@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 
 import { Ago } from "@/components/ago"
 import { useInbox, type Liveness } from "@/components/use-inbox"
+import { RowLabels } from "@/components/row-labels"
 import { presentationFor } from "@/lib/sections"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
@@ -101,16 +102,17 @@ const Liveness = ({ liveness, at }: { liveness: Liveness; at?: number }) => (
   </p>
 )
 
-const RowCard = ({ row }: { row: Row }) => {
+/*
+ * A card rather than one big link, because the row now has two jobs: open the
+ * thing, and change a label on it. A <button> inside an <a> is invalid HTML and
+ * browsers resolve it by making the whole card a link — so the title is the
+ * link and the chips sit beside it.
+ */
+const RowCard = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
   const section = presentationFor(sectionKeyOf(row))
 
   return (
-    <a
-      href={row.url}
-      target="_blank"
-      rel="noreferrer"
-      className="block rounded-lg border border-line bg-panel-2 p-3 hover:border-accent focus:border-accent focus:outline-none"
-    >
+    <div className="rounded-lg border border-line bg-panel-2 p-3 focus-within:border-accent hover:border-accent">
       <p className="flex items-center gap-1.5 text-[12px] text-fg-quiet">
         <span aria-hidden>{section.glyph}</span>
         <span className="truncate">{row.repo}</span>
@@ -118,7 +120,14 @@ const RowCard = ({ row }: { row: Row }) => {
         <span>#{row.number}</span>
       </p>
 
-      <p className="mt-1 text-[14px] leading-snug">{row.title}</p>
+      <a
+        href={row.url}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-1 block text-[14px] leading-snug hover:underline focus:underline focus:outline-none"
+      >
+        {row.title}
+      </a>
 
       <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-fg-quiet">
         <span className="rounded border border-line px-1.5 py-px">
@@ -126,11 +135,26 @@ const RowCard = ({ row }: { row: Row }) => {
         </span>
         <span>{row.activityAge ?? row.age} ago</span>
       </p>
-    </a>
+
+      <RowLabels
+        repo={row.repo}
+        number={row.number}
+        labels={row.labels ?? []}
+        onChanged={onChanged}
+      />
+    </div>
   )
 }
 
-const Section = ({ id, rows }: { id: string; rows: Row[] }) => {
+const Section = ({
+  id,
+  rows,
+  onChanged,
+}: {
+  id: string
+  rows: Row[]
+  onChanged: () => void
+}) => {
   const presentation = presentationFor(id)
   const [open, setOpen] = useState(true)
 
@@ -156,7 +180,9 @@ const Section = ({ id, rows }: { id: string; rows: Row[] }) => {
       {open ? (
         <div className="flex flex-col gap-2">
           {rows.length ? (
-            rows.map((row) => <RowCard key={row.url} row={row} />)
+            rows.map((row) => (
+              <RowCard key={row.url} row={row} onChanged={onChanged} />
+            ))
           ) : (
             <p className="py-1 text-[13px] text-fg-quiet">
               {presentation.empty}
@@ -234,7 +260,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           <div className="flex flex-col md:flex-row md:gap-4 md:overflow-x-auto md:pb-2">
             {group.sections.length ? (
               group.sections.map(([id, rows]) => (
-                <Section key={id} id={id} rows={rows} />
+                <Section
+                  key={id}
+                  id={id}
+                  rows={rows}
+                  onChanged={() => void refresh()}
+                />
               ))
             ) : (
               <p className="py-2 text-[13px] text-fg-quiet">
