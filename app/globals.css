@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/*
+ * Committed dark. Not an omission — the look is glow-over-near-black, and a
+ * light variant would be a different design rather than a recolour. Every
+ * colour is painted explicitly so the page never borrows a host ground.
+ *
+ * Colour never carries a state on its own: each board section has its own
+ * glyph, and the tints below only reinforce a shape that already reads.
+ */
+@theme {
+  --color-void: #0b0c0e;
+  --color-panel: #131519;
+  --color-panel-2: #191c21;
+  --color-raise: #20242a;
+  --color-line: #262b32;
+  --color-line-soft: #1c2026;
+
+  --color-fg: #e9ebee;
+  --color-fg-mute: #a2aab5;
+  --color-fg-quiet: #6b7280;
+
+  --color-accent: #e0707c;
+  --color-accent-dim: #3a1c21;
+  --color-brass: #e0a84e;
+  --color-sage: #7fc08f;
+  --color-slate: #8fa3be;
+
+  --font-serif:
+    "Iowan Old Style", "Charter", "Palatino Linotype", ui-serif, Georgia, serif;
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  --ease-flip: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  background: var(--color-void);
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+
+  /* Installed to a home screen the page runs full-bleed (`viewportFit: "cover"`
+     in `app/layout.tsx`), which is the only way a dark app avoids a white band
+     under the clock — and it is also how the first row of the board ends up
+     behind the notch. Paid back here, once, rather than on every container:
+     `Sky` is `fixed`, so it still covers the whole screen. Every inset is 0 on a
+     device without cutouts, so nothing moves anywhere else. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/*
+ * A viewport's worth of height, less what the insets above already took.
+ *
+ * `min-h-dvh` inside a padded body is taller than the screen by exactly the
+ * insets, so a page that fits perfectly still scrolls by a centimetre — the
+ * kind of wrongness that reads as a rendering bug rather than a layout one.
+ */
+.min-h-safe {
+  min-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* The one sanctioned expressive effect: an opacity breathe so "alive" is
+   glanceable without reading a timestamp. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+.breathe {
+  animation: breathe 2.2s ease-in-out infinite;
+}
+
+/* Skeletons breathe on a slower, shallower rhythm than a live session dot, so a
+   placeholder never reads as something actually happening. */
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.shimmer {
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Centre peek rises slightly as it fades in — enough to read as arriving from
+   the card rather than being switched on. */
+@keyframes rise-in {
+  from {
+    transform: translateY(10px) scale(0.985);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
