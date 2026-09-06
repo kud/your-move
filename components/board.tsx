@@ -435,29 +435,47 @@ export const Swimlanes = ({
   return (
     <div
       ref={scroller}
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start"
         style={{ gridTemplateColumns: track }}
       >
-        {/* The group row names the two lifecycles. Answering "does this read
-            as a timeline" with visible structure beats answering it with a
-            reorder alone. */}
-        <div className="sticky left-0 z-30 hidden border-r border-line bg-panel md:block" />
-        {GROUPS.map((group) => (
+        {/*
+          The group row names the two lifecycles, and it is STICKY — which is
+          the whole fix.
+
+          It used to scroll away on the first lane, so a label that has to
+          persist exactly as long as the column it names was doing its job for
+          about three seconds and then costing 18px of nothing. Iris's reading,
+          and her measurement is the part that settles it: 18px + 41px = 59px at
+          rest today, collapsing to 41 the moment you scroll. Sticky at 16px is
+          57px permanently — two pixels cheaper than what it replaces, and it
+          never leaves. There was no trade to make.
+
+          `text-fg-mute` rather than `fg-quiet`: quiet reads about 4.2:1 here,
+          under the bar for 9.5px, which was half of why it could not be seen.
+          Mute clears 8:1 on dark, 8:1 on light and 12:1 in high contrast — one
+          value, all three.
+        */}
+        <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r border-line bg-panel md:block" />
+        {GROUPS.map((group, i) => (
           <div
             key={group.label}
-            className="hidden bg-panel px-2 pt-1.5 font-mono text-[9.5px] uppercase tracking-[0.16em] text-fg-quiet md:block"
+            /* The seam runs unbroken from the very top edge; without it the
+               band floats free of the columns it names. */
+            className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
+              i ? "border-l-2 border-l-line" : ""
+            }`}
             style={{ gridColumn: `span ${group.ids.length}` }}
           >
             {group.label}
           </div>
         ))}
-        <div className="hidden bg-panel md:block" />
+        <div className="sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
 
         {/* Corner: the one cell belonging to both sticky axes. */}
-        <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r border-line bg-panel" />
+        <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r border-line bg-panel md:top-[16px]" />
 
         {columns.map((id) => {
           const p = presentationFor(id)
@@ -466,8 +484,8 @@ export const Swimlanes = ({
               key={id}
               ref={(el) => register(id, el)}
               data-column={id}
-              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 [scroll-snap-align:none_start] ${
-                SEAM.has(id) ? "border-l border-l-accent/40" : ""
+              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${
+                SEAM.has(id) ? "border-l-2 border-l-line" : ""
               }`}
             >
               <Slot glyph={p.glyph} tone={p.tone} />
@@ -481,7 +499,7 @@ export const Swimlanes = ({
             </div>
           )
         })}
-        <div className="sticky top-0 z-20 h-[41px] border-b border-line-soft bg-panel" />
+        <div className="sticky top-0 z-20 h-[41px] border-b border-line-soft bg-panel md:top-[16px]" />
 
         {lanes.map((lane) => (
           <Fragment key={lane.repo}>
@@ -510,14 +528,31 @@ export const Swimlanes = ({
                   }}
                   aria-expanded={!folded.has(lane.repo)}
                   aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
-                  className="font-mono text-[11px] leading-none text-fg-quiet transition-transform"
+                  /*
+                   * Drawn rather than typed. `▾` was a glyph from the mono
+                   * face, so its weight and its exact shape were whatever that
+                   * font happened to think a filled triangle was — heavy beside
+                   * a 14px name, and different wherever the font fell back.
+                   * Two rounded strokes are the same everywhere and sit at the
+                   * weight of the text they belong to.
+                   */
+                  className="grid size-4 shrink-0 place-items-center rounded text-fg-quiet transition-[transform,color] duration-200 ease-out hover:text-fg"
                   style={{
                     transform: folded.has(lane.repo)
                       ? "rotate(-90deg)"
                       : undefined,
                   }}
                 >
-                  ▾
+                  <svg viewBox="0 0 12 12" aria-hidden className="size-3">
+                    <path
+                      d="M2.75 4.5 L6 7.75 L9.25 4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
 
                 <LaneName repo={lane.repo} />
@@ -561,7 +596,7 @@ export const Swimlanes = ({
                   key={id}
                   className={`flex flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
                     shut ? "hatch min-h-[34px] justify-center" : "min-h-[44px]"
-                  } ${SEAM.has(id) ? "border-l border-l-accent/40" : ""}`}
+                  } ${SEAM.has(id) ? "border-l-2 border-l-line" : ""}`}
                 >
                   {!rows.length ? null : shut ? (
                     <span className="font-mono text-[12px] tabular-nums leading-none text-fg-quiet">
