@@ -35,7 +35,7 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 }
 
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
-  const { inbox, liveness, refresh } = useInbox(initial)
+  const { inbox, liveness, refresh, applyLabel } = useInbox(initial)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
@@ -481,7 +481,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   lanes={lanes}
                   columns={COLUMNS}
                   counts={shownTotals}
-                  onChanged={() => void refresh()}
+                  onChanged={applyLabel}
                   register={register}
                   scroller={scroller}
                   folded={folded}

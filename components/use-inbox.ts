@@ -31,11 +31,14 @@ const STALE_AFTER_MS = 8 * 60 * 1000
  * One load of this inbox costs about 74 GraphQL points. GitHub grants 5,000 an
  * hour, so a sixty-second poll spends 4,440 of them doing nothing but asking —
  * and the first version did exactly that, exhausted the budget, and rendered an
- * empty board that blamed GitHub. At five minutes it is ~890 an hour, which
- * leaves room for opening the app, refreshing by hand, and the terminal surface
- * using the same account.
+ * empty board that blamed GitHub.
+ *
+ * Ten minutes is ~440 an hour, under a tenth of the budget. That matters because
+ * this app is not the only thing spending it: the terminal surface uses the same
+ * account, so does every `gh` command, and a second tab is a second poller. The
+ * board should be a small part of the bill, not most of it.
  */
-const POLL_MS = 5 * 60 * 1000
+const POLL_MS = 10 * 60 * 1000
 
 /*
  * Returning to a backgrounded tab is when the answer is most likely stale — but
@@ -148,6 +151,8 @@ export const useInbox = (initial?: Inbox) => {
       /* Never let the automatic refresh be the thing that spends the last of
          the budget — the deliberate one matters more. */
       if (budget.current !== undefined && budget.current < BUDGET_FLOOR) return
+      /* And never on a screen nobody is looking at. */
+      if (document.visibilityState !== "visible") return
       void refresh()
     }, POLL_MS)
     const tick = setInterval(() => setNow(Date.now()), 30 * 1000)
@@ -173,11 +178,35 @@ export const useInbox = (initial?: Inbox) => {
     }
   }, [initial, refresh])
 
+  const applyLabel = useCallback(
+    (repo: string, number: number, label: string, action: "add" | "remove") =>
+      setInbox((was) =>
+        was
+          ? {
+              ...was,
+              rows: was.rows.map((row) =>
+                row.repo === repo && row.number === number
+                  ? {
+                      ...row,
+                      labels:
+                        action === "add"
+                          ? [...(row.labels ?? []), label]
+                          : (row.labels ?? []).filter((l) => l !== label),
+                    }
+                  : row,
+              ),
+            }
+          : was,
+      ),
+    [],
+  )
+
   const age = inbox ? now - inbox.fetchedAt : 0
 
   return {
     inbox,
     refresh,
+    applyLabel,
     age,
     /* Age wins over a nominally "live" state: a successful fetch five minutes
        ago is not live any more, whatever the last request reported. */

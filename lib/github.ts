@@ -158,7 +158,14 @@ export const fetchInbox = async (
   options: { repo?: string } = {},
 ): Promise<Inbox> => {
   const sources = [...INBOX_SOURCES]
-  const queries = buildInboxQueries({ ...options, sources })
+
+  /*
+   * A week of closures, not a fortnight. `recentlyDone` is the second most
+   * expensive source in the query and it feeds one column of receipts — the
+   * oldest half of which nobody reads. Halving its window is the cheapest real
+   * saving available without dropping a column.
+   */
+  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 7 })
 
   /*
    * `allSettled`, not `all`. The queries are split precisely so one source

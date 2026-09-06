@@ -19,9 +19,14 @@ type Props = {
   repo: string
   number: number
   labels: readonly string[]
-  /* So the list can re-rank: applying a label can change whose move it is, which
-     is the whole reason labels are worth having here. */
-  onChanged: () => void
+  /* Corrects the row in place. Nothing on the board derives from labels, so a
+     refetch here would spend 74 GraphQL points to redraw one chip. */
+  onChanged: (
+    repo: string,
+    number: number,
+    label: string,
+    action: "add" | "remove",
+  ) => void
 }
 
 const post = (body: unknown) =>
@@ -46,7 +51,7 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
         return setProblem(error ?? "That did not work.")
       }
       setAvailable(undefined)
-      onChanged()
+      onChanged(repo, number, label, action)
     } finally {
       setBusy(undefined)
     }

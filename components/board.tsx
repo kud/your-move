@@ -147,7 +147,7 @@ export const Card = ({
   onChanged,
 }: {
   row: Row
-  onChanged: () => void
+  onChanged: OnLabelChange
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
@@ -222,6 +222,13 @@ const Summary = ({ lane, columns }: { lane: Lane; columns: string[] }) => (
   </div>
 )
 
+export type OnLabelChange = (
+  repo: string,
+  number: number,
+  label: string,
+  action: "add" | "remove",
+) => void
+
 export type Lane = {
   repo: string
   yours: number
@@ -242,7 +249,7 @@ const Cell = ({
 }: {
   rows: Row[]
   cap: number
-  onChanged: () => void
+  onChanged: OnLabelChange
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -279,7 +286,7 @@ export const Swimlanes = ({
   lanes: Lane[]
   columns: string[]
   counts: Map<string, number>
-  onChanged: () => void
+  onChanged: OnLabelChange
   register: (id: string, el: HTMLElement | null) => void
   scroller: React.Ref<HTMLDivElement>
   folded: Set<string>
