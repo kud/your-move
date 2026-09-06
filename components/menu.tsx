@@ -55,6 +55,8 @@ export const Menu = ({
   sound,
   onSound,
   permission,
+  openMode,
+  onOpenMode,
 }: {
   login?: string
   doneDays: 7 | 30
@@ -64,6 +66,8 @@ export const Menu = ({
   sound: boolean
   onSound: (on: boolean) => void
   permission: "unsupported" | "default" | "granted" | "denied"
+  openMode: "side" | "modal" | "full"
+  onOpenMode: (mode: "side" | "modal" | "full") => void
 }) => {
   const [contrast, setContrast] = useState(false)
   const [still, setStill] = useState(false)
@@ -288,6 +292,30 @@ export const Menu = ({
               {sound ? "On" : "Off"}
             </span>
           </button>
+
+          {/* Desktop only, because opening a row in place is desktop only —
+              a card tap on a phone goes to the GitHub app, which does all of
+              this better. */}
+          <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
+            Open as
+            <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              {(["side", "modal", "full"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onOpenMode(option)}
+                  aria-pressed={openMode === option}
+                  className={`px-2 py-0.5 text-[12px] capitalize ${
+                    openMode === option
+                      ? "bg-accent-dim text-accent"
+                      : "text-fg-quiet"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </span>
+          </div>
 
           <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
             Theme

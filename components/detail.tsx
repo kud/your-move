@@ -111,14 +111,47 @@ const verdictFor = (row: Row, detail?: Detail) => {
   }
 }
 
+/*
+ * Where the row opens.
+ *
+ * A side panel is still the default and still the argued-for one: the board is
+ * the context you came from, and on something that scrolls in two axes,
+ * blacking it out costs you your place. But that is a claim about the common
+ * case, not about every case — a long description wants width, and a row you
+ * are going to sit with wants the screen. Three answers, and you pick.
+ *
+ * Changeable from the panel itself as well as from the settings, because the
+ * moment you know which one you wanted is the moment you are looking at the
+ * wrong one. Changing it there also sets it, so the control teaches the setting
+ * rather than competing with it.
+ */
+export type OpenMode = "side" | "modal" | "full"
+
+const SHELL: Record<OpenMode, string> = {
+  side: "inset-y-0 right-0 w-[min(620px,92vw)] border-l",
+  modal:
+    "inset-0 m-auto h-[min(86vh,820px)] w-[min(780px,92vw)] rounded-2xl border",
+  full: "inset-0",
+}
+
+const MODE_LABEL: Record<OpenMode, string> = {
+  side: "Side",
+  modal: "Modal",
+  full: "Full",
+}
+
 export const Detail = ({
   row,
   onClose,
   onLabelChange,
+  mode,
+  onMode,
 }: {
   row: Row
   onClose: () => void
   onLabelChange: OnLabelChange
+  mode: OpenMode
+  onMode: (mode: OpenMode) => void
 }) => {
   const [detail, setDetail] = useState<Detail>()
   const [failed, setFailed] = useState(false)
@@ -174,7 +207,7 @@ export const Detail = ({
       <aside
         role="dialog"
         aria-label={`${row.repo}#${row.number}`}
-        className="fixed inset-y-0 right-0 z-50 flex w-[min(620px,92vw)] flex-col border-l border-line bg-panel shadow-[-30px_0_80px_-40px_rgba(0,0,0,.9)]"
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${SHELL[mode]}`}
       >
         <header className="flex items-start gap-3 border-b border-line-soft p-4">
           <div className="min-w-0 flex-1">
@@ -185,6 +218,28 @@ export const Detail = ({
               {row.title}
             </h2>
           </div>
+
+          {/* At the top of the ticket as well as in the settings, and the same
+              choice in both places — the one you make here is remembered. */}
+          <span className="hidden shrink-0 overflow-hidden rounded-lg border border-line lg:flex">
+            {(["side", "modal", "full"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onMode(option)}
+                aria-pressed={mode === option}
+                title={`Open as ${MODE_LABEL[option].toLowerCase()}`}
+                className={`px-2 py-1 text-[11.5px] ${
+                  mode === option
+                    ? "bg-accent-dim text-accent"
+                    : "text-fg-quiet hover:text-fg"
+                }`}
+              >
+                {MODE_LABEL[option]}
+              </button>
+            ))}
+          </span>
+
           <button
             type="button"
             onClick={onClose}
