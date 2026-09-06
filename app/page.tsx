@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 
 import { Inbox } from "@/components/inbox"
 import { COOKIE, unseal } from "@/lib/auth"
+import { cached, remember } from "@/lib/cache"
 import { fetchInbox } from "@/lib/github"
 
 /*
@@ -23,8 +24,16 @@ const Page = async () => {
     ? await unseal(secret, (await cookies()).get(COOKIE)?.value)
     : undefined
 
+  /* Opening the page used to cost a fetch here AND another from the client on
+     mount. Through the cache the second one is free. */
   const initial = token
-    ? await fetchInbox(token).catch(() => undefined)
+    ? ((await cached(token)) ??
+      (await fetchInbox(token)
+        .then(async (inbox) => {
+          await remember(token, inbox)
+          return inbox
+        })
+        .catch(() => undefined)))
     : undefined
 
   return <Inbox initial={initial} />
