@@ -167,6 +167,13 @@ export const Sky = () => {
       {/*
         The page meets the system bars in flat ground, not in a gradient.
 
+        The stops are an eased ramp rather than the two-stop one this started
+        with, and that is a banding fix rather than a taste one. Going from
+        #0b0c0e to transparent over about eighty pixels, above a sky that
+        differs from it by a handful of RGB steps, gives each step twenty pixels
+        of width — which stops reading as a fade and starts reading as a line.
+        An OLED panel at low luminance is exactly where that shows.
+
         Android paints the status bar with a single colour from the manifest's
         theme_color, so a wash running all the way to the top edge butts against
         an aplat and reads as a seam — the app looking pasted onto the phone
@@ -179,7 +186,7 @@ export const Sky = () => {
         className="pointer-events-none fixed inset-x-0 top-0 z-[1] h-[max(96px,calc(env(safe-area-inset-top)+72px))]"
         style={{
           background:
-            "linear-gradient(to bottom, var(--color-void) 0%, var(--color-void) 34%, transparent 100%)",
+            "linear-gradient(to bottom, var(--color-void) 0%, var(--color-void) 30%, color-mix(in srgb, var(--color-void) 94%, transparent) 40%, color-mix(in srgb, var(--color-void) 82%, transparent) 50%, color-mix(in srgb, var(--color-void) 63%, transparent) 61%, color-mix(in srgb, var(--color-void) 41%, transparent) 73%, color-mix(in srgb, var(--color-void) 19%, transparent) 86%, transparent 100%)",
         }}
       />
       <div
@@ -187,7 +194,7 @@ export const Sky = () => {
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-[max(72px,calc(env(safe-area-inset-bottom)+56px))]"
         style={{
           background:
-            "linear-gradient(to top, var(--color-void) 0%, var(--color-void) 34%, transparent 100%)",
+            "linear-gradient(to top, var(--color-void) 0%, var(--color-void) 30%, color-mix(in srgb, var(--color-void) 94%, transparent) 40%, color-mix(in srgb, var(--color-void) 82%, transparent) 50%, color-mix(in srgb, var(--color-void) 63%, transparent) 61%, color-mix(in srgb, var(--color-void) 41%, transparent) 73%, color-mix(in srgb, var(--color-void) 19%, transparent) 86%, transparent 100%)",
         }}
       />
     </>
