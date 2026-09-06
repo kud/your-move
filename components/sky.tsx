@@ -174,6 +174,13 @@ export const Sky = () => {
         of width — which stops reading as a fade and starts reading as a line.
         An OLED panel at low luminance is exactly where that shows.
 
+        And the flat part is measured in `env()`, not in a percentage of the
+        overlay. At 30% of a 120px overlay it ended at 36px, while a Pixel's
+        status bar is about 48 — so the boundary between the system's flat
+        `#0b0c0e` and our page landed INSIDE the ramp, where the sky has already
+        begun to show. The two were painting the same colour and still did not
+        match, because only one of them was painting it flat.
+
         Android paints the status bar with a single colour from the manifest's
         theme_color, so a wash running all the way to the top edge butts against
         an aplat and reads as a seam — the app looking pasted onto the phone
@@ -186,7 +193,7 @@ export const Sky = () => {
         className="pointer-events-none fixed inset-x-0 top-0 z-[1] h-[max(96px,calc(env(safe-area-inset-top)+72px))]"
         style={{
           background:
-            "linear-gradient(to bottom, var(--color-void) 0%, var(--color-void) 30%, color-mix(in srgb, var(--color-void) 94%, transparent) 40%, color-mix(in srgb, var(--color-void) 82%, transparent) 50%, color-mix(in srgb, var(--color-void) 63%, transparent) 61%, color-mix(in srgb, var(--color-void) 41%, transparent) 73%, color-mix(in srgb, var(--color-void) 19%, transparent) 86%, transparent 100%)",
+            "linear-gradient(to bottom, var(--color-void) 0px, var(--color-void) calc(env(safe-area-inset-top) + 10px), color-mix(in srgb, var(--color-void) 94%, transparent) 50%, color-mix(in srgb, var(--color-void) 82%, transparent) 60%, color-mix(in srgb, var(--color-void) 63%, transparent) 70%, color-mix(in srgb, var(--color-void) 41%, transparent) 82%, color-mix(in srgb, var(--color-void) 19%, transparent) 92%, transparent 100%)",
         }}
       />
       <div
@@ -194,7 +201,7 @@ export const Sky = () => {
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-[max(72px,calc(env(safe-area-inset-bottom)+56px))]"
         style={{
           background:
-            "linear-gradient(to top, var(--color-void) 0%, var(--color-void) 30%, color-mix(in srgb, var(--color-void) 94%, transparent) 40%, color-mix(in srgb, var(--color-void) 82%, transparent) 50%, color-mix(in srgb, var(--color-void) 63%, transparent) 61%, color-mix(in srgb, var(--color-void) 41%, transparent) 73%, color-mix(in srgb, var(--color-void) 19%, transparent) 86%, transparent 100%)",
+            "linear-gradient(to top, var(--color-void) 0px, var(--color-void) calc(env(safe-area-inset-bottom) + 10px), color-mix(in srgb, var(--color-void) 94%, transparent) 50%, color-mix(in srgb, var(--color-void) 82%, transparent) 60%, color-mix(in srgb, var(--color-void) 63%, transparent) 70%, color-mix(in srgb, var(--color-void) 41%, transparent) 82%, color-mix(in srgb, var(--color-void) 19%, transparent) 92%, transparent 100%)",
         }}
       />
     </>
