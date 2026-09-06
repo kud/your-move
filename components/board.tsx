@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, memo, useState } from "react"
+import { Fragment, memo, useEffect, useRef, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { presentationFor } from "@/lib/sections"
@@ -123,6 +123,9 @@ export const shortName = (repo: string) => repo.split("/").pop() ?? repo
 /** A cell shows this many, then says how many it is holding back. */
 const PER_CELL = 4
 const DONE_PER_CELL = 2
+
+/** The fold transition, shared by the CSS below and the unmount that follows. */
+const FOLD_MS = 200
 
 export const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
   <span
@@ -470,6 +473,36 @@ export const Swimlanes = ({
    */
   const track = `var(--ym-lane) repeat(${columns.length}, var(--ym-col)) var(--ym-tail)`
 
+  /*
+   * Which lanes are mid-fold, so a collapse can be animated without giving up
+   * what folding is FOR.
+   *
+   * A row cannot shrink smoothly if its contents vanish on the first frame, so
+   * the cards have to stay mounted while it moves. But leaving them mounted
+   * afterwards would cost about twenty-eight cards per folded lane — and
+   * folding a noisy project is partly how a big board stays cheap, so paying
+   * for the animation with that would be trading the feature for the flourish.
+   *
+   * They stay for exactly the length of the transition and then go. The timer
+   * is deliberately a little longer than the CSS, since finishing early is the
+   * one failure that would be visible.
+   */
+  const [settling, setSettling] = useState<Set<string>>(new Set())
+  const before = useRef(folded)
+
+  useEffect(() => {
+    const changed = [
+      ...[...folded].filter((repo) => !before.current.has(repo)),
+      ...[...before.current].filter((repo) => !folded.has(repo)),
+    ]
+    before.current = folded
+    if (!changed.length) return
+
+    setSettling(new Set(changed))
+    const done = setTimeout(() => setSettling(new Set()), FOLD_MS + 40)
+    return () => clearTimeout(done)
+  }, [folded])
+
   return (
     <div
       ref={scroller}
@@ -629,25 +662,48 @@ export const Swimlanes = ({
                  an empty cell, where an empty bordered box reads as a broken
                  component. Folded, the same rule holds: only a cell with
                  something in it is hatched. */
+              const moving = settling.has(lane.repo)
               return (
                 <div
                   key={id}
-                  className={`flex flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
-                    shut ? "hatch min-h-[34px] justify-center" : "min-h-[44px]"
+                  className={`relative border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] transition-[min-height] duration-200 ease-out ${
+                    shut ? "hatch min-h-[34px]" : "min-h-[44px]"
                   } ${SEAM.has(id) ? "border-l-2 border-l-line" : ""}`}
                 >
-                  {!rows.length ? null : shut ? (
-                    <span className="font-mono text-[12px] tabular-nums leading-none text-fg-quiet">
+                  {/* Out of flow, so it can cross-fade with the cards rather
+                      than replace them and make the row jump. */}
+                  {rows.length ? (
+                    <span
+                      className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-150 ${
+                        shut ? "opacity-100 delay-100" : "opacity-0"
+                      }`}
+                    >
                       {rows.length}
                     </span>
-                  ) : (
-                    <Cell
-                      rows={rows}
-                      cap={id === DONE ? DONE_PER_CELL : PER_CELL}
-                      onChanged={onChanged}
-                      onOpen={onOpen}
-                    />
-                  )}
+                  ) : null}
+
+                  {/*
+                    `1fr` to `0fr` is how a grid row animates to nothing without
+                    anyone having to know its height in advance. The inner box
+                    carries the clipping, and `min-h-0` is what lets it actually
+                    reach zero — a grid item's default minimum is its content.
+                  */}
+                  <div
+                    className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                      shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+                    }`}
+                  >
+                    <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                      {rows.length && (!shut || moving) ? (
+                        <Cell
+                          rows={rows}
+                          cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                          onChanged={onChanged}
+                          onOpen={onOpen}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               )
             })}
