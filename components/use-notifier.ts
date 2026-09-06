@@ -14,7 +14,7 @@ export type Notifiable = {
 
 export type Permission = "unsupported" | "default" | "granted" | "denied"
 
-/* Keyed by repo, not company: numbers repeat across the repos the board
+/* Keyed by repo, not by number alone: numbers repeat across the repos the board
    aggregates, and a collision here silently swallows the notification. */
 const keyOf = (row: Notifiable) => `${row.repo}#${row.number}`
 

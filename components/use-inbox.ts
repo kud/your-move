@@ -7,7 +7,7 @@ import type { Inbox } from "@/lib/github"
 /*
  * Polling, not a stream.
  *
- * The Companies board this grew out of used SSE because it was watching a local
+ * The board this grew out of used SSE because it was watching a local
  * process write files, and an event was the only way to know something had
  * happened. GitHub offers no such signal without webhooks, and a webhook needs
  * an always-on endpoint and somewhere to put what arrives — the mirror this

@@ -114,7 +114,7 @@ describe("the shell worker", () => {
    */
   it.each([
     "/api/stream",
-    "/api/mission?company=acme&ref=%2312",
+    "/api/row?repo=acme%2Fwidgets&number=12",
     "/?_rsc=1a2b3c",
     "/mission/acme/12?_rsc=1a2b3c",
   ])("declines %s rather than caching it", async (path) => {
