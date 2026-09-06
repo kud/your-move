@@ -243,7 +243,6 @@ const CardBody = ({
         target="_blank"
         rel="noreferrer"
         onClick={(e) => {
-          if (!matchMedia("(min-width: 768px)").matches) return
           /* A modified click means "somewhere else, not here" — every other
              link in the app honours it, and swallowing it here made the card
              the one thing you could not open in a background tab. */

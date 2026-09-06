@@ -22,11 +22,19 @@ import type { Row } from "@/lib/github"
  * moment you can read one here, you are reviewing here, and the app is a worse
  * GitHub client rather than a better inbox.
  *
- * Desktop only, and that is his call rather than an omission — on a phone the
- * native GitHub app does all of this better, and a card tap goes there instead.
- * A side panel rather than a centre modal, because the board is the context you
- * came from and on a board that scrolls horizontally, blacking it out costs you
- * your place.
+ * Every width, which reverses an earlier call that was answering the wrong
+ * question. "On a phone the native GitHub app does all of this better" is true
+ * of the WORK — and this panel does not do the work. It does the verdict, which
+ * GitHub states nowhere, and a verdict is worth most on a phone, in a queue,
+ * where the alternative is an app switch per row.
+ *
+ * That was the real cost of sending a tap straight out: reading four rows meant
+ * four round trips, a load each way and a place to find again. Now you decide
+ * in here and leave only for the ones you are going to act on.
+ *
+ * A side panel rather than a centre modal on a desk, because the board is the
+ * context you came from and blacking it out on a two-axis board costs you your
+ * place. On a phone there is no context to preserve, so it takes the screen.
  */
 
 type Detail = {
@@ -213,9 +221,15 @@ export const Detail = ({
       <aside
         role="dialog"
         aria-label={`${row.repo}#${row.number}`}
-        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${ENTER[mode]} ${SHELL[mode]}`}
+        /* Full screen below `md` regardless of the preference, which is a
+           desk preference: at 390px a "side panel" at 92vw is a full screen
+           wearing a border, and a modal is one with margins. */
+        className={`fixed inset-0 z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${ENTER[mode]} md:inset-auto ${SHELL[mode]}`}
       >
-        <header className="flex items-start gap-3 border-b border-line-soft p-4">
+        <header
+          className="flex items-start gap-3 border-b border-line-soft p-4"
+          style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        >
           <div className="min-w-0 flex-1">
             <p className="font-mono text-[12px] text-fg-quiet">
               {row.repo}#{row.number}
@@ -417,16 +431,31 @@ export const Detail = ({
 
         {/* Two exits, asymmetric on purpose: the work is elsewhere by design,
             and the labels are the only act available in place. */}
-        <footer className="flex items-center gap-3 border-t border-line-soft p-3">
+        {/*
+          Two exits, asymmetric on purpose: the work is elsewhere by design, and
+          the labels are the only act available in place.
+
+          Full width and thumb-height on a phone, because there it is not a
+          footnote — it is the second half of the gesture. You read the verdict,
+          and either you are done or you are going. `env()` on the padding
+          because a full-screen panel escapes the body's safe-area inset, so
+          without it this sits under the gesture bar.
+        */}
+        <footer
+          className="flex flex-col gap-2 border-t border-line-soft p-3 md:flex-row md:items-center md:gap-3"
+          style={{
+            paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          }}
+        >
           <a
             href={row.url}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-accent bg-accent-dim px-3 py-1.5 text-[13.5px] text-accent"
+            className="rounded-lg border border-accent bg-accent-dim px-3 py-2.5 text-center text-[15px] font-semibold text-accent md:py-1.5 md:text-[13.5px] md:font-normal"
           >
             Open on GitHub ↗
           </a>
-          <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet">
+          <span className="hidden font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet md:ml-auto md:inline">
             labels only
           </span>
         </footer>
