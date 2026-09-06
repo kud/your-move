@@ -16,6 +16,7 @@ import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
+import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
@@ -154,6 +155,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           b.total - a.total,
       )
   }, [shown])
+
+  /* Tapping a card leaves the app entirely on a phone; this is what brings you
+     back to the same place rather than to the first column. */
+  useScrollMemory(scroller, lanes)
 
   /* Unfiltered totals, so a filtered board never narrows silently. */
   const totals = useMemo(() => {
