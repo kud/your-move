@@ -34,8 +34,16 @@ const manifest = (): MetadataRoute.Manifest => ({
      tab. */
   display_override: ["standalone", "minimal-ui"],
   orientation: "portrait",
-  /* Both taken from `globals.css`. `background_color` paints the splash while
-     the app boots, so anything but the page's own ground reads as a flash. */
+  /*
+   * Both taken from `globals.css`. `background_color` paints the splash while
+   * the app boots, so anything but the page's own ground reads as a flash.
+   *
+   * This is the ONLY splash. Chrome builds one from `name`, `background_color`
+   * and the 512 icon, and holds it until the page can paint — so the app's own
+   * launch screen, which we shipped and removed, could only ever arrive after
+   * it and repeat the name without the mark. If one is ever wanted again, the
+   * thing to change is these three fields, not a component.
+   */
   background_color: "#0b0c0e",
   theme_color: "#0b0c0e",
   icons: [
