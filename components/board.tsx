@@ -291,13 +291,14 @@ export const Swimlanes = ({
    * what makes seven columns fit a desk without the empty ones taxing the
    * ones that have work in them.
    */
-  const width = (id: string) => ((counts.get(id) ?? 0) > 0 ? "300px" : "56px")
-  const track = `140px ${columns.map(width).join(" ")}`
+  const width = (id: string) =>
+    (counts.get(id) ?? 0) > 0 ? "var(--ym-col)" : "52px"
+  const track = `var(--ym-lane) ${columns.map(width).join(" ")}`
 
   return (
     <div
       ref={scroller}
-      className="max-h-[76dvh] overflow-auto overscroll-x-contain md:snap-x md:snap-proximity"
+      className="max-h-[74dvh] overflow-auto overscroll-x-contain [--ym-col:64vw] [--ym-lane:104px] md:max-h-[76dvh] snap-x snap-mandatory scroll-pl-[var(--ym-lane)] md:snap-proximity md:[--ym-col:300px] md:[--ym-lane:150px]"
     >
       <div className="grid min-w-max" style={{ gridTemplateColumns: track }}>
         {/* Corner: the one cell belonging to both sticky axes. */}
@@ -322,7 +323,7 @@ export const Swimlanes = ({
                 </span>
               ) : (
                 <>
-                  <h3 className="truncate text-[13.5px] font-semibold">
+                  <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
                     {p.title}
                   </h3>
                   <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
@@ -348,10 +349,12 @@ export const Swimlanes = ({
               onClick={() => onFold(lane.repo)}
               aria-expanded={!folded.has(lane.repo)}
               aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
-              className="sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r border-line bg-panel p-2 text-left hover:bg-raise"
+              className={`sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise ${
+                lane.yours ? "border-r-accent/60" : ""
+              }`}
             >
               <h4
-                className="flex items-center gap-1 truncate text-[13px] font-semibold"
+                className="flex items-center gap-1 truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
                 title={lane.repo}
               >
                 <span aria-hidden className="font-mono text-fg-quiet">
@@ -407,79 +410,3 @@ export const Swimlanes = ({
     </div>
   )
 }
-
-/** Narrow: the same content, one axis. */
-export const Stack = ({
-  lanes,
-  columns,
-  onChanged,
-  register,
-  folded,
-  onFold,
-}: {
-  lanes: Lane[]
-  columns: string[]
-  onChanged: () => void
-  register: (id: string, el: HTMLElement | null) => void
-  folded: Set<string>
-  onFold: (repo: string) => void
-}) => (
-  <div className="divide-y divide-line">
-    {lanes.map((lane) => (
-      <section
-        key={lane.repo}
-        ref={(el) => register(lane.repo, el)}
-        data-lane={lane.repo}
-      >
-        <button
-          type="button"
-          onClick={() => onFold(lane.repo)}
-          aria-expanded={!folded.has(lane.repo)}
-          className="sticky top-0 z-20 flex w-full items-center gap-2 border-b border-line-soft bg-panel px-2.5 py-2 text-left"
-        >
-          <span aria-hidden className="font-mono text-[12px] text-fg-quiet">
-            {folded.has(lane.repo) ? "▸" : "▾"}
-          </span>
-          <h4 className="min-w-0 flex-1 truncate text-[14px] font-semibold">
-            {shortName(lane.repo)}
-          </h4>
-          {lane.yours ? (
-            <span className="shrink-0 rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[11px] text-accent">
-              {lane.yours} you
-            </span>
-          ) : null}
-          <span className="shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
-            {lane.total}
-          </span>
-        </button>
-
-        {folded.has(lane.repo) ? (
-          <Summary lane={lane} columns={columns} />
-        ) : (
-        <div className="flex flex-col gap-2 p-2.5">
-          {columns
-            .filter((id) => (lane.cells.get(id) ?? []).length)
-            .map((id) => {
-              const p = presentationFor(id)
-              const rows = lane.cells.get(id) ?? []
-              return (
-                <Fragment key={id}>
-                  <p className="flex items-center gap-1.5 pt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-quiet">
-                    <span aria-hidden>{p.glyph}</span>
-                    <span>{p.title}</span>
-                    <span className="tabular-nums">{rows.length}</span>
-                  </p>
-                  <Cell
-                    rows={rows}
-                    cap={id === DONE ? DONE_PER_CELL : PER_CELL}
-                    onChanged={onChanged}
-                  />
-                </Fragment>
-              )
-            })}
-        </div>
-        )}
-      </section>
-    ))}
-  </div>
-)

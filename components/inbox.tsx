@@ -6,7 +6,6 @@ import { Ago } from "@/components/ago"
 import {
   COLUMNS,
   DONE,
-  Stack,
   Swimlanes,
   sectionOf,
   shortName,
@@ -406,46 +405,37 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                *
                * On narrow it addresses the axis the stack keeps — projects.
                */}
+              {/* The rail navigates the horizontal axis, which is the one a
+                  narrow screen cannot show all of at once. */}
               <nav className="flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden">
-                {lanes.map((lane) => (
-                  <button
-                    key={lane.repo}
-                    type="button"
-                    onClick={() => goTo(lane.repo)}
-                    aria-label={lane.repo}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
-                      active === lane.repo
-                        ? "border-accent bg-accent-dim text-fg"
-                        : lane.yours
-                          ? "border-accent/40 text-fg-mute"
+                {COLUMNS.map((id) => {
+                  const p = presentationFor(id)
+                  const now = shownTotals.get(id) ?? 0
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => goTo(id)}
+                      aria-label={p.title}
+                      className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
+                        active === id
+                          ? "border-accent bg-accent-dim text-fg"
                           : "border-line text-fg-mute"
-                    }`}
-                  >
-                    <span className="max-w-[8rem] truncate">
-                      {shortName(lane.repo)}
-                    </span>
-                    <span className="font-mono tabular-nums text-fg-quiet">
-                      {lane.yours ? (
-                        <span className="text-accent">{lane.yours}/</span>
-                      ) : null}
-                      {lane.total}
-                    </span>
-                  </button>
-                ))}
+                      }`}
+                    >
+                      <span aria-hidden className="font-mono">
+                        {p.glyph}
+                      </span>
+                      <span>{p.title}</span>
+                      <span className="font-mono tabular-nums text-fg-quiet">
+                        {now}
+                      </span>
+                    </button>
+                  )
+                })}
               </nav>
 
-              <div className="md:hidden">
-                <Stack
-                  lanes={lanes}
-                  columns={COLUMNS}
-                  onChanged={() => void refresh()}
-                  register={register}
-                  folded={folded}
-                  onFold={fold}
-                />
-              </div>
-
-              <div className="hidden md:block">
+              <div>
                 <Swimlanes
                   lanes={lanes}
                   columns={COLUMNS}
