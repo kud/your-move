@@ -279,3 +279,61 @@ h4 {
     font-size: 16px;
   }
 }
+
+/*
+ * Popovers arrive and leave, rather than appearing.
+ *
+ * A native popover toggles `display`, so by default it snaps in and out — which
+ * is what reads as brutal: nothing on a phone appears without travelling. Two
+ * modern pieces make the transition possible at all: `@starting-style` gives the
+ * browser a "from" state for an element that did not exist a frame ago, and
+ * `allow-discrete` lets `display` and `overlay` participate so the exit plays
+ * before the element is removed rather than being cut off by it.
+ */
+[popover] {
+  opacity: 0;
+  transform: translateY(6px) scale(0.985);
+  transition:
+    opacity 160ms ease,
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+
+[popover]:popover-open {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  [popover]:popover-open {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+[popover]::backdrop {
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+
+[popover]:popover-open::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  [popover]:popover-open::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [popover],
+  [popover]::backdrop {
+    transition: none;
+    transform: none;
+  }
+}

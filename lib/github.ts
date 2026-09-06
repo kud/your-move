@@ -160,15 +160,15 @@ export const fetchInbox = async (
   const sources = [...INBOX_SOURCES]
 
   /*
-   * A fortnight of closures, which is @kud/gh's own default.
+   * A week of receipts.
    *
-   * Briefly halved to seven days as a saving, on the assumption that
-   * `recentlyDone` was expensive. Measured, it costs ONE point at either window:
-   * the query's cost is driven by the PR sources fetching checks and threads,
-   * not by how far back the closed search reaches. The saving was imaginary and
-   * it cost four days of receipts.
+   * Not a saving — measured, this source costs ONE point at seven days or at
+   * fourteen, because the query's cost comes from the PR sources fetching checks
+   * and threads, not from how far back the closed search reaches. So the window
+   * is purely an editorial call about how long something stays worth seeing
+   * after it is finished, and a week is the answer.
    */
-  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 14 })
+  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 7 })
 
   /*
    * `allSettled`, not `all`. The queries are split precisely so one source
