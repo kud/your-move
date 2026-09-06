@@ -29,11 +29,17 @@ const manifest = (): MetadataRoute.Manifest => ({
    * unaffected. What this does cost is the install prompt's title, which is the
    * one other place Chrome reads `name` — a screen seen once per device.
    *
-   * If Chrome trims this and falls back to `short_name`, the old text simply
-   * returns and nothing else changes. That is the whole of the downside risk,
-   * and it is why this is worth trying rather than reasoning about.
+   * A NON-BREAKING space, and the distinction is the whole attempt. A plain
+   * space is ASCII whitespace, which Chrome trims before deciding whether the
+   * field is empty — so the first try almost certainly fell back to
+   * `short_name` and printed the same word as before. `\u00A0` is not ASCII
+   * whitespace, survives that trim as a non-empty string, and renders as
+   * nothing.
+   *
+   * If this one also prints, the field is not the lever and there is no other:
+   * revert to "Your Move" rather than trying a third character.
    */
-  name: " ",
+  name: "\u00A0",
   short_name: "Your Move",
   description: "What moved on GitHub, and whose move it is.",
   start_url: "/",
