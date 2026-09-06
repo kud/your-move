@@ -329,8 +329,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     <>
       <Sky />
 
-      <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-3 md:px-6 md:pb-6 md:pt-8">
-        <header className="flex items-center gap-2 pb-1 md:flex-wrap md:items-end md:gap-x-4 md:pb-2">
+      <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
+        <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
           {/*
             The mark sits beside the whole left stack rather than inside the
             `h1`, because the `h1` is baseline-aligned and a picture has no
@@ -358,7 +358,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 type="button"
                 onClick={() => void refresh()}
                 aria-label="Refresh"
-                className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+                className="flex max-w-full mt-1 items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
               >
                 <span aria-hidden>
                   {liveness === "live"
