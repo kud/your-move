@@ -329,79 +329,97 @@ export const Filters = ({
           wrong while GitHub is right. A view is a copy of nothing, so there is
           nothing for it to disagree with.
         */}
-        {views.length || savable ? (
-          <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
-            {views.map((view) => {
-              const on = current?.name === view.name
-              return (
-                <span
-                  key={view.name}
-                  className={`flex items-center rounded-full border text-[12.5px] ${
-                    on
-                      ? "border-accent bg-accent-dim text-accent"
-                      : "border-line text-fg-mute"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => onChange(view.picks)}
-                    className="py-1 pl-2.5 pr-1.5"
-                  >
-                    {view.name}
-                  </button>
-                  {/* Only the applied view can be deleted, so a mis-tap costs a
-                      switch rather than a view. */}
-                  {on ? (
-                    <button
-                      type="button"
-                      aria-label={`Delete ${view.name}`}
-                      onClick={() =>
-                        onViews(views.filter((v) => v.name !== view.name))
-                      }
-                      className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
-                    >
-                      ×
-                    </button>
-                  ) : null}
-                </span>
-              )
-            })}
+        {/*
+          Always present, always the same height.
 
-            {savable && !naming ? (
-              <button
-                type="button"
-                onClick={() => setNaming(true)}
-                className="rounded-full border border-dashed border-line px-2.5 py-1 text-[12.5px] text-fg-quiet hover:text-fg"
+          It used to appear the moment you ticked anything and vanish when you
+          cleared, so the tabs and the list jumped under your thumb at exactly
+          the point you were aiming at them — the same fault as the sheet that
+          resized per tab, one row higher. Reserved space costs 30px of a sheet
+          that has a fixed height anyway; movement costs a mis-tap.
+        */}
+        <div className="mb-2 flex min-h-[30px] shrink-0 flex-wrap items-center gap-1.5">
+          {views.map((view) => {
+            const on = current?.name === view.name
+            return (
+              <span
+                key={view.name}
+                className={`flex items-center rounded-full border text-[12.5px] ${
+                  on
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-mute"
+                }`}
               >
-                Save this view
-              </button>
-            ) : null}
-
-            {naming ? (
-              <span className="flex flex-1 items-center gap-1.5">
-                <input
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") save()
-                    if (e.key === "Escape") setNaming(false)
-                  }}
-                  placeholder="At work"
-                  aria-label="Name this view"
-                  className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2 py-1 text-[12.5px] outline-none focus:border-accent"
-                />
                 <button
                   type="button"
-                  onClick={save}
-                  className="rounded-lg border border-accent bg-accent-dim px-2 py-1 text-[12.5px] text-accent"
+                  onClick={() => onChange(view.picks)}
+                  className="py-1 pl-2.5 pr-1.5"
                 >
-                  Save
+                  {view.name}
                 </button>
+                {/* Only the applied view can be deleted, so a mis-tap costs a
+                      switch rather than a view. */}
+                {on ? (
+                  <button
+                    type="button"
+                    aria-label={`Delete ${view.name}`}
+                    onClick={() =>
+                      onViews(views.filter((v) => v.name !== view.name))
+                    }
+                    className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </span>
-            ) : null}
-          </div>
-        ) : null}
+            )
+          })}
+
+          {/* The button holds its slot whether or not it can act, so the
+                row's height never depends on what you have ticked. Disabled
+                rather than hidden: absent, it would take the row with it. */}
+          {!naming ? (
+            <button
+              type="button"
+              disabled={!savable}
+              onClick={() => setNaming(true)}
+              title={
+                savable
+                  ? undefined
+                  : isEmptyPicks(picks)
+                    ? "Pick a filter first"
+                    : "Already saved as a view"
+              }
+              className="rounded-full border border-dashed border-line px-2.5 py-1 text-[12.5px] text-fg-quiet transition-opacity hover:text-fg disabled:opacity-40 disabled:hover:text-fg-quiet"
+            >
+              Save this view
+            </button>
+          ) : null}
+
+          {naming ? (
+            <span className="flex flex-1 items-center gap-1.5">
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") save()
+                  if (e.key === "Escape") setNaming(false)
+                }}
+                placeholder="At work"
+                aria-label="Name this view"
+                className="h-[26px] min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2 text-[12.5px] outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={save}
+                className="h-[26px] rounded-lg border border-accent bg-accent-dim px-2 text-[12.5px] text-accent"
+              >
+                Save
+              </button>
+            </span>
+          ) : null}
+        </div>
 
         {/*
           Whose move it is sits ABOVE the tabs, not inside them as a fourth.
@@ -479,7 +497,7 @@ export const Filters = ({
           })}
         </div>
 
-        {list.length > TYPEAHEAD_AFTER ? (
+        {repos.length > TYPEAHEAD_AFTER ? (
           <input
             type="search"
             value={needle}
