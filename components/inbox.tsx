@@ -13,18 +13,20 @@ import type { Inbox as InboxData, Row } from "@/lib/github"
 /*
  * A board: fixed columns, always drawn, scrolling sideways with snap.
  *
- * The columns are SECTIONS, and whose move it is rides on the card. An earlier
- * shape had it the other way round — `move` as the container, sections inside —
- * which shredded sections across two tiers, because `move` is a property of a
- * row rather than of a section: one column legitimately holds a PR of yours with
- * failing CI (yours) beside one out for review (theirs). One axis for space, one
- * for emphasis.
+ * The columns are SECTIONS, and whose move it is rides on the card. `move` is a
+ * property of a row rather than of a section — one column legitimately holds a
+ * PR of yours with failing CI (yours) beside one out for review (theirs) — so
+ * making it the container axis would shred sections across tiers. One axis for
+ * space, one for emphasis.
  *
  * The column set is furniture: known, ordered, present. A set rebuilt from
  * whichever rows arrived is a groupBy wearing a board's clothes, and can build
- * neither the peripheral vision nor the spatial memory that justify columns at
- * all. An empty column is information — "nothing awaits your review" answers the
- * question this board exists to ask.
+ * neither the peripheral vision nor the spatial memory that justify columns.
+ *
+ * The exception, and it is not a contradiction: several ADJACENT empty sections
+ * are ONE fact, and stating it three times is what makes output read as broken
+ * rather than as a state. They collapse into a single tile that still names
+ * every section it stands for.
  */
 
 const TONE: Record<string, string> = {
@@ -36,8 +38,7 @@ const TONE: Record<string, string> = {
 
 /*
  * Order encodes the move axis: the sections that mostly produce "your move"
- * come first, so left-to-right is the priority read. The boundary between the
- * two blocks is marked in the rail, so the board is not six identical buckets.
+ * come first, so left-to-right is the priority read.
  */
 const YOURS_FIRST = ["review", "assigned", "open", "issues"] as const
 const THEIRS = ["incoming", "reviewed"] as const
@@ -141,13 +142,23 @@ const About = ({
   </>
 )
 
+/*
+ * Two bands on a phone, three from `md` up.
+ *
+ * The identity line is the band that earns least on a narrow screen — the column
+ * already says which section, the filter usually says which owner, and `#123`
+ * identifies nothing to a human. Dropping it and the rule under it takes a card
+ * from ~120px to ~86px, which is the difference between three cards on screen
+ * and five.
+ */
 const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
   const section = presentationFor(sectionOf(row))
   const reason = reasonFor(row)
   const yours = row.move === "you"
+  const shortRepo = row.repo.split("/").pop() ?? row.repo
 
   return (
-    <article className="group relative rounded-[9px] border border-line bg-panel-2 p-3 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise">
+    <article className="group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise md:p-3">
       {/* Position and shape, not hue alone: a bar on the leading edge. */}
       {yours ? (
         <span
@@ -163,14 +174,14 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
           href={row.url}
           target="_blank"
           rel="noreferrer"
-          className="line-clamp-3 text-pretty text-[15.5px] font-semibold leading-[1.45] text-fg hover:underline focus:underline focus:outline-none"
+          className="line-clamp-2 text-pretty text-[15px] font-semibold leading-[1.4] text-fg hover:underline focus:underline focus:outline-none md:line-clamp-3 md:text-[15.5px] md:leading-[1.45]"
         >
           {row.title}
         </a>
       </div>
 
-      {/* Band 2 — the identity. One string, not two spans and a dot. */}
-      <p className="mt-1.5 font-mono text-[12.5px] text-fg-quiet">
+      {/* Band 2 — the identity. Wide only. */}
+      <p className="mt-1.5 hidden font-mono text-[12.5px] text-fg-quiet md:block">
         {row.repo}#{row.number}
       </p>
 
@@ -181,10 +192,11 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         onChanged={onChanged}
       />
 
-      {/* Band 3 — the state. */}
-      <div className="mt-2 flex items-center gap-2 border-t border-line-soft pt-2">
+      {/* Band 3 — the state. No rule under two lines of text on a phone: a
+          separator there is ceremony. */}
+      <div className="mt-1.5 flex items-center gap-2 md:mt-2 md:border-t md:border-line-soft md:pt-2">
         <span
-          className={`rounded border px-1.5 py-px text-[11px] ${
+          className={`shrink-0 rounded border px-1.5 py-px text-[11px] ${
             yours
               ? (TONE[REASON_TONE[reason] ?? "slate"] ?? TONE.slate)
               : TONE.slate
@@ -192,7 +204,10 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         >
           {reason}
         </span>
-        <span className="ml-auto font-mono text-[12.5px] tabular-nums text-fg-quiet">
+        <span className="truncate font-mono text-[12px] text-fg-quiet md:hidden">
+          {shortRepo}
+        </span>
+        <span className="ml-auto shrink-0 font-mono text-[12.5px] tabular-nums text-fg-quiet">
           {row.activityAge ?? row.age}
         </span>
       </div>
@@ -222,21 +237,10 @@ const Column = ({
     <section
       ref={(el) => register(id, el)}
       data-column={id}
-      /*
-       * Snap on the column itself, not a wrapper — a wrapper would break the
-       * gap-px-over-line-soft divider for nothing. An empty column is narrower:
-       * you pass a dead region quickly, and the board's silhouette shows where
-       * the work actually is before you read a word.
-       *
-       * The ~14vw of the next column showing past 86vw is load-bearing. It is
-       * the only thing telling a first-time reader the board HAS more; without
-       * it, a mandatory snap on a full-width column is a carousel.
-       */
-      className={`flex flex-none snap-start flex-col bg-panel ${
-        state === "rows"
-          ? "w-[min(86vw,340px)] min-w-[min(86vw,340px)] md:w-[320px] md:min-w-[320px]"
-          : "w-[220px] min-w-[220px]"
-      }`}
+      /* The ~14vw of the next column showing past 86vw is load-bearing: it is
+         the only thing telling a first-time reader the board HAS more. Without
+         it, a mandatory snap on a full-width column is a carousel. */
+      className="flex w-[min(86vw,340px)] min-w-[min(86vw,340px)] flex-none snap-start flex-col bg-panel md:w-[320px] md:min-w-[320px]"
     >
       <header className="flex items-center gap-2 border-b border-line-soft p-2.5 md:p-3.5">
         <Slot glyph={p.glyph} tone={p.tone} />
@@ -260,26 +264,57 @@ const Column = ({
             <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
             <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
           </>
-        ) : state === "failed" ? (
-          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-brass">
-            <span aria-hidden>! </span>Could not read this section.
-          </p>
-        ) : state === "filtered" ? (
-          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
-            Nothing here in the repositories you have selected.
-          </p>
-        ) : state === "clear" ? (
-          /* The `empty` sentence is a claim about REALITY, so it may only appear
-             when the board is actually showing all of reality. */
-          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
-            {p.empty}
-          </p>
         ) : (
           rows.map((row) => (
             <Card key={row.url} row={row} onChanged={onChanged} />
           ))
         )}
       </div>
+    </section>
+  )
+}
+
+/*
+ * One tile standing for a run of adjacent quiet sections.
+ *
+ * Every section it covers is still named, still in order, and still reachable —
+ * the rail chip snaps here, and the glyphs say which sections are accounted for.
+ * What it refuses to do is state the same fact once per column.
+ */
+const QuietTile = ({
+  ids,
+  kind,
+  register,
+}: {
+  ids: string[]
+  kind: "clear" | "filtered"
+  register: (id: string, el: HTMLElement | null) => void
+}) => {
+  const titles = ids.map((id) => presentationFor(id).title)
+  const list =
+    titles.length === 1
+      ? titles[0]
+      : `${titles.slice(0, -1).join(", ")} or ${titles.at(-1)}`
+
+  return (
+    <section
+      ref={(el) => {
+        for (const id of ids) register(id, el)
+      }}
+      data-column={ids[0]}
+      className="flex w-[min(86vw,340px)] min-w-[min(86vw,340px)] flex-none snap-start flex-col justify-center gap-3 bg-panel p-5 md:w-[280px] md:min-w-[280px]"
+    >
+      <div className="flex flex-wrap gap-1.5">
+        {ids.map((id) => {
+          const p = presentationFor(id)
+          return <Slot key={id} glyph={p.glyph} tone="slate" />
+        })}
+      </div>
+      <p className="text-balance text-[13.5px] leading-[1.5] text-fg-quiet">
+        {kind === "filtered"
+          ? `Nothing in ${list} for the repositories you have selected.`
+          : `Nothing in ${list}.`}
+      </p>
     </section>
   )
 }
@@ -331,9 +366,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       { root, threshold: [0.5, 0.9] },
     )
 
-    for (const el of columns.current.values()) observer.observe(el)
+    for (const el of new Set(columns.current.values())) observer.observe(el)
     return () => observer.disconnect()
-  }, [inbox])
+  }, [inbox, selected])
 
   const all = useMemo(() => inbox?.rows ?? [], [inbox])
   const repos = useMemo(() => repoCounts(all), [all])
@@ -368,6 +403,40 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     return map
   }, [all])
 
+  const stateOf = useCallback(
+    (id: string): ColumnState => {
+      if (!inbox) return "loading"
+      if ((bySection.get(id) ?? []).length) return "rows"
+      if (inbox.failed.length && !totals.get(id)) return "failed"
+      return filtering && (totals.get(id) ?? 0) > 0 ? "filtered" : "clear"
+    },
+    [inbox, bySection, totals, filtering],
+  )
+
+  /*
+   * Runs of adjacent quiet columns merge; anything with rows stands alone. This
+   * is what stops six identical sentences reading as six failures.
+   */
+  const lanes = useMemo(() => {
+    const out: (
+      | { kind: "column"; id: string }
+      | { kind: "quiet"; ids: string[]; empty: "clear" | "filtered" }
+    )[] = []
+
+    for (const id of ALL_COLUMNS) {
+      const state = stateOf(id)
+      if (state === "rows" || state === "loading") {
+        out.push({ kind: "column", id })
+        continue
+      }
+      const last = out.at(-1)
+      const empty = state === "filtered" ? "filtered" : "clear"
+      if (last?.kind === "quiet" && last.empty === empty) last.ids.push(id)
+      else out.push({ kind: "quiet", ids: [id], empty })
+    }
+    return out
+  }, [stateOf])
+
   const goTo = (id: string) =>
     columns.current.get(id)?.scrollIntoView({
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -377,51 +446,34 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       block: "nearest",
     })
 
-  const stateOf = (id: string): ColumnState => {
-    if (!inbox) return "loading"
-    if ((bySection.get(id) ?? []).length) return "rows"
-    if (inbox.failed.length && !totals.get(id)) return "failed"
-    return filtering && (totals.get(id) ?? 0) > 0 ? "filtered" : "clear"
-  }
-
   const yoursTotal = shown.filter((r) => r.move === "you").length
   const doneRows = bySection.get(DONE) ?? []
   const hidden = all.length - shown.length
   const asOf = inbox ? new Date(inbox.fetchedAt).toISOString() : undefined
 
-  /* Running out of GitHub budget is not "a source failed" — it is a specific,
-     self-inflicted, self-healing condition, and saying so beats a generic
-     warning that sends you looking at GitHub status pages. */
-  const rateLimited = (inbox?.reasons ?? []).some((r) =>
-    /rate limit/i.test(r),
+  const rateLimited = (inbox?.reasons ?? []).some((r) => /rate limit/i.test(r))
+
+  /*
+   * Everything failed. That is ONE fact, so it is stated once — not as a banner
+   * plus six columns each repeating it. Redundancy reads as panic.
+   */
+  const allFailed = Boolean(
+    inbox && inbox.failed.length > 0 && all.length === 0,
   )
+  const healthy = liveness === "live" || liveness === "refreshing"
 
   return (
     <>
       <Sky />
 
-      <main className="relative z-10 mx-auto min-h-safe max-w-[1360px] px-3 pb-10 pt-4 md:px-6 md:pb-16 md:pt-8">
-        <header className="flex flex-wrap items-end gap-x-4 gap-y-2 pb-3">
-          <div className="min-w-0">
-            <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-fg-quiet">
-              {yoursTotal === 0
-                ? "nothing needs you"
-                : `${yoursTotal} ${yoursTotal === 1 ? "thing needs" : "things need"} you`}
-              {asOf ? " · as of " : ""}
-              {asOf ? <Ago iso={asOf} since={asOf} /> : null}
-            </p>
-            <h1 className="font-serif text-[27px] font-semibold tracking-[-0.015em]">
-              Your Move
-            </h1>
-            <p className="max-w-[58ch] text-[13.5px] text-fg-mute">
-              {yoursTotal === 0
-                ? "Nothing is waiting on you."
-                : "What moved, and whose move it is."}
-            </p>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <p className="flex items-center gap-1.5 text-[12px] text-fg-quiet">
+      <main className="relative z-10 mx-auto min-h-safe max-w-[1360px] px-3 pb-8 pt-3 md:px-6 md:pb-16 md:pt-8">
+        <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
+          <div className="min-w-0 flex-1">
+            {/* On a phone this line IS the header: it answers "what's on my
+                board" better than a title that says less. A degraded state gets
+                MORE space, not less — the healthy one is the only one that can
+                afford to be terse. */}
+            <p className="flex items-center gap-1.5 truncate text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
               <span aria-hidden>
                 {liveness === "live"
                   ? "●"
@@ -429,16 +481,52 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                     ? "◐"
                     : "◌"}
               </span>
-              <span>{LIVENESS_TEXT[liveness]}</span>
+              {healthy ? null : (
+                <span className="text-brass">{LIVENESS_TEXT[liveness]} ·</span>
+              )}
+              {yoursTotal > 0 ? (
+                <>
+                  <b className="font-semibold text-accent">{yoursTotal}</b>
+                  <span>need{yoursTotal === 1 ? "s" : ""} you</span>
+                </>
+              ) : (
+                <span>nothing needs you</span>
+              )}
+              {all.length ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="font-mono tabular-nums">{all.length}</span>
+                </>
+              ) : null}
+              {asOf ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <Ago iso={asOf} since={asOf} />
+                </>
+              ) : null}
               {inbox?.budget ? (
                 <span
-                  className="font-mono tabular-nums"
+                  className="hidden font-mono tabular-nums md:inline"
                   title="GitHub GraphQL points left this hour"
                 >
                   · {inbox.budget.remaining}
                 </span>
               ) : null}
             </p>
+
+            {/* An installed PWA already names itself in the icon and the title
+                bar; spending 36px to say it twice is the easiest cut here. */}
+            <h1 className="hidden font-serif text-[27px] font-semibold tracking-[-0.015em] md:block">
+              Your Move
+            </h1>
+            <p className="hidden max-w-[58ch] text-[13.5px] text-fg-mute md:block">
+              {yoursTotal === 0
+                ? "Nothing is waiting on you."
+                : "What moved, and whose move it is."}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
             <RepoFilter
               repos={repos}
               selected={selected}
@@ -447,9 +535,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             <button
               type="button"
               onClick={() => void refresh()}
-              className="rounded-lg border border-line px-2.5 py-1 text-[13px] text-fg-mute hover:text-fg"
+              aria-label="Refresh"
+              className="rounded-lg border border-line px-2 py-1 text-[13px] text-fg-mute hover:text-fg"
             >
-              Refresh
+              <span className="md:hidden" aria-hidden>
+                ↻
+              </span>
+              <span className="hidden md:inline">Refresh</span>
             </button>
           </div>
         </header>
@@ -465,36 +557,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </p>
         ) : null}
 
-        {inbox?.failed.length ? (
-          /* A partial answer is worth rendering, but never silently: an empty
-             board and a broken one are otherwise the same picture. */
-          <div className="mb-2 rounded-lg border border-brass p-3 text-[12px]">
+        {/* Only when the failure is PARTIAL. Total failure is said once, below. */}
+        {inbox?.failed.length && !allFailed ? (
+          <div className="mb-2 rounded-lg border border-brass p-2.5 text-[12px]">
             <p className="text-brass">
               <span aria-hidden>! </span>
-              {rateLimited ? (
-                <>
-                  <strong>GitHub&rsquo;s hourly budget is spent.</strong> The
-                  board below is missing data, not empty. It refills on its own
-                  {inbox?.budget?.resetAt ? (
-                    <>
-                      {" "}
-                      at{" "}
-                      {new Date(inbox.budget.resetAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </>
-                  ) : (
-                    " within the hour"
-                  )}
-                  .
-                </>
-              ) : (
-                <>
-                  <strong>A source failed.</strong> An empty board below is
-                  missing data, not an empty inbox.
-                </>
-              )}
+              <strong>A source failed.</strong> An empty column below is missing
+              data, not an empty section.
             </p>
             <details className="mt-1">
               <summary className="cursor-pointer text-fg-quiet">
@@ -514,15 +583,15 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           /* Takes layout rather than being a toast: the board must visibly be a
              smaller thing than the app, or a filtered board lies exactly the way
              a broken one does. */
-          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-3 py-2 text-[12.5px]">
-            <span>
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
+            <span className="min-w-0 truncate">
               Filtered to {selected.join(", ")}
-              {hidden > 0 ? ` · ${hidden} rows hidden` : ""}
+              {hidden > 0 ? ` · ${hidden} hidden` : ""}
             </span>
             <button
               type="button"
               onClick={() => setSelected([])}
-              className="ml-auto text-accent hover:underline"
+              className="ml-auto shrink-0 text-accent hover:underline"
             >
               Clear
             </button>
@@ -530,58 +599,117 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
         ) : null}
 
         <div className="overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
-          {/* The rail answers "how much is in review" from any column, and is
-              also the navigation — a tap beats six swipes. */}
-          <nav className="sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-3 py-2">
-            {ALL_COLUMNS.map((id, i) => {
-              const p = presentationFor(id)
-              const total = totals.get(id) ?? 0
-              const now = (bySection.get(id) ?? []).length
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => goTo(id)}
-                  aria-label={p.title}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-[12.5px] transition-colors ${
-                    active === id
-                      ? "border-accent bg-accent-dim text-fg"
-                      : "border-line text-fg-mute"
-                  } ${i === YOURS_FIRST.length ? "ml-3" : ""}`}
-                >
-                  <span aria-hidden className="font-mono">
-                    {p.glyph}
-                  </span>
-                  <span className="hidden md:inline">{p.title}</span>
-                  <span className="font-mono tabular-nums text-fg-quiet">
-                    {filtering ? `${now}/${total}` : total}
-                  </span>
-                </button>
-              )
-            })}
-          </nav>
+          {allFailed ? (
+            /* One block, one fact, one way out. */
+            <div className="flex flex-col items-start gap-3 p-5">
+              <p className="text-[15px] font-semibold text-brass">
+                <span aria-hidden>! </span>
+                {rateLimited
+                  ? "GitHub's hourly budget is spent."
+                  : "GitHub did not answer."}
+              </p>
+              <p className="max-w-[52ch] text-[13.5px] leading-[1.5] text-fg-mute">
+                {rateLimited ? (
+                  <>
+                    This board is empty because nothing could be read, not
+                    because nothing is waiting. The budget refills on its own
+                    {inbox?.budget?.resetAt ? (
+                      <>
+                        {" "}
+                        at{" "}
+                        {new Date(inbox.budget.resetAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </>
+                    ) : (
+                      " within the hour"
+                    )}
+                    .
+                  </>
+                ) : (
+                  "This board is empty because nothing could be read, not because nothing is waiting."
+                )}
+              </p>
+              {inbox?.reasons?.length ? (
+                <p className="font-mono text-[12px] text-fg-quiet">
+                  {inbox.reasons.join(" · ")}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="rounded-lg border border-line px-2.5 py-1 text-[13px] text-fg-mute hover:text-fg"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* The rail answers "how much is in review" from any column, and
+                  is also the navigation — a tap beats six swipes. Zero-count
+                  chips stay: a map that hides what is empty is a lying map. */}
+              <nav className="sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5">
+                {ALL_COLUMNS.map((id, i) => {
+                  const p = presentationFor(id)
+                  const total = totals.get(id) ?? 0
+                  const now = (bySection.get(id) ?? []).length
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => goTo(id)}
+                      aria-label={p.title}
+                      className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
+                        active === id
+                          ? "border-accent bg-accent-dim text-fg"
+                          : "border-line text-fg-mute"
+                      } ${i === YOURS_FIRST.length ? "ml-3" : ""}`}
+                    >
+                      <span aria-hidden className="font-mono">
+                        {p.glyph}
+                      </span>
+                      <span className="hidden md:inline">{p.title}</span>
+                      <span className="font-mono tabular-nums text-fg-quiet">
+                        {filtering ? `${now}/${total}` : total}
+                      </span>
+                    </button>
+                  )
+                })}
+              </nav>
 
-          <div
-            ref={rowRef}
-            className="h-board flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain bg-line-soft md:snap-proximity"
-          >
-            {ALL_COLUMNS.map((id) => (
-              <Column
-                key={id}
-                id={id}
-                rows={bySection.get(id) ?? []}
-                state={stateOf(id)}
-                onChanged={() => void refresh()}
-                register={register}
-              />
-            ))}
-          </div>
+              <div
+                ref={rowRef}
+                className="h-board flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain bg-line-soft md:snap-proximity"
+              >
+                {lanes.map((lane) =>
+                  lane.kind === "column" ? (
+                    <Column
+                      key={lane.id}
+                      id={lane.id}
+                      rows={bySection.get(lane.id) ?? []}
+                      state={stateOf(lane.id)}
+                      onChanged={() => void refresh()}
+                      register={register}
+                    />
+                  ) : (
+                    <QuietTile
+                      key={lane.ids.join("+")}
+                      ids={lane.ids}
+                      kind={lane.empty}
+                      register={register}
+                    />
+                  ),
+                )}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* A receipt, not a stage: nothing can move into it — items simply
-            appear, already finished. */}
+        {/* A receipt, not a stage — and a collapsed strip nobody opens on a
+            phone is the easiest cut on the page. */}
         {doneRows.length ? (
-          <details className="mt-4 rounded-xl border border-line bg-panel">
+          <details className="mt-3 hidden rounded-xl border border-line bg-panel md:block">
             <summary className="cursor-pointer px-3.5 py-2.5 text-[13px] text-fg-mute">
               <span aria-hidden>{presentationFor(DONE).glyph} </span>
               Recently done{" "}
@@ -601,7 +729,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   <span className="min-w-0 flex-1 truncate text-[14.5px]">
                     {r.title}
                   </span>
-                  <span className="hidden font-mono text-[12.5px] text-fg-quiet md:inline">
+                  <span className="font-mono text-[12.5px] text-fg-quiet">
                     {r.repo}#{r.number}
                   </span>
                   <span className="font-mono text-[12.5px] tabular-nums text-fg-quiet">
@@ -616,7 +744,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </details>
         ) : null}
 
-        <footer className="mt-4 border-t border-line pt-3 text-[12px] text-fg-quiet">
+        <footer className="mt-4 hidden border-t border-line pt-3 text-[12px] text-fg-quiet md:block">
           Read live from GitHub on every load. Nothing is stored; labels are the
           only thing written back.
         </footer>

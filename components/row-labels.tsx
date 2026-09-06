@@ -68,28 +68,37 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
   }
 
   return (
-    <div className="mt-1.5">
+    <div className="mt-1 md:mt-1.5">
       <div className="flex flex-wrap items-center gap-1">
-        {labels.map((label) => (
+        {labels.map((label, i) => (
           <button
             key={label}
             type="button"
             onClick={() => void change(label, "remove")}
             disabled={busy === label}
             title={`Remove ${label}`}
-            className="rounded-full border border-line px-2 py-px text-[11px] text-fg-quiet disabled:opacity-50"
+            className={`rounded-full border border-line px-2 py-px text-[10px] text-fg-quiet disabled:opacity-50 md:text-[11px] ${i > 1 ? "hidden md:inline-block" : ""}`}
           >
             {label}
             <span aria-hidden> ×</span>
           </button>
         ))}
 
+        {labels.length > 2 ? (
+          <span className="text-[10px] text-fg-quiet md:hidden">
+            +{labels.length - 2}
+          </span>
+        ) : null}
+
+        {/* Revealed rather than advertised, and never on a phone: the card is a
+            tap target there, and a permanent control for a rare act doubles the
+            noise on every row to serve one in twenty. */}
         <button
           type="button"
           onClick={() => void openPicker()}
           aria-expanded={Boolean(available)}
           title="Add a label"
-          className="rounded-full border border-line px-2 py-px text-[11px] text-fg-quiet"
+          className="hidden rounded-full border border-line px-2 py-px text-[11px] text-fg-quiet opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100 md:inline-block"
         >
           +
         </button>
