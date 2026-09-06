@@ -49,10 +49,20 @@ export const Menu = ({
   login,
   doneDays,
   onDoneDays,
+  notify,
+  onNotify,
+  sound,
+  onSound,
+  permission,
 }: {
   login?: string
   doneDays: 7 | 30
   onDoneDays: (days: 7 | 30) => void
+  notify: boolean
+  onNotify: (on: boolean) => void
+  sound: boolean
+  onSound: (on: boolean) => void
+  permission: "unsupported" | "default" | "granted" | "denied"
 }) => {
   const [contrast, setContrast] = useState(false)
   const [theme, setTheme] = useState<Theme>("auto")
@@ -203,6 +213,65 @@ export const Menu = ({
           <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
             Settings
           </p>
+
+          {/*
+           * Only while the app is open, and the label says so.
+           *
+           * Anything else means Web Push: a service worker handler, a key pair,
+           * a store of subscriptions, and something scheduled asking GitHub on
+           * your behalf while nobody is looking — which is exactly the spend the
+           * polling work went to remove. Promising "notifications" and
+           * delivering only the open-tab kind would be the lie; naming it is
+           * free.
+           */}
+          <button
+            type="button"
+            onClick={() => onNotify(!notify)}
+            aria-pressed={notify}
+            disabled={permission === "denied" || permission === "unsupported"}
+            className={`${link} w-full disabled:opacity-50`}
+          >
+            <span className="text-left">
+              Notify me
+              <span className="block text-[11.5px] text-fg-quiet">
+                {permission === "denied"
+                  ? "Blocked in your browser settings"
+                  : permission === "unsupported"
+                    ? "Not supported here"
+                    : "While the app is open"}
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
+                notify
+                  ? "border-accent bg-accent-dim text-accent"
+                  : "border-line text-fg-quiet"
+              }`}
+            >
+              {notify ? "On" : "Off"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSound(!sound)}
+            aria-pressed={sound}
+            disabled={!notify}
+            className={`${link} w-full disabled:opacity-50`}
+          >
+            Sound
+            <span
+              aria-hidden
+              className={`ml-auto rounded-full border px-2 py-px text-[11px] ${
+                sound
+                  ? "border-accent bg-accent-dim text-accent"
+                  : "border-line text-fg-quiet"
+              }`}
+            >
+              {sound ? "On" : "Off"}
+            </span>
+          </button>
 
           <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
             Theme

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { chime } from "@/lib/chime"
+
 /** Anything with a stable identity and something to announce. */
 export type Notifiable = {
   repo: string
@@ -24,7 +26,10 @@ const keyOf = (row: Notifiable) => `${row.repo}#${row.number}`
  * once the browser is closed — that would take a service worker and a push
  * service, which is the standing infrastructure this deliberately does without.
  */
-export const useNotifier = (attention: Notifiable[]) => {
+export const useNotifier = (
+  attention: Notifiable[],
+  { enabled = true, sound = false }: { enabled?: boolean; sound?: boolean } = {},
+) => {
   const [permission, setPermission] = useState<Permission>("unsupported")
 
   /* Notify on the edge, never the level: a row that still needs you is not
@@ -43,7 +48,7 @@ export const useNotifier = (attention: Notifiable[]) => {
   }, [])
 
   useEffect(() => {
-    if (permission !== "granted") return
+    if (!enabled || permission !== "granted") return
 
     const current = new Set(attention.map(keyOf))
 
@@ -55,9 +60,13 @@ export const useNotifier = (attention: Notifiable[]) => {
       return
     }
 
-    for (const row of attention) {
+    /* One chime for the batch, not one per row: five things arriving at once
+       is one event to a human, and five overlapping tones is an alarm. */
+    const fresh = attention.filter((row) => !announced.current.has(keyOf(row)))
+    if (sound && fresh.length) chime()
+
+    for (const row of fresh) {
       const key = keyOf(row)
-      if (announced.current.has(key)) continue
 
       const notice = new Notification(key, {
         body: row.title,
@@ -71,7 +80,7 @@ export const useNotifier = (attention: Notifiable[]) => {
 
     /* Drop anything no longer needing you, so it can announce again if it comes back. */
     announced.current = current
-  }, [attention, permission])
+  }, [attention, permission, enabled, sound])
 
   return { permission, ask }
 }

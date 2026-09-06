@@ -14,6 +14,8 @@ import { Detail } from "@/components/detail"
 import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
+import { useNotifier } from "@/components/use-notifier"
+import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { presentationFor } from "@/lib/sections"
 import type { Inbox as InboxData, Row } from "@/lib/github"
@@ -40,6 +42,15 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const [doneDays, setDoneDays] = useState<7 | 30>(7)
   /* `owner/repo#number`, or nothing. */
   const [open, setOpen] = useState<string>()
+  const [notify, setNotify] = useState(false)
+  const [sound, setSound] = useState(false)
+
+  useEffect(() => {
+    try {
+      setNotify(localStorage.getItem("ym:notify") === "1")
+      setSound(localStorage.getItem("ym:sound") === "1")
+    } catch {}
+  }, [])
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial, doneDays)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
@@ -259,6 +270,34 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     ? all.find((r) => `${r.repo}#${r.number}` === open)
     : undefined
 
+  /* Only what has crossed into your side is worth interrupting anyone for. */
+  const attention = useMemo(
+    () => shown.filter((r) => r.move === "you"),
+    [shown],
+  )
+  const { permission, ask } = useNotifier(attention, { enabled: notify, sound })
+
+  const chooseNotify = useCallback(
+    async (on: boolean) => {
+      if (on && permission === "default") await ask()
+      setNotify(on)
+      try {
+        localStorage.setItem("ym:notify", on ? "1" : "0")
+      } catch {}
+    },
+    [ask, permission],
+  )
+
+  const chooseSound = useCallback((on: boolean) => {
+    /* The tap that turns it on is the gesture that unlocks audio — a context
+       created without one is suspended for the life of the page. */
+    if (on) unlockChime()
+    setSound(on)
+    try {
+      localStorage.setItem("ym:sound", on ? "1" : "0")
+    } catch {}
+  }, [])
+
   const yoursTotal = shown.filter((r) => r.move === "you").length
   const hidden = all.length - shown.length
   /*
@@ -366,6 +405,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 setDoneDays(d)
                 void refresh()
               }}
+              notify={notify}
+              onNotify={(on) => void chooseNotify(on)}
+              sound={sound}
+              onSound={chooseSound}
+              permission={permission}
             />
           </div>
         </header>
