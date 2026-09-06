@@ -137,11 +137,18 @@ export type OpenMode = "side" | "modal" | "full" | "github"
 
 /* `github` has no shell: choosing it means the panel is never opened at all,
    so the card behaves as the plain link it always was underneath. */
+/*
+ * Every shape here is `md:`-prefixed, and that is the whole of what makes the
+ * phone case work. The base is `max-md:inset-0` — a real full screen — and
+ * without the prefixes a "side panel" kept its `w-[min(620px,92vw)]` at 390px,
+ * so the panel stopped 8% short and the board showed down the right edge.
+ * Below `md` there is no shape to choose: it takes the screen.
+ */
 const SHELL: Record<Exclude<OpenMode, "github">, string> = {
-  side: "inset-y-0 right-0 w-[min(620px,92vw)] border-l",
+  side: "md:inset-y-0 md:right-0 md:w-[min(620px,92vw)] md:border-l",
   modal:
-    "inset-0 m-auto h-[min(86vh,820px)] w-[min(780px,92vw)] rounded-2xl border",
-  full: "inset-0",
+    "md:inset-0 md:m-auto md:h-[min(86vh,820px)] md:w-[min(780px,92vw)] md:rounded-2xl md:border",
+  full: "md:inset-0",
 }
 
 const ENTER: Record<Exclude<OpenMode, "github">, string> = {
@@ -218,7 +225,13 @@ export const Detail = ({
       <div
         aria-hidden
         onClick={onClose}
-        className="ym-in-fade fixed inset-0 z-40 bg-black/40"
+        /* The ground recedes as well as darkens. On a desk the board stays
+           readable behind a side panel, which is the point of a side panel; on
+           a phone the panel IS the screen, so a sharp board showing through the
+           edges reads as a rendering fault rather than as context. The blur is
+           dropped under reduced motion, where it is the most expensive thing
+           on the page. */
+        className="ym-backdrop ym-in-fade fixed inset-0 z-40 bg-black/50"
       />
 
       <aside
@@ -227,7 +240,7 @@ export const Detail = ({
         /* Full screen below `md` regardless of the preference, which is a
            desk preference: at 390px a "side panel" at 92vw is a full screen
            wearing a border, and a modal is one with margins. */
-        className={`fixed inset-0 z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${ENTER[mode]} md:inset-auto ${SHELL[mode]}`}
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] max-md:inset-0 ${ENTER[mode]} md:inset-auto ${SHELL[mode]}`}
       >
         <header
           className="flex items-start gap-3 border-b border-line-soft p-4"

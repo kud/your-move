@@ -751,3 +751,13 @@ html:has([popover]:popover-open) main {
 .ym-crawl {
   animation: ym-crawl 1.1s ease-in-out infinite;
 }
+
+/* The ground behind the row panel. Its own class rather than a utility, so the
+   reduced-motion escape below has something to name. */
+.ym-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+:root[data-motion="reduce"] .ym-backdrop {
+  backdrop-filter: none;
+}
