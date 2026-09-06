@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 
+import { REASON_TONE } from "@/components/board"
 import type { Row } from "@/lib/github"
 
 /*
@@ -24,6 +25,55 @@ import type { Row } from "@/lib/github"
  */
 
 const ID = "board-filters"
+
+/*
+ * Drawn, in the same language as the section marks: 12 viewBox, ink inside a
+ * concentric 10×10 band, 1.25 stroke. A different weight or grid here would
+ * read as a second icon set rather than as more of the same one.
+ */
+const GLYPH: Record<Tab, ReactNode> = {
+  /* A book with a spine — a repository. */
+  repos: (
+    <>
+      <rect x="2.2" y="1.9" width="7.6" height="8.2" rx="1.4" />
+      <path d="M4.5 1.9v8.2" />
+    </>
+  ),
+  /* A trace. Status is the one facet that is about a row's condition rather
+     than its identity, so it gets the only mark here that implies movement. */
+  status: <path d="M1.3 6h2.3l1.4-3.2 1.9 6.4 1.4-3.2h2.4" />,
+  /* A tag, hole included: without it this is just a rotated square. */
+  labels: (
+    <>
+      <path d="M6.4 1.5h4.1v4.1L6 10.5 1.5 6z" />
+      <circle cx="8.5" cy="3.5" r="0.85" fill="currentColor" stroke="none" />
+    </>
+  ),
+}
+
+const Glyph = ({ tab }: { tab: Tab }) => (
+  <svg
+    viewBox="0 0 12 12"
+    aria-hidden
+    className="size-3 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {GLYPH[tab]}
+  </svg>
+)
+
+/* The dot a status row wears is the colour its chip wears on the card, so the
+   list and the board agree without anyone having to learn a second scheme. */
+const DOT: Record<string, string> = {
+  alarm: "bg-brass",
+  brass: "bg-brass/60",
+  sage: "bg-sage",
+  slate: "bg-slate/60",
+}
 
 /** More than this and a list needs a way to search itself. */
 const TYPEAHEAD_AFTER = 10
@@ -139,6 +189,16 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
         <span aria-hidden className="w-3 font-mono text-[12px]">
           {picked ? "✓" : ""}
         </span>
+        {tab === "status" ? (
+          <span
+            aria-hidden
+            className={`size-1.5 shrink-0 rounded-full ${DOT[REASON_TONE[name] ?? "slate"] ?? DOT.slate}`}
+          />
+        ) : tab === "labels" ? (
+          <span aria-hidden className="text-fg-quiet">
+            <Glyph tab="labels" />
+          </span>
+        ) : null}
         <span className="min-w-0 flex-1 truncate">{label ?? name}</span>
         {/* Without the count, unticking is guesswork — you cannot tell whether
             it costs you two rows or forty. */}
@@ -191,9 +251,22 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
       <div
         id={ID}
         popover="auto"
-        className="fade-b m-auto max-h-[70dvh] w-[min(92vw,380px)] overflow-y-auto rounded-2xl border border-line bg-panel p-3 pb-6 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60 md:max-h-[60dvh]"
+        /*
+          One height, whatever the tab.
+
+          It used to size to its content, so switching from twenty-two repos to
+          eight statuses collapsed the sheet under your thumb and moved the tabs
+          you were aiming at. A control that changes shape as you use it is a
+          control you have to re-find on every press.
+
+          And the sheet itself no longer scrolls — the list inside it does. The
+          fade belongs to the thing that is scrolling; on the sheet it was
+          softening the card's own bottom edge and border, which is a frame, not
+          content that continues.
+        */
+        className="m-auto flex h-[min(70dvh,540px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-line bg-panel p-3 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
       >
-        <div className="flex items-center gap-2 pb-2">
+        <div className="flex shrink-0 items-center gap-2 pb-2">
           <b className="text-[15px] font-semibold">Filter</b>
           {active ? (
             <button
@@ -210,7 +283,7 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
             four screens tall and the facet you wanted would always be the one
             below the fold. Each carries its own count, so a filter left on in a
             facet you are not looking at cannot hide from you. */}
-        <div className="flex overflow-hidden rounded-lg border border-line">
+        <div className="flex shrink-0 overflow-hidden rounded-lg border border-line">
           {TABS.map(({ id, label }) => {
             const n = picks[id].length
             return (
@@ -228,6 +301,7 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
                     : "text-fg-quiet hover:text-fg-mute"
                 }`}
               >
+                <Glyph tab={id} />
                 {label}
                 {n ? (
                   <span className="rounded-full border border-accent bg-accent-dim px-1.5 text-[10.5px] text-accent">
@@ -246,39 +320,49 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
             onChange={(e) => setNeedle(e.target.value)}
             placeholder={`Find a ${tab === "repos" ? "repository" : tab === "status" ? "status" : "label"}`}
             aria-label="Find"
-            className="mb-2 mt-2 w-full rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+            className="mb-2 mt-2 w-full shrink-0 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
           />
         ) : (
           <div className="h-2" />
         )}
 
-        {byOwner
-          ? byOwner.map(([owner, entries]) => (
-              <div key={owner} className="pb-2">
-                {/* The owner header is itself a toggle. */}
-                <button
-                  type="button"
-                  onClick={() => toggleOwner(owner, entries)}
-                  className="w-full pb-1 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet hover:text-fg-mute"
-                >
-                  {owner}
-                </button>
-                {entries.map((entry) => (
-                  <Row_
-                    key={entry.name}
-                    {...entry}
-                    label={entry.name.slice(owner.length + 1)}
-                  />
-                ))}
-              </div>
-            ))
-          : shown.map((entry) => <Row_ key={entry.name} {...entry} />)}
+        {/*
+          The list is the only part that scrolls, and the fade belongs to it.
+          `min-h-0` is what lets a flex child actually shrink below its content
+          — without it this box grows to fit and the sheet's fixed height is a
+          suggestion. The negative margin puts the rows' own hover background
+          back out to the sheet's padding, so a highlighted row is not inset
+          from everything above it.
+        */}
+        <div className="fade-b -mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-5">
+          {byOwner
+            ? byOwner.map(([owner, entries]) => (
+                <div key={owner} className="pb-2">
+                  {/* The owner header is itself a toggle. */}
+                  <button
+                    type="button"
+                    onClick={() => toggleOwner(owner, entries)}
+                    className="w-full pb-1 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet hover:text-fg-mute"
+                  >
+                    {owner}
+                  </button>
+                  {entries.map((entry) => (
+                    <Row_
+                      key={entry.name}
+                      {...entry}
+                      label={entry.name.slice(owner.length + 1)}
+                    />
+                  ))}
+                </div>
+              ))
+            : shown.map((entry) => <Row_ key={entry.name} {...entry} />)}
 
-        {shown.length === 0 ? (
-          <p className="px-2 py-3 text-[13px] text-fg-quiet">
-            Nothing matches that.
-          </p>
-        ) : null}
+          {shown.length === 0 ? (
+            <p className="px-2 py-3 text-[13px] text-fg-quiet">
+              Nothing matches that.
+            </p>
+          ) : null}
+        </div>
       </div>
     </>
   )
