@@ -701,7 +701,17 @@ export const Swimlanes = ({
                       shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
                     }`}
                   >
-                    <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                    {/*
+                      Clipped only while it is moving. `overflow-hidden` is what
+                      lets the row shrink, and it was left on permanently — so it
+                      also cropped the focus ring, which sits 3px outside the
+                      card. An open, settled cell has nothing to clip.
+                    */}
+                    <div
+                      className={`flex min-h-0 flex-col gap-2 ${
+                        shut || moving ? "overflow-hidden" : ""
+                      }`}
+                    >
                       {rows.length && (!shut || moving) ? (
                         <Cell
                           rows={rows}
