@@ -610,9 +610,49 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           )}
         </div>
 
-        <footer className="mt-3 hidden shrink-0 border-t border-line pt-2 text-[12px] text-fg-quiet md:block">
-          Read live from GitHub, cached for a minute. Nothing is stored; labels
-          are the only thing written back.
+        {/*
+          Desktop only, and that is the right asymmetry rather than an omission:
+          on a phone this content lives in the menu, where someone wondering
+          where the data comes from actually goes looking. Here there is room
+          for it on the page, so it sits on the page.
+        */}
+        <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
+          <span>
+            Read live from GitHub, cached for a minute. Nothing is stored;
+            labels are the only thing written back.
+          </span>
+
+          {[
+            { label: "Source", href: "https://github.com/kud/your-move" },
+            {
+              label: "Report an issue",
+              href: "https://github.com/kud/your-move/issues/new",
+            },
+            { label: "@kud", href: "https://github.com/kud" },
+          ].map((out) => (
+            <a
+              key={out.label}
+              href={out.href}
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
+            >
+              {out.label}
+            </a>
+          ))}
+
+          <span className="ml-auto text-right">
+            Began as one person's board inside{" "}
+            <a
+              href="https://github.com/kud/companies"
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
+            >
+              kud/companies
+            </a>
+            , then lost the company and kept the board.
+          </span>
         </footer>
         {/* Desktop only, by his call rather than by omission: on a phone the
             card opens the native GitHub app, which does all of this better. */}

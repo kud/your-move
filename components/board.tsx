@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, memo, useRef, useState } from "react"
+import { Fragment, memo, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { presentationFor } from "@/lib/sections"
@@ -260,46 +260,32 @@ const CardBody = ({
   )
 }
 
-/*
- * The full `owner/name`, on demand, gone by itself.
- *
- * A `popover` again: top layer, so the grid's overflow cannot clip it, and the
- * browser owns Escape, click-outside and focus return. What it adds here is a
- * timer — he asked for something that disappears on its own, so it does, and a
- * finger held down pauses it rather than fighting it.
- *
- * Discoverability is the part that decides whether this works at all. With no
- * hover, a tap that only reveals is invisible — so the truncation is rendered as
- * a deliberate accent-coloured ellipsis rather than the browser's grey one, and
- * only names that actually need it carry the affordance. An affordance that is
- * sometimes a lie is worse than none.
- */
-const REVEAL_MS = 2500
-
 /* The label column is 104px narrow, 150px wide; at 14px this is where a short
    name stops fitting. Approximate on purpose — the cost of being wrong is an
    ellipsis that reveals a name you could already read. */
 const FITS = 11
 
-const LaneName = ({ repo }: { repo: string }) => {
+const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
+  const repo = lane.repo
   const short = shortName(repo)
   const long = short.length > FITS
   const id = `lane-${repo.replace(/[^a-z0-9]/gi, "-")}`
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const arm = () => {
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => {
-      document.getElementById(id)?.hidePopover?.()
-    }, REVEAL_MS)
-  }
-
-  if (!long)
-    return (
-      <h4 className="truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]">
-        {short}
-      </h4>
-    )
+  /*
+   * Every repo, not only the ones whose name did not fit.
+   *
+   * This began as a tooltip revealing a truncated name, which made the
+   * affordance a lie: the same gesture did something on some lanes and nothing
+   * on others, and the ones it did nothing on were the majority. What a lane
+   * actually holds — the full `owner/name`, how much of it is yours, where it
+   * sits across the columns, and the way out to GitHub — is worth a tap on any
+   * lane, so the tap now always answers.
+   *
+   * And no auto-dismiss any more. A tooltip should get out of the way; a panel
+   * with links in it must not vanish while you are reaching for one.
+   */
+  const link =
+    "flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-fg-mute hover:bg-raise hover:text-fg"
 
   return (
     <>
@@ -314,24 +300,76 @@ const LaneName = ({ repo }: { repo: string }) => {
       <button
         type="button"
         title={repo}
-        aria-label={repo}
+        aria-label={`About ${repo}`}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
-        onPointerDown={() => clearTimeout(timer.current)}
-        onPointerUp={arm}
         className="min-w-0 truncate text-left text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
       >
-        {short.slice(0, FITS)}
-        <span className="text-accent">…</span>
+        {long ? short.slice(0, FITS) : short}
+        {long ? <span className="text-accent">…</span> : null}
       </button>
 
       <div
         id={id}
         popover="auto"
-        onToggle={arm}
-        className="m-auto rounded-lg border border-line bg-panel px-3 py-2 text-fg shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
+        className="m-auto w-[min(92vw,320px)] rounded-xl border border-line bg-panel p-3 text-fg shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
       >
-        <p className="font-mono text-[13px]">{repo}</p>
+        <p className="break-all font-mono text-[13px] text-fg">{repo}</p>
+        <p className="mt-1 flex items-center gap-1.5">
+          {lane.yours ? (
+            <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[10.5px] text-accent">
+              {lane.yours} you
+            </span>
+          ) : null}
+          <span className="font-mono text-[11.5px] tabular-nums text-fg-quiet">
+            {lane.total} open
+          </span>
+        </p>
+
+        {/* The same breakdown the row draws, in words — for the folded case and
+            for the columns that are off screen to the right. */}
+        <div className="mt-2 border-t border-line-soft pt-2">
+          {columns
+            .filter((c) => (lane.cells.get(c) ?? []).length)
+            .map((c) => {
+              const p = presentationFor(c)
+              return (
+                <p
+                  key={c}
+                  className="flex items-center gap-2 py-0.5 text-[13px] text-fg-mute"
+                >
+                  <span aria-hidden className="font-mono text-fg-quiet">
+                    {p.glyph}
+                  </span>
+                  {p.title}
+                  <span className="ml-auto font-mono tabular-nums text-fg-quiet">
+                    {(lane.cells.get(c) ?? []).length}
+                  </span>
+                </p>
+              )
+            })}
+        </div>
+
+        <div className="mt-2 border-t border-line-soft pt-1">
+          {[
+            { label: "Repository", path: "" },
+            { label: "Issues", path: "/issues" },
+            { label: "Pull requests", path: "/pulls" },
+          ].map((out) => (
+            <a
+              key={out.label}
+              className={link}
+              href={`https://github.com/${repo}${out.path}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {out.label}
+              <span aria-hidden className="ml-auto">
+                ↗
+              </span>
+            </a>
+          ))}
+        </div>
       </div>
     </>
   )
@@ -555,7 +593,7 @@ export const Swimlanes = ({
                   </svg>
                 </button>
 
-                <LaneName repo={lane.repo} />
+                <LaneName lane={lane} columns={columns} />
               </div>
 
               <p className="flex items-center gap-1.5">
