@@ -234,8 +234,14 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-3 md:px-6 md:pb-6 md:pt-8">
         <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
           <div className="min-w-0 flex-1">
-            <h1 className="font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
+            <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
               Your Move
+              {/* The baseline sits ON the title baseline rather than under it,
+                  so it costs no vertical space — which is what got it cut the
+                  first time. Sans against the serif keeps them distinct. */}
+              <span className="truncate font-sans text-[12px] font-normal tracking-normal text-fg-quiet md:text-[13px]">
+                what moved, and whose move it is
+              </span>
             </h1>
             {/* Under the name rather than instead of it: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
