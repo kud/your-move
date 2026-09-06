@@ -11,22 +11,22 @@ import { presentationFor } from "@/lib/sections"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
 /*
- * A board: fixed columns, always drawn, scrolling sideways with snap.
+ * A board whose columns are REPOSITORIES.
  *
- * The columns are SECTIONS, and whose move it is rides on the card. `move` is a
- * property of a row rather than of a section — one column legitimately holds a
- * PR of yours with failing CI (yours) beside one out for review (theirs) — so
- * making it the container axis would shred sections across tiers. One axis for
- * space, one for emphasis.
+ * Two earlier axes were wrong for the same underlying reason. `move` as the
+ * container shredded sections, because whose move it is belongs to a row. Then
+ * sections as columns turned out to be partly redundant with the card itself —
+ * a column headed "Review requested" over cards whose chips say "Review
+ * requested" states the same thing twice — and, worse, sections are a vocabulary
+ * you have to learn while `kud/ambre` means something before you read a word.
  *
- * The column set is furniture: known, ordered, present. A set rebuilt from
- * whichever rows arrived is a groupBy wearing a board's clothes, and can build
- * neither the peripheral vision nor the spatial memory that justify columns.
+ * The fixed-furniture argument that justified section columns does not transfer,
+ * because of one asymmetry: an empty SECTION is information ("nothing awaits
+ * your review" answers a question), while an empty REPO is the default state of
+ * two hundred repositories. So repo columns simply do not render when empty.
  *
- * The exception, and it is not a contradiction: several ADJACENT empty sections
- * are ONE fact, and stating it three times is what makes output read as broken
- * rather than as a state. They collapse into a single tile that still names
- * every section it stands for.
+ * The section axis is not lost — it rotates. Vertical, inside a column, as
+ * sticky sub-headers, which is where a list of mixed things wants its structure.
  */
 
 const TONE: Record<string, string> = {
@@ -36,15 +36,17 @@ const TONE: Record<string, string> = {
   slate: "text-slate border-line bg-panel-2",
 }
 
-/*
- * Order encodes the move axis: the sections that mostly produce "your move"
- * come first, so left-to-right is the priority read.
- */
-const YOURS_FIRST = ["review", "assigned", "open", "issues"] as const
-const THEIRS = ["incoming", "reviewed"] as const
-const ALL_COLUMNS: string[] = [...YOURS_FIRST, ...THEIRS]
+/** The vertical order inside a column. `done` last: it is what already happened. */
+const SECTION_ORDER = [
+  "review",
+  "assigned",
+  "open",
+  "issues",
+  "incoming",
+  "reviewed",
+  "done",
+]
 
-/** `done` is a receipt, not a stage: nothing can ever move into it. */
 const DONE = "done"
 
 const SECTION_OF: Record<string, string> = {
@@ -60,6 +62,17 @@ const SECTION_OF: Record<string, string> = {
 
 const sectionOf = (row: Row): string => SECTION_OF[row.source] ?? "open"
 
+/*
+ * Sub-headers earn their place only once a column is mixed enough to need them.
+ * At about five rows they would outweigh the content, and the reason chips
+ * already carry the kind.
+ */
+const SUBHEADERS_ABOVE_ROWS = 6
+const SUBHEADERS_ABOVE_SECTIONS = 2
+
+/** A day of closing ten things must not bury the live work. */
+const DONE_PER_REPO = 3
+
 const REASON_TONE: Record<string, string> = {
   "CI failing": "accent",
   Conflict: "accent",
@@ -70,8 +83,7 @@ const REASON_TONE: Record<string, string> = {
 }
 
 /*
- * The one-word reason a row is in front of you. Without it a column of titles is
- * undifferentiated and the ordering reads as arbitrary.
+ * The one-word reason a row is in front of you.
  *
  * Issue-versus-PR comes from `kind`, which is the fact. It used to come from
  * comparing the section's GLYPH — a presentation token read as data, so the day
@@ -99,6 +111,8 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
   expired: "Session expired",
 }
 
+const shortName = (repo: string) => repo.split("/").pop() ?? repo
+
 const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
   <span
     aria-hidden
@@ -109,53 +123,14 @@ const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
 )
 
 /*
- * What a section means, on demand. A native popover rather than `title=`,
- * because this board is mostly read on a phone where hover does not exist — and
- * it renders in the top layer, so the column's overflow cannot clip it.
- */
-const About = ({
-  id,
-  title,
-  meaning,
-}: {
-  id: string
-  title: string
-  meaning: string
-}) => (
-  <>
-    <button
-      type="button"
-      popoverTarget={id}
-      aria-label={`What "${title}" means`}
-      className="grid size-5 shrink-0 place-items-center rounded-full border border-line bg-panel-2 font-mono text-[12px] leading-none text-fg-quiet transition-colors hover:border-accent hover:text-accent"
-    >
-      ?
-    </button>
-    <div
-      id={id}
-      popover="auto"
-      className="m-auto max-w-[330px] rounded-xl border border-line bg-panel p-4 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
-    >
-      <b className="text-[15px] font-semibold">{title}</b>
-      <p className="mt-2 text-[14px] leading-[1.55] text-fg-mute">{meaning}</p>
-    </div>
-  </>
-)
-
-/*
- * Two bands on a phone, three from `md` up.
- *
- * The identity line is the band that earns least on a narrow screen — the column
- * already says which section, the filter usually says which owner, and `#123`
- * identifies nothing to a human. Dropping it and the rule under it takes a card
- * from ~120px to ~86px, which is the difference between three cards on screen
- * and five.
+ * Two bands on a phone, three from `md` up. The identity line earns least on a
+ * narrow screen — and on a repo board it earns even less, because the column
+ * header already says which repository this is.
  */
 const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
   const section = presentationFor(sectionOf(row))
   const reason = reasonFor(row)
   const yours = row.move === "you"
-  const shortRepo = row.repo.split("/").pop() ?? row.repo
 
   return (
     <article className="group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise md:p-3">
@@ -167,7 +142,6 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         />
       ) : null}
 
-      {/* Band 1 — the ask. The only thing here at full foreground. */}
       <div className="flex items-start gap-2">
         <Slot glyph={section.glyph} tone={yours ? section.tone : "slate"} />
         <a
@@ -180,11 +154,6 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         </a>
       </div>
 
-      {/* Band 2 — the identity. Wide only. */}
-      <p className="mt-1.5 hidden font-mono text-[12.5px] text-fg-quiet md:block">
-        {row.repo}#{row.number}
-      </p>
-
       <RowLabels
         repo={row.repo}
         number={row.number}
@@ -192,8 +161,6 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         onChanged={onChanged}
       />
 
-      {/* Band 3 — the state. No rule under two lines of text on a phone: a
-          separator there is ceremony. */}
       <div className="mt-1.5 flex items-center gap-2 md:mt-2 md:border-t md:border-line-soft md:pt-2">
         <span
           className={`shrink-0 rounded border px-1.5 py-px text-[11px] ${
@@ -204,8 +171,8 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         >
           {reason}
         </span>
-        <span className="truncate font-mono text-[12px] text-fg-quiet md:hidden">
-          {shortRepo}
+        <span className="hidden font-mono text-[12px] text-fg-quiet md:inline">
+          #{row.number}
         </span>
         <span className="ml-auto shrink-0 font-mono text-[12.5px] tabular-nums text-fg-quiet">
           {row.activityAge ?? row.age}
@@ -215,106 +182,93 @@ const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
   )
 }
 
-type ColumnState = "loading" | "clear" | "filtered" | "failed" | "rows"
+/** Recently closed, as part of a project's story rather than a page region. */
+const DoneRow = ({ row }: { row: Row }) => (
+  <a
+    href={row.url}
+    target="_blank"
+    rel="noreferrer"
+    className="flex items-center gap-2 px-1 py-1 text-[12.5px] text-fg-quiet hover:text-fg-mute"
+  >
+    <span aria-hidden className="text-sage">
+      ✓
+    </span>
+    <span className="min-w-0 flex-1 truncate">{row.title}</span>
+    <span className="shrink-0 font-mono tabular-nums">{row.age}</span>
+  </a>
+)
+
+type RepoLane = {
+  repo: string
+  rows: Row[]
+  yours: number
+  groups: [string, Row[]][]
+  done: Row[]
+}
 
 const Column = ({
-  id,
-  rows,
-  state,
+  lane,
   onChanged,
   register,
 }: {
-  id: string
-  rows: Row[]
-  state: ColumnState
+  lane: RepoLane
   onChanged: () => void
   register: (id: string, el: HTMLElement | null) => void
 }) => {
-  const p = presentationFor(id)
-  const yours = rows.filter((r) => r.move === "you").length
+  const subheaders =
+    lane.rows.length > SUBHEADERS_ABOVE_ROWS ||
+    lane.groups.length > SUBHEADERS_ABOVE_SECTIONS
 
   return (
     <section
-      ref={(el) => register(id, el)}
-      data-column={id}
+      ref={(el) => register(lane.repo, el)}
+      data-column={lane.repo}
       /* The ~14vw of the next column showing past 86vw is load-bearing: it is
-         the only thing telling a first-time reader the board HAS more. Without
-         it, a mandatory snap on a full-width column is a carousel. */
+         the only thing telling a first-time reader the board HAS more. */
       className="flex w-[min(86vw,340px)] min-w-[min(86vw,340px)] flex-none snap-start flex-col bg-panel md:w-[320px] md:min-w-[320px]"
     >
       <header className="flex items-center gap-2 border-b border-line-soft p-2.5 md:p-3.5">
-        <Slot glyph={p.glyph} tone={p.tone} />
-        <h3 className="truncate text-[15px] font-semibold tracking-[-0.01em] md:text-[17px]">
-          {p.title}
+        <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.01em] md:text-[17px]">
+          {shortName(lane.repo)}
         </h3>
-        <span className="ml-auto font-mono text-[13px] tabular-nums text-fg-quiet">
-          {rows.length}
+        <span className="font-mono text-[13px] tabular-nums text-fg-quiet">
+          {lane.rows.length}
         </span>
-        {yours ? (
-          <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[11px] text-accent">
-            {yours} you
+        {/* "Does this project want me" answerable from the header alone. */}
+        {lane.yours ? (
+          <span className="shrink-0 rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[11px] text-accent">
+            {lane.yours} you
           </span>
         ) : null}
-        <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
       </header>
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5 md:gap-2.5 md:p-3">
-        {state === "loading" ? (
-          <>
-            <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
-            <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
-          </>
-        ) : (
-          rows.map((row) => (
-            <Card key={row.url} row={row} onChanged={onChanged} />
-          ))
-        )}
-      </div>
-    </section>
-  )
-}
-
-/*
- * One tile standing for a run of adjacent quiet sections.
- *
- * Every section it covers is still named, still in order, and still reachable —
- * the rail chip snaps here, and the glyphs say which sections are accounted for.
- * What it refuses to do is state the same fact once per column.
- */
-const QuietTile = ({
-  ids,
-  kind,
-  register,
-}: {
-  ids: string[]
-  kind: "clear" | "filtered"
-  register: (id: string, el: HTMLElement | null) => void
-}) => {
-  const titles = ids.map((id) => presentationFor(id).title)
-  const list =
-    titles.length === 1
-      ? titles[0]
-      : `${titles.slice(0, -1).join(", ")} or ${titles.at(-1)}`
-
-  return (
-    <section
-      ref={(el) => {
-        for (const id of ids) register(id, el)
-      }}
-      data-column={ids[0]}
-      className="flex w-[min(86vw,340px)] min-w-[min(86vw,340px)] flex-none snap-start flex-col justify-center gap-3 bg-panel p-5 md:w-[280px] md:min-w-[280px]"
-    >
-      <div className="flex flex-wrap gap-1.5">
-        {ids.map((id) => {
-          const p = presentationFor(id)
-          return <Slot key={id} glyph={p.glyph} tone="slate" />
+        {lane.groups.map(([section, rows]) => {
+          const p = presentationFor(section)
+          return (
+            <div key={section} className="flex flex-col gap-2 md:gap-2.5">
+              {subheaders ? (
+                <p className="sticky top-0 z-10 -mx-2.5 flex items-center gap-1.5 bg-panel px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-quiet md:-mx-3 md:px-3">
+                  <span aria-hidden>{p.glyph}</span>
+                  <span>{p.title}</span>
+                  <span className="tabular-nums">{rows.length}</span>
+                </p>
+              ) : null}
+              {rows.map((row) => (
+                <Card key={row.url} row={row} onChanged={onChanged} />
+              ))}
+            </div>
+          )
         })}
+
+        {lane.done.length ? (
+          <div className="mt-1 border-t border-line-soft pt-1.5">
+            {lane.done.slice(0, DONE_PER_REPO).map((row) => (
+              <DoneRow key={row.url} row={row} />
+            ))}
+          </div>
+        ) : null}
       </div>
-      <p className="text-balance text-[13.5px] leading-[1.5] text-fg-quiet">
-        {kind === "filtered"
-          ? `Nothing in ${list} for the repositories you have selected.`
-          : `Nothing in ${list}.`}
-      </p>
     </section>
   )
 }
@@ -322,7 +276,7 @@ const QuietTile = ({
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const { inbox, liveness, refresh } = useInbox(initial)
   const [selected, setSelected] = useState<string[]>([])
-  const [active, setActive] = useState<string>(ALL_COLUMNS[0]!)
+  const [active, setActive] = useState<string>()
 
   const rowRef = useRef<HTMLDivElement>(null)
   const columns = useRef(new Map<string, HTMLElement>())
@@ -346,6 +300,70 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     history.replaceState(null, "", url)
   }, [selected])
 
+  const all = useMemo(() => inbox?.rows ?? [], [inbox])
+  const repos = useMemo(() => repoCounts(all), [all])
+  const filtering = selected.length > 0
+
+  const shown = useMemo(
+    () => (filtering ? all.filter((r) => selected.includes(r.repo)) : all),
+    [all, selected, filtering],
+  )
+
+  /*
+   * Columns ordered by urgency, and this is what makes fifteen of them
+   * survivable: you never reach column twelve, because column twelve is by
+   * construction the quietest thing you own. Semantic position replaces the
+   * spatial memory that a fixed set would have given — and at fifteen columns
+   * nobody was going to remember positions anyway.
+   */
+  const lanes = useMemo((): RepoLane[] => {
+    const byRepo = new Map<string, Row[]>()
+    for (const r of shown)
+      byRepo.set(r.repo, [...(byRepo.get(r.repo) ?? []), r])
+
+    return (
+      [...byRepo]
+        .map(([repo, rows]): RepoLane => {
+          const live = rows.filter((r) => sectionOf(r) !== DONE)
+          const done = rows
+            .filter((r) => sectionOf(r) === DONE)
+            .sort((a, b) => b.ts - a.ts)
+
+          const grouped = new Map<string, Row[]>()
+          for (const r of live)
+            grouped.set(sectionOf(r), [...(grouped.get(sectionOf(r)) ?? []), r])
+
+          const groups = SECTION_ORDER.filter((s) => grouped.has(s)).map(
+            (s): [string, Row[]] => [
+              s,
+              [...grouped.get(s)!].sort(
+                (a, b) =>
+                  Number(b.move === "you") - Number(a.move === "you") ||
+                  b.ts - a.ts,
+              ),
+            ],
+          )
+
+          return {
+            repo,
+            rows: live,
+            yours: live.filter((r) => r.move === "you").length,
+            groups,
+            done,
+          }
+        })
+        /* A repo with nothing live and nothing done is not a column. */
+        .filter((lane) => lane.rows.length || lane.done.length)
+        .sort(
+          (a, b) =>
+            Number(b.yours > 0) - Number(a.yours > 0) ||
+            b.yours - a.yours ||
+            Math.max(...b.rows.map((r) => r.ts), 0) -
+              Math.max(...a.rows.map((r) => r.ts), 0),
+        )
+    )
+  }, [shown])
+
   /*
    * The active chip follows what is ON SCREEN, never what was last tapped. The
    * moment you swipe rather than tap, a last-tapped model is wrong and the rail
@@ -368,77 +386,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
     for (const el of new Set(columns.current.values())) observer.observe(el)
     return () => observer.disconnect()
-  }, [inbox, selected])
+  }, [lanes])
 
-  const all = useMemo(() => inbox?.rows ?? [], [inbox])
-  const repos = useMemo(() => repoCounts(all), [all])
-  const filtering = selected.length > 0
-
-  const shown = useMemo(
-    () => (filtering ? all.filter((r) => selected.includes(r.repo)) : all),
-    [all, selected, filtering],
-  )
-
-  const bySection = useMemo(() => {
-    const map = new Map<string, Row[]>()
-    for (const r of shown) {
-      const key = sectionOf(r)
-      map.set(key, [...(map.get(key) ?? []), r])
-    }
-    /* `you` first inside each column: the order carries the emphasis. */
-    for (const [key, rs] of map)
-      map.set(
-        key,
-        [...rs].sort(
-          (a, b) => Number(b.move === "you") - Number(a.move === "you"),
-        ),
-      )
-    return map
-  }, [shown])
-
-  /* Unfiltered totals, so the rail can show `2/9` and never narrow silently. */
-  const totals = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of all) map.set(sectionOf(r), (map.get(sectionOf(r)) ?? 0) + 1)
-    return map
-  }, [all])
-
-  const stateOf = useCallback(
-    (id: string): ColumnState => {
-      if (!inbox) return "loading"
-      if ((bySection.get(id) ?? []).length) return "rows"
-      if (inbox.failed.length && !totals.get(id)) return "failed"
-      return filtering && (totals.get(id) ?? 0) > 0 ? "filtered" : "clear"
-    },
-    [inbox, bySection, totals, filtering],
-  )
-
-  /*
-   * Runs of adjacent quiet columns merge; anything with rows stands alone. This
-   * is what stops six identical sentences reading as six failures.
-   */
-  const lanes = useMemo(() => {
-    const out: (
-      | { kind: "column"; id: string }
-      | { kind: "quiet"; ids: string[]; empty: "clear" | "filtered" }
-    )[] = []
-
-    for (const id of ALL_COLUMNS) {
-      const state = stateOf(id)
-      if (state === "rows" || state === "loading") {
-        out.push({ kind: "column", id })
-        continue
-      }
-      const last = out.at(-1)
-      const empty = state === "filtered" ? "filtered" : "clear"
-      if (last?.kind === "quiet" && last.empty === empty) last.ids.push(id)
-      else out.push({ kind: "quiet", ids: [id], empty })
-    }
-    return out
-  }, [stateOf])
-
-  const goTo = (id: string) =>
-    columns.current.get(id)?.scrollIntoView({
+  const goTo = (repo: string) =>
+    columns.current.get(repo)?.scrollIntoView({
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth",
@@ -447,16 +398,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     })
 
   const yoursTotal = shown.filter((r) => r.move === "you").length
-  const doneRows = bySection.get(DONE) ?? []
   const hidden = all.length - shown.length
   const asOf = inbox ? new Date(inbox.fetchedAt).toISOString() : undefined
-
   const rateLimited = (inbox?.reasons ?? []).some((r) => /rate limit/i.test(r))
 
-  /*
-   * Everything failed. That is ONE fact, so it is stated once — not as a banner
-   * plus six columns each repeating it. Redundancy reads as panic.
-   */
+  /* Everything failed. One fact, stated once — not a banner plus a column each
+     repeating it. Redundancy reads as panic. */
   const allFailed = Boolean(
     inbox && inbox.failed.length > 0 && all.length === 0,
   )
@@ -471,8 +418,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           <div className="min-w-0 flex-1">
             {/* On a phone this line IS the header: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
-                MORE space, not less — the healthy one is the only one that can
-                afford to be terse. */}
+                MORE space, not less. */}
             <p className="flex items-center gap-1.5 truncate text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
               <span aria-hidden>
                 {liveness === "live"
@@ -492,10 +438,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               ) : (
                 <span>nothing needs you</span>
               )}
-              {all.length ? (
+              {lanes.length ? (
                 <>
                   <span aria-hidden>·</span>
-                  <span className="font-mono tabular-nums">{all.length}</span>
+                  <span className="font-mono tabular-nums">
+                    {lanes.length} {lanes.length === 1 ? "project" : "projects"}
+                  </span>
                 </>
               ) : null}
               {asOf ? (
@@ -514,8 +462,6 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               ) : null}
             </p>
 
-            {/* An installed PWA already names itself in the icon and the title
-                bar; spending 36px to say it twice is the easiest cut here. */}
             <h1 className="hidden font-serif text-[27px] font-semibold tracking-[-0.015em] md:block">
               Your Move
             </h1>
@@ -557,13 +503,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </p>
         ) : null}
 
-        {/* Only when the failure is PARTIAL. Total failure is said once, below. */}
         {inbox?.failed.length && !allFailed ? (
           <div className="mb-2 rounded-lg border border-brass p-2.5 text-[12px]">
             <p className="text-brass">
               <span aria-hidden>! </span>
-              <strong>A source failed.</strong> An empty column below is missing
-              data, not an empty section.
+              <strong>A source failed.</strong> A project missing below is
+              missing data, not idle.
             </p>
             <details className="mt-1">
               <summary className="cursor-pointer text-fg-quiet">
@@ -581,11 +526,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
         {filtering ? (
           /* Takes layout rather than being a toast: the board must visibly be a
-             smaller thing than the app, or a filtered board lies exactly the way
-             a broken one does. */
+             smaller thing than the app. On a repo board this reads especially
+             well — filtering simply removes columns. */
           <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
             <span className="min-w-0 truncate">
-              Filtered to {selected.join(", ")}
+              Filtered to {selected.map(shortName).join(", ")}
               {hidden > 0 ? ` · ${hidden} hidden` : ""}
             </span>
             <button
@@ -600,7 +545,6 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
         <div className="overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
           {allFailed ? (
-            /* One block, one fact, one way out. */
             <div className="flex flex-col items-start gap-3 p-5">
               <p className="text-[15px] font-semibold text-brass">
                 <span aria-hidden>! </span>
@@ -644,109 +588,95 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 Try again
               </button>
             </div>
-          ) : (
-            <>
-              {/* The rail answers "how much is in review" from any column, and
-                  is also the navigation — a tap beats six swipes. Zero-count
-                  chips stay: a map that hides what is empty is a lying map. */}
-              <nav className="sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5">
-                {ALL_COLUMNS.map((id, i) => {
-                  const p = presentationFor(id)
-                  const total = totals.get(id) ?? 0
-                  const now = (bySection.get(id) ?? []).length
+          ) : !inbox ? (
+            <div className="flex gap-px bg-line-soft">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="flex w-[min(86vw,340px)] flex-none flex-col gap-2 bg-panel p-3 md:w-[320px]"
+                >
+                  <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
+                  <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
+                </div>
+              ))}
+            </div>
+          ) : lanes.length === 0 ? (
+            /* The restful empty board. The section vocabulary survives here —
+               it says what the board watches, without six columns of prose. */
+            <div className="flex flex-col items-start gap-3 p-6">
+              <p className="text-[15px] text-fg">
+                {filtering
+                  ? "Nothing in the repositories you have selected."
+                  : "Nothing is waiting on you."}
+              </p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
+                {SECTION_ORDER.filter((s) => s !== DONE).map((s) => {
+                  const p = presentationFor(s)
                   return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => goTo(id)}
-                      aria-label={p.title}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
-                        active === id
-                          ? "border-accent bg-accent-dim text-fg"
-                          : "border-line text-fg-mute"
-                      } ${i === YOURS_FIRST.length ? "ml-3" : ""}`}
-                    >
+                    <span key={s} className="flex items-center gap-1.5">
                       <span aria-hidden className="font-mono">
                         {p.glyph}
                       </span>
-                      <span className="hidden md:inline">{p.title}</span>
-                      <span className="font-mono tabular-nums text-fg-quiet">
-                        {filtering ? `${now}/${total}` : total}
-                      </span>
-                    </button>
+                      {p.title}
+                    </span>
                   )
                 })}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* With a column per project the rail stops being a nicety and
+                  becomes the navigation. It shares the urgency order, so the
+                  projects that want you are at the left end, already on screen
+                  — fifteen chips need not fit, the first four do. */}
+              <nav className="sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5">
+                {lanes.map((lane) => (
+                  <button
+                    key={lane.repo}
+                    type="button"
+                    onClick={() => goTo(lane.repo)}
+                    aria-label={lane.repo}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
+                      active === lane.repo
+                        ? "border-accent bg-accent-dim text-fg"
+                        : lane.yours
+                          ? "border-accent/40 text-fg-mute"
+                          : "border-line text-fg-mute"
+                    }`}
+                  >
+                    <span className="max-w-[9rem] truncate">
+                      {shortName(lane.repo)}
+                    </span>
+                    <span className="font-mono tabular-nums text-fg-quiet">
+                      {lane.yours ? (
+                        <span className="text-accent">{lane.yours}/</span>
+                      ) : null}
+                      {lane.rows.length}
+                    </span>
+                  </button>
+                ))}
               </nav>
 
               <div
                 ref={rowRef}
                 className="h-board flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain bg-line-soft md:snap-proximity"
               >
-                {lanes.map((lane) =>
-                  lane.kind === "column" ? (
-                    <Column
-                      key={lane.id}
-                      id={lane.id}
-                      rows={bySection.get(lane.id) ?? []}
-                      state={stateOf(lane.id)}
-                      onChanged={() => void refresh()}
-                      register={register}
-                    />
-                  ) : (
-                    <QuietTile
-                      key={lane.ids.join("+")}
-                      ids={lane.ids}
-                      kind={lane.empty}
-                      register={register}
-                    />
-                  ),
-                )}
+                {lanes.map((lane) => (
+                  <Column
+                    key={lane.repo}
+                    lane={lane}
+                    onChanged={() => void refresh()}
+                    register={register}
+                  />
+                ))}
               </div>
             </>
           )}
         </div>
 
-        {/* A receipt, not a stage — and a collapsed strip nobody opens on a
-            phone is the easiest cut on the page. */}
-        {doneRows.length ? (
-          <details className="mt-3 hidden rounded-xl border border-line bg-panel md:block">
-            <summary className="cursor-pointer px-3.5 py-2.5 text-[13px] text-fg-mute">
-              <span aria-hidden>{presentationFor(DONE).glyph} </span>
-              Recently done{" "}
-              <span className="font-mono tabular-nums text-fg-quiet">
-                {doneRows.length}
-              </span>
-            </summary>
-            <div className="divide-y divide-line-soft border-t border-line-soft">
-              {doneRows.map((r) => (
-                <a
-                  key={r.url}
-                  href={r.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-raise"
-                >
-                  <span className="min-w-0 flex-1 truncate text-[14.5px]">
-                    {r.title}
-                  </span>
-                  <span className="font-mono text-[12.5px] text-fg-quiet">
-                    {r.repo}#{r.number}
-                  </span>
-                  <span className="font-mono text-[12.5px] tabular-nums text-fg-quiet">
-                    {r.age}
-                  </span>
-                  <span aria-label="Opens on GitHub" className="text-fg-quiet">
-                    ↗
-                  </span>
-                </a>
-              ))}
-            </div>
-          </details>
-        ) : null}
-
         <footer className="mt-4 hidden border-t border-line pt-3 text-[12px] text-fg-quiet md:block">
-          Read live from GitHub on every load. Nothing is stored; labels are the
-          only thing written back.
+          Read live from GitHub, cached for a minute. Nothing is stored; labels
+          are the only thing written back.
         </footer>
       </main>
     </>
