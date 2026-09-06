@@ -38,7 +38,7 @@ export type Presentation = {
 
 const PRESENTATION: Record<string, Presentation> = {
   /* Every section is a shape of GitHub fact. Nothing here is a commitment with
-     an owner or a wake condition — that vocabulary belonged to the Company
+     an owner or a wake condition — that vocabulary belonged to the earlier
      board this grew out of, and it went with it. */
   review: {
     title: "Review requested",

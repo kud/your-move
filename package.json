@@ -2,6 +2,7 @@
   "name": "@kud/your-move",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "A GitHub inbox for what moved and whose move it is. Installable on any device.",
   "scripts": {

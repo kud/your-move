@@ -11,7 +11,7 @@ import { COOKIE, unseal } from "@/lib/auth"
  * allow-list of protected paths fails the opposite way — silently, and only for
  * the page someone just added.
  *
- * What the gate protects is different from the Companies board this grew out of.
+ * What the gate protects is different from the board this grew out of.
  * There, one shared passphrase stood in front of one shared token, so the gate
  * WAS the credential. Here the cookie IS the user's own GitHub token, sealed, so
  * a session grants exactly what that person can already see on GitHub and
