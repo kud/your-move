@@ -39,6 +39,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const { inbox, liveness, refresh } = useInbox(initial)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
+  const [folded, setFolded] = useState<Set<string>>(new Set())
 
   const scroller = useRef<HTMLDivElement>(null)
   const anchors = useRef(new Map<string, HTMLElement>())
@@ -46,6 +47,30 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const register = useCallback((id: string, el: HTMLElement | null) => {
     if (el) anchors.current.set(id, el)
     else anchors.current.delete(id)
+  }, [])
+
+  /* Which projects are folded is a per-device convenience, not shared state:
+     it belongs in this browser and nowhere else. */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ym:folded")
+      if (saved) setFolded(new Set(JSON.parse(saved) as string[]))
+    } catch {
+      /* A private window, cleared site data, or storage refused outright — an
+         unfolded board is the correct fallback and needs no explanation. */
+    }
+  }, [])
+
+  const fold = useCallback((repo: string) => {
+    setFolded((was) => {
+      const next = new Set(was)
+      if (next.has(repo)) next.delete(repo)
+      else next.add(repo)
+      try {
+        localStorage.setItem("ym:folded", JSON.stringify([...next]))
+      } catch {}
+      return next
+    })
   }, [])
 
   /* Restore a filter from the URL, so a filtered board is shareable and can be
@@ -180,7 +205,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       <main className="relative z-10 mx-auto min-h-safe max-w-[1600px] px-3 pb-8 pt-3 md:px-6 md:pb-16 md:pt-8">
         <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
           <div className="min-w-0 flex-1">
-            {/* On a phone this line IS the header: it answers "what's on my
+            <h1 className="font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
+              Your Move
+            </h1>
+            {/* Under the name rather than instead of it: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
                 MORE space, not less. */}
             <p className="flex items-center gap-1.5 truncate text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
@@ -226,9 +254,6 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               ) : null}
             </p>
 
-            <h1 className="hidden font-serif text-[27px] font-semibold tracking-[-0.015em] md:block">
-              Your Move
-            </h1>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
@@ -415,6 +440,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   columns={COLUMNS}
                   onChanged={() => void refresh()}
                   register={register}
+                  folded={folded}
+                  onFold={fold}
                 />
               </div>
 
@@ -426,6 +453,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   onChanged={() => void refresh()}
                   register={register}
                   scroller={scroller}
+                  folded={folded}
+                  onFold={fold}
                 />
               </div>
             </>

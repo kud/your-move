@@ -196,6 +196,32 @@ export const Card = ({
   )
 }
 
+/* A folded lane keeps its name and its shape — the counts stay visible, so
+   folding is hiding detail rather than hiding the project. */
+const Summary = ({ lane, columns }: { lane: Lane; columns: string[] }) => (
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5">
+    {columns
+      .filter((id) => (lane.cells.get(id) ?? []).length)
+      .map((id) => {
+        const p = presentationFor(id)
+        return (
+          <span
+            key={id}
+            className="flex items-center gap-1 text-[12px] text-fg-quiet"
+          >
+            <span aria-hidden className="font-mono">
+              {p.glyph}
+            </span>
+            <span className="hidden lg:inline">{p.title}</span>
+            <span className="font-mono tabular-nums">
+              {(lane.cells.get(id) ?? []).length}
+            </span>
+          </span>
+        )
+      })}
+  </div>
+)
+
 export type Lane = {
   repo: string
   yours: number
@@ -247,6 +273,8 @@ export const Swimlanes = ({
   onChanged,
   register,
   scroller,
+  folded,
+  onFold,
 }: {
   lanes: Lane[]
   columns: string[]
@@ -254,6 +282,8 @@ export const Swimlanes = ({
   onChanged: () => void
   register: (id: string, el: HTMLElement | null) => void
   scroller: React.Ref<HTMLDivElement>
+  folded: Set<string>
+  onFold: (repo: string) => void
 }) => {
   /*
    * A column with nothing in it anywhere collapses to a rail. It keeps the
@@ -313,12 +343,21 @@ export const Swimlanes = ({
           <Fragment key={lane.repo}>
             {/* Sticky left: without it you lose which lane you are in the
                 moment you scroll right, and the grid becomes unreadable. */}
-            <div className="sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r border-line bg-panel p-2">
+            <button
+              type="button"
+              onClick={() => onFold(lane.repo)}
+              aria-expanded={!folded.has(lane.repo)}
+              aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
+              className="sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r border-line bg-panel p-2 text-left hover:bg-raise"
+            >
               <h4
-                className="truncate text-[13px] font-semibold"
+                className="flex items-center gap-1 truncate text-[13px] font-semibold"
                 title={lane.repo}
               >
-                {shortName(lane.repo)}
+                <span aria-hidden className="font-mono text-fg-quiet">
+                  {folded.has(lane.repo) ? "▸" : "▾"}
+                </span>
+                <span className="truncate">{shortName(lane.repo)}</span>
               </h4>
               <p className="flex items-center gap-1.5">
                 {lane.yours ? (
@@ -330,9 +369,17 @@ export const Swimlanes = ({
                   {lane.total}
                 </span>
               </p>
-            </div>
+            </button>
 
-            {columns.map((id) => {
+            {folded.has(lane.repo) ? (
+              <div
+                className="border-b border-line-soft"
+                style={{ gridColumn: "2 / -1" }}
+              >
+                <Summary lane={lane} columns={columns} />
+              </div>
+            ) : (
+              columns.map((id) => {
               const rows = lane.cells.get(id) ?? []
               /* An empty cell is not a box. No border, no background, no
                  sentence — blank space between the hairlines already reads as
@@ -352,7 +399,8 @@ export const Swimlanes = ({
                   ) : null}
                 </div>
               )
-            })}
+              })
+            )}
           </Fragment>
         ))}
       </div>
@@ -366,11 +414,15 @@ export const Stack = ({
   columns,
   onChanged,
   register,
+  folded,
+  onFold,
 }: {
   lanes: Lane[]
   columns: string[]
   onChanged: () => void
   register: (id: string, el: HTMLElement | null) => void
+  folded: Set<string>
+  onFold: (repo: string) => void
 }) => (
   <div className="divide-y divide-line">
     {lanes.map((lane) => (
@@ -379,7 +431,15 @@ export const Stack = ({
         ref={(el) => register(lane.repo, el)}
         data-lane={lane.repo}
       >
-        <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-line-soft bg-panel px-2.5 py-2">
+        <button
+          type="button"
+          onClick={() => onFold(lane.repo)}
+          aria-expanded={!folded.has(lane.repo)}
+          className="sticky top-0 z-20 flex w-full items-center gap-2 border-b border-line-soft bg-panel px-2.5 py-2 text-left"
+        >
+          <span aria-hidden className="font-mono text-[12px] text-fg-quiet">
+            {folded.has(lane.repo) ? "▸" : "▾"}
+          </span>
           <h4 className="min-w-0 flex-1 truncate text-[14px] font-semibold">
             {shortName(lane.repo)}
           </h4>
@@ -391,8 +451,11 @@ export const Stack = ({
           <span className="shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
             {lane.total}
           </span>
-        </header>
+        </button>
 
+        {folded.has(lane.repo) ? (
+          <Summary lane={lane} columns={columns} />
+        ) : (
         <div className="flex flex-col gap-2 p-2.5">
           {columns
             .filter((id) => (lane.cells.get(id) ?? []).length)
@@ -415,6 +478,7 @@ export const Stack = ({
               )
             })}
         </div>
+        )}
       </section>
     ))}
   </div>
