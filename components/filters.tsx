@@ -226,16 +226,17 @@ export const Filters = ({
         <span aria-hidden className="w-3 font-mono text-[12px]">
           {picked ? "✓" : ""}
         </span>
-        {tab === "status" ? (
-          <span
-            aria-hidden
-            className={`size-1.5 shrink-0 rounded-full ${DOT[REASON_TONE[name] ?? "slate"] ?? DOT.slate}`}
-          />
-        ) : tab === "labels" ? (
-          <span aria-hidden className="text-fg-quiet">
-            <Glyph tab="labels" />
-          </span>
-        ) : null}
+        {/* Each facet's rows wear the mark of what they are, so the three
+            lists read as one family rather than as three lists. */}
+        <span aria-hidden className="shrink-0 text-fg-quiet">
+          {tab === "status" ? (
+            <span
+              className={`block size-1.5 rounded-full ${DOT[REASON_TONE[name] ?? "slate"] ?? DOT.slate}`}
+            />
+          ) : (
+            <Glyph tab={tab} />
+          )}
+        </span>
         <span className="min-w-0 flex-1 truncate">{label ?? name}</span>
         {/* Without the count, unticking is guesswork — you cannot tell whether
             it costs you two rows or forty. */}
@@ -483,12 +484,33 @@ export const Filters = ({
           {byOwner
             ? byOwner.map(([owner, entries]) => (
                 <div key={owner} className="pb-2">
-                  {/* The owner header is itself a toggle. */}
+                  {/*
+                    The owner header is itself a toggle, and it carries the face.
+
+                    The avatar goes here rather than on each row because the
+                    list is already grouped by owner: repeated per row it would
+                    be the same picture eight times, which is decoration. On the
+                    header it does work — two owners are told apart by
+                    recognition rather than by reading, which is exactly the
+                    personal-versus-work split these filters exist for.
+
+                    A stable URL off a name we already have, so nothing is
+                    fetched to learn who someone is, and `size=64` into a 20px
+                    box because a phone at 3x would otherwise show it soft.
+                  */}
                   <button
                     type="button"
                     onClick={() => toggleOwner(owner, entries)}
-                    className="w-full pb-1 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet hover:text-fg-mute"
+                    className="flex w-full items-center gap-1.5 pb-1 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet hover:text-fg-mute"
                   >
+                    <img
+                      src={`https://github.com/${owner}.png?size=64`}
+                      alt=""
+                      width={20}
+                      height={20}
+                      loading="lazy"
+                      className="size-5 shrink-0 rounded-full border border-line"
+                    />
                     {owner}
                   </button>
                   {entries.map((entry) => (
