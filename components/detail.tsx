@@ -139,7 +139,16 @@ export type OpenMode = "side" | "modal" | "full" | "github"
    so the card behaves as the plain link it always was underneath. */
 /*
  * Every shape here is `md:`-prefixed, and that is the whole of what makes the
- * phone case work. The base is `max-md:inset-0` — a real full screen — and
+ * phone case work. The base deliberately does NOT reset its inset above `md`:
+ * its own inset is a `max-md` one, so there is nothing up there to undo — and
+ * adding a reset did real damage, because two utilities of equal specificity
+ * are resolved by their order in the GENERATED sheet, not by the order they
+ * appear in the class string. Tailwind emits the reset after the zero, so the
+ * base silently beat `modal` and `full` and both lost their positioning: the
+ * modal had nothing left to centre against and collapsed.
+ *
+ * Written without naming the class, because Tailwind scans source text — a
+ * class named in a COMMENT is emitted as though it were used. The base is `max-md:inset-0` — a real full screen — and
  * without the prefixes a "side panel" kept its `w-[min(620px,92vw)]` at 390px,
  * so the panel stopped 8% short and the board showed down the right edge.
  * Below `md` there is no shape to choose: it takes the screen.
@@ -240,7 +249,7 @@ export const Detail = ({
         /* Full screen below `md` regardless of the preference, which is a
            desk preference: at 390px a "side panel" at 92vw is a full screen
            wearing a border, and a modal is one with margins. */
-        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] max-md:inset-0 ${ENTER[mode]} md:inset-auto ${SHELL[mode]}`}
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] max-md:inset-0 ${ENTER[mode]} ${SHELL[mode]}`}
       >
         <header
           className="flex items-start gap-3 border-b border-line-soft p-4"
