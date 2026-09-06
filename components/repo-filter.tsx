@@ -89,17 +89,49 @@ export const RepoFilter = ({ repos, selected, onChange }: Props) => {
 
   return (
     <>
-      {/* The button is the primary "a filter is on" signal, before any banner. */}
+      {/*
+        A funnel rather than the words, and a count rather than a sentence.
+
+        "All repos" spent a header he has twice called too heavy on saying
+        nothing was happening — the least interesting state the control has. As
+        an icon it matches the avatar beside it, so the two controls read as a
+        pair rather than as a label next to a face.
+
+        It is still the primary "a filter is on" signal, before any banner:
+        filtered, the funnel fills with accent and carries the number kept.
+        `aria-label` says the whole sentence, so nothing was lost for anyone
+        reading it aloud — only for the eye, which did not need it.
+      */}
       <button
         type="button"
         popoverTarget={ID}
-        className={`rounded-lg border px-2.5 py-1 text-[13px] transition-colors ${
+        aria-label={
           on
-            ? "border-accent bg-accent-dim text-fg"
-            : "border-line text-fg-mute hover:text-fg"
+            ? `Filtered to ${selected.length} of ${repos.length} repositories`
+            : "Filter by repository"
+        }
+        className={`grid size-8 shrink-0 place-items-center rounded-full border transition-colors ${
+          on
+            ? "border-accent bg-accent-dim text-accent"
+            : "border-line text-fg-mute hover:border-accent hover:text-fg"
         }`}
       >
-        {on ? `${selected.length} of ${repos.length} repos` : "All repos"}
+        {on ? (
+          <span className="font-mono text-[12px] tabular-nums leading-none">
+            {selected.length}
+          </span>
+        ) : (
+          <svg viewBox="0 0 16 16" aria-hidden className="size-4">
+            <path
+              d="M2.5 3.5 H13.5 L9.5 8.25 V12.5 L6.5 13.75 V8.25 Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
       </button>
 
       <div

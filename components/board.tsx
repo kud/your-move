@@ -179,16 +179,19 @@ const CardBody = ({
   row,
   onChanged,
   onOpen,
+  arrived,
 }: {
   row: Row
   onChanged: OnLabelChange
   onOpen: (row: Row) => void
+  /* This row is in a different column than it was on the last read. */
+  arrived?: boolean
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
 
   return (
-    <article className="group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise">
+    <article className={`group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise ${arrived ? "ym-arrived" : ""}`}>
       {/* Position and shape, not hue alone: a bar on the leading edge. */}
       {yours ? (
         <span
@@ -411,11 +414,13 @@ const Cell = ({
   cap,
   onChanged,
   onOpen,
+  arrived,
 }: {
   rows: Row[]
   cap: number
   onChanged: OnLabelChange
   onOpen: (row: Row) => void
+  arrived: Set<string>
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -423,7 +428,13 @@ const Cell = ({
   return (
     <>
       {shown.map((row) => (
-        <Card key={row.url} row={row} onChanged={onChanged} onOpen={onOpen} />
+        <Card
+            key={row.url}
+            row={row}
+            onChanged={onChanged}
+            onOpen={onOpen}
+            arrived={arrived.has(row.url)}
+          />
       ))}
       {rows.length > cap && !all ? (
         <button
@@ -449,6 +460,7 @@ export const Swimlanes = ({
   scroller,
   folded,
   onFold,
+  arrived,
 }: {
   lanes: Lane[]
   columns: string[]
@@ -459,6 +471,8 @@ export const Swimlanes = ({
   scroller: React.Ref<HTMLDivElement>
   folded: Set<string>
   onFold: (repo: string) => void
+  /* Row urls that changed column since the previous read. */
+  arrived: Set<string>
 }) => {
   /*
    * Every column the same width, including the empty ones.
@@ -718,6 +732,7 @@ export const Swimlanes = ({
                           cap={id === DONE ? DONE_PER_CELL : PER_CELL}
                           onChanged={onChanged}
                           onOpen={onOpen}
+                          arrived={arrived}
                         />
                       ) : null}
                     </div>

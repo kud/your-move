@@ -172,6 +172,46 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
      back to the same place rather than to the first column. */
   useScrollMemory(scroller, lanes)
 
+  /*
+   * Rows that changed column since the last read.
+   *
+   * Deliberately an ARRIVAL rather than a journey. A literal move animation
+   * would tween a card from its old cell to its new one — and on a board whose
+   * columns are 300px wide and which scrolls horizontally, the two cells are
+   * usually not on screen together, so most of that motion would play where
+   * nobody is looking. What is actually observable is that something is now
+   * here that was not, and that is what gets marked.
+   *
+   * Compared against the previous read rather than against a render: a filter,
+   * a fold or a re-sort moves nothing between columns, and flashing on those
+   * would turn a signal into decoration.
+   */
+  const placed = useRef(new Map<string, string>())
+  const [arrived, setArrived] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!all.length) return
+
+    const now = new Map(all.map((r) => [r.url, sectionOf(r)]))
+    const seen = placed.current
+    placed.current = now
+
+    /* Nothing on the first read: every row would count as having arrived, and
+       a board that flashes wholesale on open is noise, not news. */
+    if (!seen.size) return
+
+    const moved = new Set(
+      [...now]
+        .filter(([url, section]) => seen.has(url) && seen.get(url) !== section)
+        .map(([url]) => url),
+    )
+    if (!moved.size) return
+
+    setArrived(moved)
+    const clear = setTimeout(() => setArrived(new Set()), 2000)
+    return () => clearTimeout(clear)
+  }, [all])
+
   /* Unfiltered totals, so a filtered board never narrows silently. */
   const totals = useMemo(() => {
     const map = new Map<string, number>()
@@ -619,6 +659,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   scroller={scroller}
                   folded={folded}
                   onFold={fold}
+                  arrived={arrived}
                 />
               </div>
             </>

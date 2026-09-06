@@ -596,3 +596,42 @@ html:has([popover]:popover-open) body {
     0 1px 2px rgba(26, 28, 31, 0.04),
     0 12px 32px -24px rgba(26, 28, 31, 0.3);
 }
+
+/*
+ * A row that has changed column since the last read.
+ *
+ * An arrival, not a journey: the columns are 300px wide on a board that scrolls
+ * sideways, so a card's old cell and its new one are rarely on screen together
+ * and a literal move would play where nobody is looking. What is observable is
+ * that something is here now that was not, so that is what is drawn — a brief
+ * lift and a warm edge, twice, then nothing.
+ *
+ * Two beats rather than one: a single flash reads as a rendering glitch, and a
+ * repeat reads as deliberate. It ends on its own — a permanent marker would
+ * need clearing, and a board with a "seen" state is a different app.
+ */
+@keyframes ym-arrived {
+  0% {
+    transform: translateY(6px);
+    opacity: 0.4;
+    border-color: var(--color-accent);
+  }
+  35% {
+    transform: none;
+    opacity: 1;
+    border-color: var(--color-accent);
+  }
+  60% {
+    border-color: var(--color-line);
+  }
+  80% {
+    border-color: var(--color-accent);
+  }
+  100% {
+    border-color: var(--color-line);
+  }
+}
+
+.ym-arrived {
+  animation: ym-arrived 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
