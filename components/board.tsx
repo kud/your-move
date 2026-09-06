@@ -296,12 +296,12 @@ export const Swimlanes = ({
    * different depending on which columns happen to be empty today. A grid whose
    * geometry changes with its contents is not furniture.
    */
-  const track = `var(--ym-lane) repeat(${columns.length}, var(--ym-col))`
+  const track = `var(--ym-lane) repeat(${columns.length}, var(--ym-col)) var(--ym-tail)`
 
   return (
     <div
       ref={scroller}
-      className="max-h-[74dvh] overflow-auto overscroll-x-contain [--ym-col:64vw] [--ym-lane:104px] md:max-h-[76dvh] snap-x snap-mandatory scroll-pl-[var(--ym-lane)] md:snap-proximity md:[--ym-col:300px] md:[--ym-lane:150px]"
+      className="max-h-[74dvh] overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] [--ym-col:64vw] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:max-h-[76dvh] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-4rem-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
     >
       <div className="grid min-w-max" style={{ gridTemplateColumns: track }}>
         {/* Corner: the one cell belonging to both sticky axes. */}
@@ -314,7 +314,7 @@ export const Swimlanes = ({
               key={id}
               ref={(el) => register(id, el)}
               data-column={id}
-              className="sticky top-0 z-20 flex snap-start items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 py-2"
+              className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 py-2 [scroll-snap-align:none_start]"
             >
               <Slot glyph={p.glyph} tone={p.tone} />
               <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
@@ -327,6 +327,7 @@ export const Swimlanes = ({
             </div>
           )
         })}
+        <div className="sticky top-0 z-20 border-b border-line-soft bg-panel" />
 
         {lanes.map((lane) => (
           <Fragment key={lane.repo}>
@@ -339,7 +340,7 @@ export const Swimlanes = ({
               aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
               className={`sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise ${
                 lane.yours ? "border-r-accent/60" : ""
-              }`}
+              } [scroll-snap-align:start_none]`}
             >
               <h4
                 className="flex items-center gap-1 truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
@@ -379,7 +380,7 @@ export const Swimlanes = ({
               return (
                 <div
                   key={id}
-                  className="flex min-h-[44px] snap-start flex-col gap-2 border-b border-r border-line-soft p-2"
+                  className="flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start]"
                 >
                   {rows.length ? (
                     <Cell
@@ -391,6 +392,9 @@ export const Swimlanes = ({
                 </div>
               )
               })
+            )}
+            {folded.has(lane.repo) ? null : (
+              <div className="border-b border-line-soft" />
             )}
           </Fragment>
         ))}
