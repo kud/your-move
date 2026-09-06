@@ -389,6 +389,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const hidden = all.length - shown.length
   const asOf = inbox ? new Date(inbox.fetchedAt).toISOString() : undefined
 
+  /* Running out of GitHub budget is not "a source failed" — it is a specific,
+     self-inflicted, self-healing condition, and saying so beats a generic
+     warning that sends you looking at GitHub status pages. */
+  const rateLimited = (inbox?.reasons ?? []).some((r) =>
+    /rate limit/i.test(r),
+  )
+
   return (
     <>
       <Sky />
@@ -423,6 +430,14 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                     : "◌"}
               </span>
               <span>{LIVENESS_TEXT[liveness]}</span>
+              {inbox?.budget ? (
+                <span
+                  className="font-mono tabular-nums"
+                  title="GitHub GraphQL points left this hour"
+                >
+                  · {inbox.budget.remaining}
+                </span>
+              ) : null}
             </p>
             <RepoFilter
               repos={repos}
@@ -456,8 +471,30 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           <div className="mb-2 rounded-lg border border-brass p-3 text-[12px]">
             <p className="text-brass">
               <span aria-hidden>! </span>
-              <strong>A source failed.</strong> An empty board below is missing
-              data, not an empty inbox.
+              {rateLimited ? (
+                <>
+                  <strong>GitHub&rsquo;s hourly budget is spent.</strong> The
+                  board below is missing data, not empty. It refills on its own
+                  {inbox?.budget?.resetAt ? (
+                    <>
+                      {" "}
+                      at{" "}
+                      {new Date(inbox.budget.resetAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </>
+                  ) : (
+                    " within the hour"
+                  )}
+                  .
+                </>
+              ) : (
+                <>
+                  <strong>A source failed.</strong> An empty board below is
+                  missing data, not an empty inbox.
+                </>
+              )}
             </p>
             <p className="mt-1 text-fg-quiet">
               Did not answer: {inbox.failed.join(", ")}

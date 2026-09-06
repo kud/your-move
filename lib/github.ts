@@ -53,6 +53,14 @@ export type Inbox = {
   /** Sources GitHub refused. A partial answer is still worth rendering. */
   failed: InboxSource[]
   /*
+   * What GitHub says is left of the hourly GraphQL budget, and when it resets.
+   *
+   * Not decoration: this inbox costs ~74 points a load, so a naive one-minute
+   * poll spends 4,440 of a 5,000-point hour and the board dies of its own
+   * refreshing. Every query already returns this; not reading it was the bug.
+   */
+  budget?: { remaining: number; resetAt: string }
+  /*
    * Why they failed, deduplicated. Without this an empty board and a broken one
    * are the same picture: the first version of this swallowed every reason into
    * allSettled and reported eight failed sources with no way to tell whether the
@@ -195,6 +203,9 @@ export const fetchInbox = async (
     login,
     fetchedAt: Date.now(),
     failed: INBOX_SOURCES.filter((source) => !answered.has(source)),
+    budget: data?.rateLimit
+      ? { remaining: data.rateLimit.remaining, resetAt: data.rateLimit.resetAt }
+      : undefined,
     reasons,
   }
 }
