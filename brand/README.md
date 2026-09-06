@@ -5,14 +5,13 @@ Everything here is the source of truth for the mark. Take what you need from
 
 ## What the mark means
 
-Two diamonds: the same form in its two states, one empty and one filled. The
-board already speaks this language — `◇` is someone waiting on you, `◆` is you
-having answered — so the mark is that pair caught mid-turn. The diagonal seam
-between them is the only thing the product actually tracks: the boundary between
-their side and yours, and which side the piece is currently on.
+One circle, twice: once open and once whole, parted by a single straight cut.
+The open one is the side that has let it go; the full one is the side that holds
+it. The cut is the only thing this app actually tracks — which side of it the
+piece is currently on.
 
-Nothing about it depends on colour. Strip the palette and the empty form and the
-filled one still say which is which.
+An empty circle beside a full one needs no reference to trace, which is the
+point: provenance you have to look up is not provenance.
 
 ## Which file to use where
 
@@ -41,25 +40,25 @@ rsvg-convert -w 1024 -h 1024 brand/svg/icon.svg -o brand/png/icon-1024.png
 The accent is re-derived rather than reused on light: `#e0707c` is calibrated
 against near-black, where it reads about 7:1, and falls under 3:1 on white.
 
-> [!IMPORTANT]
-> **The hollow diamond has no `fill-rule="evenodd"`, and must not be given one.**
-> Its inner contour is wound anticlockwise against a clockwise outer, so the hole
-> is correct under both `nonzero` and `evenodd`. This matters because a renderer
-> that silently drops attributes — ImageMagick's SVG fallback is the usual
-> culprit, and it exits 0 while doing it — would produce a _solid_ diamond where
-> a hollow one belongs. Half the mark's meaning, gone, with nothing to show for
-> it in the output. Rasterise with `rsvg-convert`, and look at the result.
-
 > [!NOTE]
-> **No strokes anywhere.** Every form is a filled path, so the mark scales
+> **Every path is a single closed contour** — no compound paths, no holes. The
+> arc is outer-arc, line, inner-arc, close. That is deliberate: a hole depends on
+> `fill-rule` and winding order, which is exactly the sort of thing a fallback
+> SVG renderer drops while exiting 0 — turning a hollow form solid with nothing
+> in the output to say so. There is no hole here to lose.
+>
+> **No strokes anywhere either.** Every form is a filled path, so the mark scales
 > without a stroke width to keep in step, and no renderer has to agree with us
 > about how a hairline should behave.
 
 ## Known limits
 
-- **16px is too small.** It holds cleanly at 32px and above. Below that the
-  hollow counterform closes up — true of any mark built on one, and not fixable
-  without abandoning the idea.
+- **16px is too small.** It holds at 32px and above — verified by rendering it,
+  not asserted. Below that the arc's aperture closes up.
+- **The maskable variant sits at 0.82, not the usual 0.88.** This composition is
+  taller than it is wide, so its corner radius grows faster and 0.88 overshot the
+  safe circle. Verified by rendering the file under an actual circular crop
+  rather than by trusting the arithmetic.
 - **The lockup's lettering is outlined**, not live text. Charter Bold, the freely
   redistributable serif in the app's own `--font-serif` stack, with the font's
   own kerning applied and −24/1000 em tracking. There is no font dependency and
