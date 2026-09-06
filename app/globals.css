@@ -635,3 +635,17 @@ html:has([popover]:popover-open) body {
 .ym-arrived {
   animation: ym-arrived 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/*
+ * A scrollable list that says so at its bottom edge.
+ *
+ * A long list cut flush with the container's border reads as content that has
+ * been clipped rather than content that continues — the last row is sliced in
+ * half and nothing distinguishes that from a rendering fault. Fading the final
+ * few pixels is the cue, and it is a mask rather than a gradient overlay so it
+ * works over whatever the row happens to be and needs no second colour in the
+ * light theme.
+ */
+.fade-b {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}

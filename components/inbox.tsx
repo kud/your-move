@@ -233,18 +233,41 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
    */
   useEffect(() => {
     const root = scroller.current
+    /*
+     * A running picture of every column, not just the ones that moved.
+     *
+     * The callback receives ONLY the entries whose intersection changed, and
+     * the old code took the best of that batch — so mid-swipe a column on its
+     * way out at 0.45 could beat one arriving whose entry was not in the batch,
+     * and the highlight flapped between two chips several times a second. Each
+     * flip fired a smooth scroll on the rail, which restarted the previous one
+     * from wherever it had got to. That is the vibration.
+     *
+     * Keeping the ratios in a map and choosing across all of them means the
+     * answer only changes when the actual winner does.
+     */
+    const ratios = new Map<string, number>()
+
+    /* Finer thresholds so the map is current rather than quantised into three
+       steps, which was the other half of why a near-tie could flip. */
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
-        const target = visible?.target
-        const id =
-          target?.getAttribute("data-column") ??
-          target?.getAttribute("data-lane")
-        if (id) setActive(id)
+        for (const entry of entries) {
+          const id = entry.target.getAttribute("data-column")
+          if (id) ratios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0)
+        }
+
+        let best: string | undefined
+        let most = 0
+        for (const [id, ratio] of ratios)
+          if (ratio > most) {
+            most = ratio
+            best = id
+          }
+
+        if (best) setActive(best)
       },
-      { root: root ?? null, threshold: [0.4, 0.8] },
+      { root: root ?? null, threshold: [0, 0.25, 0.5, 0.75, 1] },
     )
 
     for (const el of anchors.current.values()) observer.observe(el)
@@ -269,10 +292,22 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     const chip = strip.querySelector<HTMLElement>(`[data-chip="${active}"]`)
     if (!chip) return
 
-    const target = chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2
+    const target = Math.max(
+      0,
+      chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2,
+    )
+
+    /*
+     * A deadzone, because "keep it in view" and "keep it centred" are different
+     * promises and only the first one was wanted. Correcting by four pixels on
+     * every observer tick is what a smooth scroll cannot survive: each call
+     * restarts the animation, so a run of tiny corrections reads as a shudder
+     * rather than as following.
+     */
+    if (Math.abs(strip.scrollLeft - target) < 24) return
 
     strip.scrollTo({
-      left: Math.max(0, target),
+      left: target,
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth",
