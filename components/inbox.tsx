@@ -16,6 +16,7 @@ import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
+import { WritableRepos } from "@/components/use-writable"
 import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
@@ -329,6 +330,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     <>
       <Sky />
 
+      <WritableRepos repos={repos.map((r) => r.repo)}>
       <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
         <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
           {/*
@@ -664,6 +666,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           />
         ) : null}
       </main>
+      </WritableRepos>
     </>
   )
 }
