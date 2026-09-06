@@ -17,6 +17,33 @@ const ID = "ym-menu"
    root so the whole token set can answer at once, rather than every component
    learning about a preference. */
 const CONTRAST = "ym:contrast"
+const THEME = "ym:theme"
+
+type Theme = "auto" | "light" | "dark"
+
+/*
+ * The status bar has to follow the theme, or the "native" illusion breaks at
+ * exactly the seam it was hardest to fix: an OS bar painted near-black above a
+ * light page. `theme-color` is a meta rather than a stylesheet value, so it is
+ * the one token that has to be set imperatively.
+ */
+const GROUND: Record<"light" | "dark", string> = {
+  dark: "#0b0c0e",
+  light: "#f4f2f0",
+}
+
+const paintChrome = (theme: Theme) => {
+  const resolved: "light" | "dark" =
+    theme === "auto"
+      ? matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark"
+      : theme
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", GROUND[resolved])
+  document.documentElement.style.background = GROUND[resolved]
+}
 
 export const Menu = ({
   login,
@@ -28,16 +55,40 @@ export const Menu = ({
   onDoneDays: (days: 7 | 30) => void
 }) => {
   const [contrast, setContrast] = useState(false)
+  const [theme, setTheme] = useState<Theme>("auto")
 
   useEffect(() => {
     try {
       const on = localStorage.getItem(CONTRAST) === "1"
       setContrast(on)
       document.documentElement.dataset.contrast = on ? "high" : ""
+
+      const saved = (localStorage.getItem(THEME) as Theme | null) ?? "auto"
+      setTheme(saved)
+      document.documentElement.dataset.theme = saved
+      paintChrome(saved)
     } catch {
       /* Storage refused. The default look is the correct fallback. */
     }
   }, [])
+
+  /* Following the system means following it as it changes, not only at load. */
+  useEffect(() => {
+    if (theme !== "auto") return
+    const media = matchMedia("(prefers-color-scheme: light)")
+    const follow = () => paintChrome("auto")
+    media.addEventListener("change", follow)
+    return () => media.removeEventListener("change", follow)
+  }, [theme])
+
+  const chooseTheme = (next: Theme) => {
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+    paintChrome(next)
+    try {
+      localStorage.setItem(THEME, next)
+    } catch {}
+  }
 
   const toggleContrast = () => {
     const next = !contrast
@@ -53,15 +104,33 @@ export const Menu = ({
 
   return (
     <>
+      {/*
+        The trigger is his face rather than three lines.
+
+        A burger is a container for whatever could not be placed; an avatar is a
+        container for YOU — and it answers "who is signed in" simply by being
+        there, before anyone taps it. The primary ask is served by the
+        affordance, not by its contents.
+      */}
       <button
         type="button"
         popoverTarget={ID}
-        aria-label="Menu"
-        className="grid size-8 shrink-0 place-items-center rounded-lg border border-line text-fg-mute hover:text-fg"
+        aria-label={login ? `Menu — signed in as ${login}` : "Menu"}
+        className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full border border-line text-fg-mute hover:border-accent hover:text-fg"
       >
-        <span aria-hidden className="text-[15px] leading-none">
-          ☰
-        </span>
+        {login ? (
+          <img
+            src={`https://github.com/${login}.png?size=64`}
+            alt=""
+            width={32}
+            height={32}
+            className="size-full object-cover"
+          />
+        ) : (
+          <span aria-hidden className="text-[14px] leading-none">
+            ☰
+          </span>
+        )}
       </button>
 
       <div
@@ -135,8 +204,32 @@ export const Menu = ({
             Settings
           </p>
 
+          <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
+            Theme
+            <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              {(["auto", "light", "dark"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => chooseTheme(option)}
+                  aria-pressed={theme === option}
+                  className={`px-2 py-0.5 text-[12px] capitalize ${
+                    theme === option
+                      ? "bg-accent-dim text-accent"
+                      : "text-fg-quiet"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </span>
+          </div>
+
           {/*
-           * Not light / dark / auto. The palette is calibrated against
+           * Kept alongside the light theme rather than replaced by it: they
+           * answer different failures. Light is for a bright room; this is for
+           * direct sunlight on the dark theme, where the quiet tones go first
+           * and the sky's washes eat what contrast is left. The palette is calibrated against
            * near-black — the accent reads about 7:1 there and under 3:1 on
            * white, which is a failure exactly where colour carries meaning —
            * and the sky is additive glow, which is invisible on a light ground.

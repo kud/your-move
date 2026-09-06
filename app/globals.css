@@ -367,3 +367,91 @@ h4 {
 :root[data-contrast="high"] canvas[aria-hidden] {
   display: none;
 }
+
+/*
+ * A light theme, and it is a second design rather than a recolour.
+ *
+ * Three things had to be re-derived rather than inverted:
+ *
+ *   - the accent. `#e0707c` is a rose calibrated against near-black, where it
+ *     reads about 7:1. On white it falls under 3:1, which fails precisely where
+ *     colour carries meaning — the reason chips and the accent stripe. Light
+ *     gets its own, darker, same hue family.
+ *   - the panels. On dark, depth comes from a panel LIGHTER than its ground; on
+ *     light it has to come from a panel that is barely darker plus a real
+ *     hairline, or every surface dissolves.
+ *   - the sky. Those washes are additive glow, which is invisible on a light
+ *     ground, so light turns the canvas off and paints a flat warm ground
+ *     instead. Not a compromise: a bright room does not want a glow.
+ *
+ * Two selectors for the same palette: an explicit choice, and the system
+ * preference when no explicit choice has been made. `:not([data-theme="dark"])`
+ * is what stops the media query overriding someone who chose dark on purpose.
+ */
+:root[data-theme="light"],
+:root[data-theme="auto"] {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-void: #f4f2f0;
+    --color-panel: #ffffff;
+    --color-panel-2: #faf9f8;
+    --color-raise: #f1efed;
+    --color-line: #ddd8d4;
+    --color-line-soft: #ebe7e3;
+
+    --color-fg: #1a1c1f;
+    --color-fg-mute: #4c525a;
+    --color-fg-quiet: #767d87;
+
+    --color-accent: #b03a4c;
+    --color-accent-dim: #fbe9ec;
+    --color-brass: #8a5a12;
+    --color-sage: #2f6b41;
+    --color-slate: #46586f;
+
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --color-void: #f4f2f0;
+  --color-panel: #ffffff;
+  --color-panel-2: #faf9f8;
+  --color-raise: #f1efed;
+  --color-line: #ddd8d4;
+  --color-line-soft: #ebe7e3;
+
+  --color-fg: #1a1c1f;
+  --color-fg-mute: #4c525a;
+  --color-fg-quiet: #767d87;
+
+  --color-accent: #b03a4c;
+  --color-accent-dim: #fbe9ec;
+  --color-brass: #8a5a12;
+  --color-sage: #2f6b41;
+  --color-slate: #46586f;
+
+  color-scheme: light;
+}
+
+/* The glow is the one thing that cannot survive the swap. */
+:root[data-theme="light"] canvas[aria-hidden],
+:root[data-contrast="high"] canvas[aria-hidden] {
+  display: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) canvas[aria-hidden] {
+    display: none;
+  }
+}
+
+/* Depth on light comes from a hairline and a soft drop, never from a heavy
+   shadow — the dark panel's deep shadow reads as dirt on a pale ground. */
+:root[data-theme="light"] .shadow-panel,
+:root:not([data-theme="dark"]) .shadow-panel {
+  box-shadow: 0 1px 2px rgba(26, 28, 31, 0.04), 0 12px 32px -24px rgba(26, 28, 31, 0.3);
+}
