@@ -292,12 +292,12 @@ h4 {
  */
 [popover] {
   opacity: 0;
-  transform: translateY(6px) scale(0.985);
+  transform: translateY(12px) scale(0.94);
   transition:
-    opacity 160ms ease,
-    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    overlay 200ms allow-discrete,
-    display 200ms allow-discrete;
+    opacity 200ms ease,
+    transform 320ms cubic-bezier(0.16, 1.02, 0.3, 1),
+    overlay 320ms allow-discrete,
+    display 320ms allow-discrete;
 }
 
 [popover]:popover-open {
@@ -308,20 +308,25 @@ h4 {
 @starting-style {
   [popover]:popover-open {
     opacity: 0;
-    transform: translateY(6px) scale(0.985);
+    transform: translateY(12px) scale(0.94);
   }
 }
 
+/* The ground behind a modal recedes as well as darkens: a blur is what makes
+   the popover read as being IN FRONT of the board rather than drawn on it. */
 [popover]::backdrop {
   opacity: 0;
+  backdrop-filter: blur(0px);
   transition:
-    opacity 160ms ease,
-    overlay 200ms allow-discrete,
-    display 200ms allow-discrete;
+    opacity 220ms ease,
+    backdrop-filter 320ms ease,
+    overlay 320ms allow-discrete,
+    display 320ms allow-discrete;
 }
 
 [popover]:popover-open::backdrop {
   opacity: 1;
+  backdrop-filter: blur(3px);
 }
 
 @starting-style {
