@@ -242,32 +242,6 @@ const CardBody = ({
   )
 }
 
-/* A folded lane keeps its name and its shape — the counts stay visible, so
-   folding is hiding detail rather than hiding the project. */
-const Summary = ({ lane, columns }: { lane: Lane; columns: string[] }) => (
-  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5">
-    {columns
-      .filter((id) => (lane.cells.get(id) ?? []).length)
-      .map((id) => {
-        const p = presentationFor(id)
-        return (
-          <span
-            key={id}
-            className="flex items-center gap-1 text-[12px] text-fg-quiet"
-          >
-            <span aria-hidden className="font-mono">
-              {p.glyph}
-            </span>
-            <span className="hidden lg:inline">{p.title}</span>
-            <span className="font-mono tabular-nums">
-              {(lane.cells.get(id) ?? []).length}
-            </span>
-          </span>
-        )
-      })}
-  </div>
-)
-
 /*
  * The full `owner/name`, on demand, gone by itself.
  *
@@ -543,42 +517,50 @@ export const Swimlanes = ({
               </p>
             </div>
 
-            {folded.has(lane.repo) ? (
-              <div
-                className="border-b border-line-soft"
-                style={{ gridColumn: "2 / -1" }}
-              >
-                <Summary lane={lane} columns={columns} />
-              </div>
-            ) : (
-              columns.map((id) => {
-                const rows = lane.cells.get(id) ?? []
-                /* An empty cell is not a box. No border, no background, no
+            {/*
+              A folded lane keeps its columns.
+
+              It used to collapse to one strip spanning the whole row, which
+              threw away the thing the fold is meant to preserve: the matrix.
+              Reading "3 open, 1 review" as a sentence is work; seeing which
+              columns are filled, in the same places they always are, is not.
+              So the cells stay, hatched where they hold something and blank
+              where they do not — the counts land under the same sticky headers
+              as everything else, and folding costs detail rather than position.
+            */}
+            {columns.map((id) => {
+              const rows = lane.cells.get(id) ?? []
+              const shut = folded.has(lane.repo)
+              /* An empty cell is not a box. No border, no background, no
                  sentence — blank space between the hairlines already reads as
                  an empty cell, where an empty bordered box reads as a broken
-                 component. */
-                return (
-                  <div
-                    key={id}
-                    className={`flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
-                      SEAM.has(id) ? "border-l border-l-accent/40" : ""
-                    }`}
-                  >
-                    {rows.length ? (
-                      <Cell
-                        rows={rows}
-                        cap={id === DONE ? DONE_PER_CELL : PER_CELL}
-                        onChanged={onChanged}
-                        onOpen={onOpen}
-                      />
-                    ) : null}
-                  </div>
-                )
-              })
-            )}
-            {folded.has(lane.repo) ? null : (
-              <div className="border-b border-line-soft" />
-            )}
+                 component. Folded, the same rule holds: only a cell with
+                 something in it is hatched. */
+              return (
+                <div
+                  key={id}
+                  className={`flex flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
+                    shut ? "min-h-[34px] justify-center" : "min-h-[44px]"
+                  } ${rows.length && shut ? "hatch" : ""} ${
+                    SEAM.has(id) ? "border-l border-l-accent/40" : ""
+                  }`}
+                >
+                  {!rows.length ? null : shut ? (
+                    <span className="font-mono text-[12px] tabular-nums leading-none text-fg-quiet">
+                      {rows.length}
+                    </span>
+                  ) : (
+                    <Cell
+                      rows={rows}
+                      cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                      onChanged={onChanged}
+                      onOpen={onOpen}
+                    />
+                  )}
+                </div>
+              )
+            })}
+            <div className="border-b border-line-soft" />
           </Fragment>
         ))}
       </div>
