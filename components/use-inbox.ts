@@ -91,7 +91,7 @@ const kept = (): Inbox | undefined => {
   }
 }
 
-export const useInbox = (initial?: Inbox, doneDays: 7 | 30 = 7) => {
+export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
   const [inbox, setInbox] = useState<Inbox | undefined>(initial)
   const [liveness, setLiveness] = useState<Liveness>(
     initial ? "live" : "refreshing",

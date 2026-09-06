@@ -66,8 +66,8 @@ export const Menu = ({
   onOrder,
 }: {
   login?: string
-  doneDays: 7 | 30
-  onDoneDays: (days: 7 | 30) => void
+  doneDays: 7 | 14 | 30
+  onDoneDays: (days: 7 | 14 | 30) => void
   notify: boolean
   onNotify: (on: boolean) => void
   sound: boolean
@@ -506,7 +506,7 @@ export const Menu = ({
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
               Recently done
               <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
-                {([7, 30] as const).map((days) => (
+                {([7, 14, 30] as const).map((days) => (
                   <button
                     key={days}
                     type="button"

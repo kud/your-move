@@ -53,7 +53,7 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
   /* Declared before the hook that consumes it. */
-  const [doneDays, setDoneDays] = useState<7 | 30>(7)
+  const [doneDays, setDoneDays] = useState<7 | 14 | 30>(7)
   /* `owner/repo#number`, or nothing. */
   const [open, setOpen] = useState<string>()
   const [notify, setNotify] = useState(false)
