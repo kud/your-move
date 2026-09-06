@@ -236,10 +236,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           <div className="min-w-0 flex-1">
             <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
               Your Move
-              {/* The baseline sits ON the title baseline rather than under it,
-                  so it costs no vertical space — which is what got it cut the
-                  first time. Sans against the serif keeps them distinct. */}
-              <span className="truncate font-sans text-[12px] font-normal tracking-normal text-fg-quiet md:text-[13px]">
+              {/* Wide only: a baseline orients someone meeting the app for the
+                  first time, and on his own phone he is never that reader. It
+                  sits ON the title baseline rather than under it, so where it
+                  does show it costs no vertical space. */}
+              <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
                 what moved, and whose move it is
               </span>
             </h1>
