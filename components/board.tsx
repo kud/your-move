@@ -301,9 +301,12 @@ export const Swimlanes = ({
   return (
     <div
       ref={scroller}
-      className="max-h-[74dvh] overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] [--ym-col:64vw] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:max-h-[76dvh] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-4rem-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] [--ym-col:64vw] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-4rem-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
     >
-      <div className="grid min-w-max" style={{ gridTemplateColumns: track }}>
+      <div
+        className="grid min-w-max content-start"
+        style={{ gridTemplateColumns: track }}
+      >
         {/* Corner: the one cell belonging to both sticky axes. */}
         <div className="sticky left-0 top-0 z-30 border-b border-r border-line bg-panel" />
 

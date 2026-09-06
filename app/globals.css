@@ -177,3 +177,15 @@ body {
     );
   }
 }
+
+/*
+ * The page fills the screen exactly, rather than being at least as tall as it.
+ *
+ * `min-height` let the board size itself from a guessed fraction of the viewport
+ * and leave whatever was left over as dead space at the bottom — which is what
+ * it did. A fixed height plus `flex-1` on the board means the board takes
+ * precisely what the header and any banners have not used.
+ */
+.h-safe {
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}

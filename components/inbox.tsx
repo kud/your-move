@@ -231,7 +231,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     <>
       <Sky />
 
-      <main className="relative z-10 mx-auto min-h-safe max-w-[1600px] px-3 pb-8 pt-3 md:px-6 md:pb-16 md:pt-8">
+      <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-3 md:px-6 md:pb-6 md:pt-8">
         <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
           <div className="min-w-0 flex-1">
             <h1 className="font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
@@ -356,7 +356,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
           {allFailed ? (
             /* One block, one fact, one way out. Redundancy reads as panic. */
             <div className="flex flex-col items-start gap-3 p-5">
@@ -469,7 +469,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 })}
               </nav>
 
-              <div>
+              <div className="min-h-0 flex-1">
                 <Swimlanes
                   lanes={lanes}
                   columns={COLUMNS}
@@ -485,7 +485,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           )}
         </div>
 
-        <footer className="mt-4 hidden border-t border-line pt-3 text-[12px] text-fg-quiet md:block">
+        <footer className="mt-3 hidden shrink-0 border-t border-line pt-2 text-[12px] text-fg-quiet md:block">
           Read live from GitHub, cached for a minute. Nothing is stored; labels
           are the only thing written back.
         </footer>
