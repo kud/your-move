@@ -11,6 +11,7 @@ import {
   type Lane,
 } from "@/components/board"
 import { Detail } from "@/components/detail"
+import { Mark } from "@/components/mark"
 import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
@@ -331,67 +332,80 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
       <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-3 md:px-6 md:pb-6 md:pt-8">
         <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
-              Your Move
-              {/* Wide only: a baseline orients someone meeting the app for the
+          {/*
+            The mark sits beside the whole left stack rather than inside the
+            `h1`, because the `h1` is baseline-aligned and a picture has no
+            baseline to sit on. Centred against both lines, it reads as the
+            block's marker instead of as a very large piece of punctuation.
+          */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
+            <Mark className="w-6 shrink-0 md:w-[30px]" />
+
+            <div className="min-w-0 flex-1">
+              <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
+                Your Move
+                {/* Wide only: a baseline orients someone meeting the app for the
                   first time, and on his own phone he is never that reader. It
                   sits ON the title baseline rather than under it, so where it
                   does show it costs no vertical space. */}
-              <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
-                GitHub moves. Your turn.
-              </span>
-            </h1>
-            {/* Under the name rather than instead of it: it answers "what's on my
+                <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
+                  GitHub moves. Your turn.
+                </span>
+              </h1>
+              {/* Under the name rather than instead of it: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
                 MORE space, not less. */}
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              aria-label="Refresh"
-              className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
-            >
-              <span aria-hidden>
-                {liveness === "live"
-                  ? "●"
-                  : liveness === "refreshing"
-                    ? "◐"
-                    : "◌"}
-              </span>
-              {healthy ? null : (
-                <span className="text-brass">{LIVENESS_TEXT[liveness]} ·</span>
-              )}
-              {yoursTotal > 0 ? (
-                <>
-                  <b className="font-semibold text-accent">{yoursTotal}</b>
-                  <span>need{yoursTotal === 1 ? "s" : ""} you</span>
-                </>
-              ) : (
-                <span>nothing needs you</span>
-              )}
-              {lanes.length ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <span className="font-mono tabular-nums">
-                    {lanes.length} {lanes.length === 1 ? "project" : "projects"}
-                  </span>
-                </>
-              ) : null}
-              {freshness ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <span>{freshness}</span>
-                </>
-              ) : null}
-              {inbox?.budget ? (
-                <span
-                  className="hidden font-mono tabular-nums md:inline"
-                  title="GitHub GraphQL points left this hour"
-                >
-                  · {inbox.budget.remaining}
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                aria-label="Refresh"
+                className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+              >
+                <span aria-hidden>
+                  {liveness === "live"
+                    ? "●"
+                    : liveness === "refreshing"
+                      ? "◐"
+                      : "◌"}
                 </span>
-              ) : null}
-            </button>
+                {healthy ? null : (
+                  <span className="text-brass">
+                    {LIVENESS_TEXT[liveness]} ·
+                  </span>
+                )}
+                {yoursTotal > 0 ? (
+                  <>
+                    <b className="font-semibold text-accent">{yoursTotal}</b>
+                    <span>need{yoursTotal === 1 ? "s" : ""} you</span>
+                  </>
+                ) : (
+                  <span>nothing needs you</span>
+                )}
+                {lanes.length ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span className="font-mono tabular-nums">
+                      {lanes.length}{" "}
+                      {lanes.length === 1 ? "project" : "projects"}
+                    </span>
+                  </>
+                ) : null}
+                {freshness ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{freshness}</span>
+                  </>
+                ) : null}
+                {inbox?.budget ? (
+                  <span
+                    className="hidden font-mono tabular-nums md:inline"
+                    title="GitHub GraphQL points left this hour"
+                  >
+                    · {inbox.budget.remaining}
+                  </span>
+                ) : null}
+              </button>
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
