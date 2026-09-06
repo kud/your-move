@@ -133,22 +133,24 @@ const verdictFor = (row: Row, detail?: Detail) => {
  * wrong one. Changing it there also sets it, so the control teaches the setting
  * rather than competing with it.
  */
-export type OpenMode = "side" | "modal" | "full"
+export type OpenMode = "side" | "modal" | "full" | "github"
 
-const SHELL: Record<OpenMode, string> = {
+/* `github` has no shell: choosing it means the panel is never opened at all,
+   so the card behaves as the plain link it always was underneath. */
+const SHELL: Record<Exclude<OpenMode, "github">, string> = {
   side: "inset-y-0 right-0 w-[min(620px,92vw)] border-l",
   modal:
     "inset-0 m-auto h-[min(86vh,820px)] w-[min(780px,92vw)] rounded-2xl border",
   full: "inset-0",
 }
 
-const ENTER: Record<OpenMode, string> = {
+const ENTER: Record<Exclude<OpenMode, "github">, string> = {
   side: "ym-in-side",
   modal: "ym-in-modal",
   full: "ym-in-fade",
 }
 
-const MODE_LABEL: Record<OpenMode, string> = {
+const MODE_LABEL: Record<Exclude<OpenMode, "github">, string> = {
   side: "Side",
   modal: "Modal",
   full: "Full",
@@ -164,7 +166,8 @@ export const Detail = ({
   row: Row
   onClose: () => void
   onLabelChange: OnLabelChange
-  mode: OpenMode
+  /* Never `github` here: that mode means this component is not rendered. */
+  mode: Exclude<OpenMode, "github">
   onMode: (mode: OpenMode) => void
 }) => {
   const [detail, setDetail] = useState<Detail>()

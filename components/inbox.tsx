@@ -67,7 +67,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       setNotify(localStorage.getItem("ym:notify") === "1")
       setSound(localStorage.getItem("ym:sound") === "1")
       const saved = localStorage.getItem("ym:open")
-      if (saved === "side" || saved === "modal" || saved === "full")
+      if (
+        saved === "side" ||
+        saved === "modal" ||
+        saved === "full" ||
+        saved === "github"
+      )
         setOpenMode(saved)
       setViews(readViews())
       const how = localStorage.getItem("ym:order")
@@ -800,6 +805,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                     folded={folded}
                     onFold={fold}
                     arrived={arrived}
+                    inApp={openMode !== "github"}
                   />
                 </div>
               </>
@@ -846,7 +852,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </footer>
           {/* Every width. The reasoning, and why the earlier desk-only call was
             answering the wrong question, is at the top of `detail.tsx`. */}
-          {openRowData ? (
+          {openRowData && openMode !== "github" ? (
             <Detail
               row={openRowData}
               onClose={closeRow}

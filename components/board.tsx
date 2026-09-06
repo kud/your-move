@@ -203,12 +203,16 @@ const CardBody = ({
   onChanged,
   onOpen,
   arrived,
+  inApp,
 }: {
   row: Row
   onChanged: OnLabelChange
   onOpen: (row: Row) => void
   /* This row is in a different column than it was on the last read. */
   arrived?: boolean
+  /* False when the setting says a row opens on GitHub, in which case this is
+     an ordinary link and the app gets out of the way. */
+  inApp: boolean
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
@@ -243,6 +247,7 @@ const CardBody = ({
         target="_blank"
         rel="noreferrer"
         onClick={(e) => {
+          if (!inApp) return
           /* A modified click means "somewhere else, not here" — every other
              link in the app honours it, and swallowing it here made the card
              the one thing you could not open in a background tab. */
@@ -439,12 +444,14 @@ const Cell = ({
   onChanged,
   onOpen,
   arrived,
+  inApp,
 }: {
   rows: Row[]
   cap: number
   onChanged: OnLabelChange
   onOpen: (row: Row) => void
   arrived: Set<string>
+  inApp: boolean
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -458,6 +465,7 @@ const Cell = ({
             onChanged={onChanged}
             onOpen={onOpen}
             arrived={arrived.has(row.url)}
+            inApp={inApp}
           />
       ))}
       {rows.length > cap && !all ? (
@@ -485,6 +493,7 @@ export const Swimlanes = ({
   folded,
   onFold,
   arrived,
+  inApp,
 }: {
   lanes: Lane[]
   columns: string[]
@@ -497,6 +506,8 @@ export const Swimlanes = ({
   onFold: (repo: string) => void
   /* Row urls that changed column since the previous read. */
   arrived: Set<string>
+  /* Whether a card opens the panel or simply follows its link. */
+  inApp: boolean
 }) => {
   /*
    * Every column the same width, including the empty ones.
@@ -777,6 +788,7 @@ export const Swimlanes = ({
                           onChanged={onChanged}
                           onOpen={onOpen}
                           arrived={arrived}
+                          inApp={inApp}
                         />
                       ) : null}
                     </div>

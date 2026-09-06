@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import type { OpenMode } from "@/components/detail"
 import { exportViews, importViews, type View } from "@/lib/views"
 
 /*
@@ -72,8 +73,8 @@ export const Menu = ({
   sound: boolean
   onSound: (on: boolean) => void
   permission: "unsupported" | "default" | "granted" | "denied"
-  openMode: "side" | "modal" | "full"
-  onOpenMode: (mode: "side" | "modal" | "full") => void
+  openMode: OpenMode
+  onOpenMode: (mode: OpenMode) => void
   views: View[]
   onViews: (next: View[]) => void
   order: "urgency" | "name"
@@ -320,24 +321,68 @@ export const Menu = ({
               question. At 390px a side panel at 92vw is a full screen wearing a
               border and a modal is one with margins, so a phone always gets the
               screen and has nothing to choose between. */}
+            {/*
+              Where a row opens, and it is one setting with two faces because
+              the question genuinely differs by device.
+
+              On a phone there are two answers — in here, or hand over to the
+              GitHub app — and the three panel shapes are indistinguishable
+              anyway, since all of them take the screen at 390px. On a desk
+              there are four, because the shape is a real choice there.
+
+              Same key either way, so a phone choosing "In app" and a desk
+              choosing "Side" are not two settings that can disagree.
+            */}
+            <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:hidden">
+              Open rows
+              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+                {(
+                  [
+                    { id: "full", label: "In app" },
+                    { id: "github", label: "GitHub" },
+                  ] as const
+                ).map((option) => {
+                  const on =
+                    option.id === "github"
+                      ? openMode === "github"
+                      : openMode !== "github"
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onOpenMode(option.id)}
+                      aria-pressed={on}
+                      className={`px-2 py-0.5 text-[12px] ${
+                        on ? "bg-accent-dim text-accent" : "text-fg-quiet"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </span>
+            </div>
+
             <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
               Open as
               <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
-                {(["side", "modal", "full"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => onOpenMode(option)}
-                    aria-pressed={openMode === option}
-                    className={`px-2 py-0.5 text-[12px] capitalize ${
-                      openMode === option
-                        ? "bg-accent-dim text-accent"
-                        : "text-fg-quiet"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {(["side", "modal", "full", "github"] as const).map(
+                  (option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => onOpenMode(option)}
+                      aria-pressed={openMode === option}
+                      className={`px-2 py-0.5 text-[12px] capitalize ${
+                        openMode === option
+                          ? "bg-accent-dim text-accent"
+                          : "text-fg-quiet"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ),
+                )}
               </span>
             </div>
 
