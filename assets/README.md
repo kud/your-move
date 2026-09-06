@@ -1,6 +1,6 @@
 # Icon sources
 
-Copies of `../brand/handover/svg/`, kept here because everything under
+Copies of `../brand/svg/`, kept here because everything under
 `../public/icons/` is rendered from them and committed alongside — a build that
 shelled out to ImageMagick would only work on a laptop that happens to have it.
 **`brand/` is the original; edit there and copy here**, so the two cannot fork.
