@@ -160,12 +160,15 @@ export const fetchInbox = async (
   const sources = [...INBOX_SOURCES]
 
   /*
-   * A week of closures, not a fortnight. `recentlyDone` is the second most
-   * expensive source in the query and it feeds one column of receipts — the
-   * oldest half of which nobody reads. Halving its window is the cheapest real
-   * saving available without dropping a column.
+   * A fortnight of closures, which is @kud/gh's own default.
+   *
+   * Briefly halved to seven days as a saving, on the assumption that
+   * `recentlyDone` was expensive. Measured, it costs ONE point at either window:
+   * the query's cost is driven by the PR sources fetching checks and threads,
+   * not by how far back the closed search reaches. The saving was imaginary and
+   * it cost four days of receipts.
    */
-  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 7 })
+  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 14 })
 
   /*
    * `allSettled`, not `all`. The queries are split precisely so one source

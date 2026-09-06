@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, memo, useState } from "react"
+import { Fragment, memo, useRef, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { presentationFor } from "@/lib/sections"
@@ -28,20 +28,34 @@ export const TONE: Record<string, string> = {
 }
 
 /*
- * Left to right is the priority read: what mostly means "your move" first, what
- * you are waiting on next, what already happened last. `done` is the natural
- * terminus of that progression and the column most likely to be scrolled past —
- * exactly right for a receipt.
+ * Left to right is a LIFECYCLE, not a priority ranking — and it is two of them.
+ *
+ * Urgency already has three carriers: lanes are ordered by it, the `N you` pills
+ * announce it, and the accent stripe marks it on the card. Spending the
+ * horizontal axis on it as well was waste, and actively misleading: `done` at
+ * the right end makes any matrix promise a progression, so a reader tries to
+ * read one and finds a ranking instead.
+ *
+ * What was hiding under "the order feels slightly off" is that there is no
+ * single sequence to find. There are two, sharing a terminus: your own work
+ * (issue → assigned → you open a PR) and other people's passing through you
+ * (it arrives → it asks for your review → you have reviewed it). Interleaving
+ * them is what made every candidate ordering feel wrong.
  */
-export const COLUMNS = [
-  "review",
-  "assigned",
-  "open",
-  "issues",
-  "incoming",
-  "reviewed",
-  "done",
+const YOURS = ["issues", "assigned", "open"]
+const THEIRS = ["incoming", "review", "reviewed"]
+const CLOSED = ["done"]
+
+export const GROUPS: { label: string; ids: string[] }[] = [
+  { label: "Yours", ids: YOURS },
+  { label: "Theirs", ids: THEIRS },
+  { label: "Closed", ids: CLOSED },
 ]
+
+export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
+
+/** Where one lifecycle ends and the next begins, drawn rather than implied. */
+const SEAM = new Set([THEIRS[0], CLOSED[0]])
 
 export const DONE = "done"
 
@@ -222,6 +236,74 @@ const Summary = ({ lane, columns }: { lane: Lane; columns: string[] }) => (
   </div>
 )
 
+/*
+ * The full `owner/name`, on demand, gone by itself.
+ *
+ * A `popover` again: top layer, so the grid's overflow cannot clip it, and the
+ * browser owns Escape, click-outside and focus return. What it adds here is a
+ * timer — he asked for something that disappears on its own, so it does, and a
+ * finger held down pauses it rather than fighting it.
+ *
+ * Discoverability is the part that decides whether this works at all. With no
+ * hover, a tap that only reveals is invisible — so the truncation is rendered as
+ * a deliberate accent-coloured ellipsis rather than the browser's grey one, and
+ * only names that actually need it carry the affordance. An affordance that is
+ * sometimes a lie is worse than none.
+ */
+const REVEAL_MS = 2500
+
+/* The label column is 104px narrow, 150px wide; at 14px this is where a short
+   name stops fitting. Approximate on purpose — the cost of being wrong is an
+   ellipsis that reveals a name you could already read. */
+const FITS = 11
+
+const LaneName = ({ repo }: { repo: string }) => {
+  const short = shortName(repo)
+  const long = short.length > FITS
+  const id = `lane-${repo.replace(/[^a-z0-9]/gi, "-")}`
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const arm = () => {
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      document.getElementById(id)?.hidePopover?.()
+    }, REVEAL_MS)
+  }
+
+  if (!long)
+    return (
+      <h4 className="truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]">
+        {short}
+      </h4>
+    )
+
+  return (
+    <>
+      <h4
+        title={repo}
+        aria-label={repo}
+        popoverTarget={id}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={() => clearTimeout(timer.current)}
+        onPointerUp={arm}
+        className="min-w-0 cursor-pointer truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
+      >
+        {short.slice(0, FITS)}
+        <span className="text-accent">…</span>
+      </h4>
+
+      <div
+        id={id}
+        popover="auto"
+        onToggle={arm}
+        className="m-2 rounded-lg border border-line bg-panel px-3 py-2 shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-transparent"
+      >
+        <p className="font-mono text-[12.5px] text-fg">{repo}</p>
+      </div>
+    </>
+  )
+}
+
 export type OnLabelChange = (
   repo: string,
   number: number,
@@ -322,6 +404,21 @@ export const Swimlanes = ({
         className="grid min-w-max content-start"
         style={{ gridTemplateColumns: track }}
       >
+        {/* The group row names the two lifecycles. Answering "does this read
+            as a timeline" with visible structure beats answering it with a
+            reorder alone. */}
+        <div className="sticky left-0 z-30 hidden border-r border-line bg-panel md:block" />
+        {GROUPS.map((group) => (
+          <div
+            key={group.label}
+            className="hidden bg-panel px-2 pt-1.5 font-mono text-[9.5px] uppercase tracking-[0.16em] text-fg-quiet md:block"
+            style={{ gridColumn: `span ${group.ids.length}` }}
+          >
+            {group.label}
+          </div>
+        ))}
+        <div className="hidden bg-panel md:block" />
+
         {/* Corner: the one cell belonging to both sticky axes. */}
         <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r border-line bg-panel" />
 
@@ -332,7 +429,9 @@ export const Swimlanes = ({
               key={id}
               ref={(el) => register(id, el)}
               data-column={id}
-              className="sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 [scroll-snap-align:none_start]"
+              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 [scroll-snap-align:none_start] ${
+                SEAM.has(id) ? "border-l border-l-accent/40" : ""
+              }`}
             >
               <Slot glyph={p.glyph} tone={p.tone} />
               <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
@@ -351,24 +450,42 @@ export const Swimlanes = ({
           <Fragment key={lane.repo}>
             {/* Sticky left: without it you lose which lane you are in the
                 moment you scroll right, and the grid becomes unreadable. */}
-            <button
-              type="button"
+            {/*
+              * Fold on the cell, reveal on the name.
+              *
+              * The handler sits on the whole label — chevron, counts, empty
+              * space — and the name stops propagation. So the collapse really is
+              * "around the title", and the one thing the title does is say what
+              * it could not fit.
+              */}
+            <div
               onClick={() => onFold(lane.repo)}
-              aria-expanded={!folded.has(lane.repo)}
-              aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
-              className={`sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise ${
+              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
                 lane.yours ? "border-r-accent/60" : ""
-              } [scroll-snap-align:start_none]`}
+              }`}
             >
-              <h4
-                className="flex items-center gap-1 truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
-                title={lane.repo}
-              >
-                <span aria-hidden className="font-mono text-fg-quiet">
-                  {folded.has(lane.repo) ? "▸" : "▾"}
-                </span>
-                <span className="truncate">{shortName(lane.repo)}</span>
-              </h4>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onFold(lane.repo)
+                  }}
+                  aria-expanded={!folded.has(lane.repo)}
+                  aria-label={`${folded.has(lane.repo) ? "Expand" : "Collapse"} ${lane.repo}`}
+                  className="font-mono text-[11px] leading-none text-fg-quiet transition-transform"
+                  style={{
+                    transform: folded.has(lane.repo)
+                      ? "rotate(-90deg)"
+                      : undefined,
+                  }}
+                >
+                  ▾
+                </button>
+
+                <LaneName repo={lane.repo} />
+              </div>
+
               <p className="flex items-center gap-1.5">
                 {lane.yours ? (
                   <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[10.5px] text-accent">
@@ -379,7 +496,7 @@ export const Swimlanes = ({
                   {lane.total}
                 </span>
               </p>
-            </button>
+            </div>
 
             {folded.has(lane.repo) ? (
               <div
@@ -398,7 +515,9 @@ export const Swimlanes = ({
               return (
                 <div
                   key={id}
-                  className="flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start]"
+                  className={`flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
+                    SEAM.has(id) ? "border-l border-l-accent/40" : ""
+                  }`}
                 >
                   {rows.length ? (
                     <Cell
