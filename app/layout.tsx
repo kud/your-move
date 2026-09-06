@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import type { ReactNode } from "react"
 
+import { Leaving } from "@/components/leaving"
 import { ServiceWorker } from "@/components/service-worker"
 
 import "./globals.css"
@@ -65,6 +66,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
     </head>
     <body>
       {children}
+      <Leaving />
       <ServiceWorker />
     </body>
   </html>
