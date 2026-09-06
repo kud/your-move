@@ -286,14 +286,17 @@ export const Swimlanes = ({
   onFold: (repo: string) => void
 }) => {
   /*
-   * A column with nothing in it anywhere collapses to a rail. It keeps the
-   * furniture and states its zero honestly, at 56px instead of 300 — which is
-   * what makes seven columns fit a desk without the empty ones taxing the
-   * ones that have work in them.
+   * Every column the same width, including the empty ones.
+   *
+   * An earlier version narrowed empty columns to a rail to buy horizontal
+   * budget. It cost more than it bought: a matrix with uneven columns stops
+   * reading as a matrix, the vertical alignment that makes "everything in
+   * review, across all projects" legible is broken, and — the part that decides
+   * it — the snap positions become irregular, so the gesture lands somewhere
+   * different depending on which columns happen to be empty today. A grid whose
+   * geometry changes with its contents is not furniture.
    */
-  const width = (id: string) =>
-    (counts.get(id) ?? 0) > 0 ? "var(--ym-col)" : "52px"
-  const track = `var(--ym-lane) ${columns.map(width).join(" ")}`
+  const track = `var(--ym-lane) repeat(${columns.length}, var(--ym-col))`
 
   return (
     <div
@@ -306,36 +309,21 @@ export const Swimlanes = ({
 
         {columns.map((id) => {
           const p = presentationFor(id)
-          const empty = (counts.get(id) ?? 0) === 0
           return (
             <div
               key={id}
               ref={(el) => register(id, el)}
               data-column={id}
-              className={`sticky top-0 z-20 flex snap-start items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 py-2 ${
-                empty ? "justify-center" : ""
-              }`}
+              className="sticky top-0 z-20 flex snap-start items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 py-2"
             >
               <Slot glyph={p.glyph} tone={p.tone} />
-              {empty ? (
-                <span className="font-mono text-[12px] tabular-nums text-fg-quiet">
-                  0
-                </span>
-              ) : (
-                <>
-                  <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
-                    {p.title}
-                  </h3>
-                  <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
-                    {counts.get(id)}
-                  </span>
-                  <About
-                    id={`about-${id}`}
-                    title={p.title}
-                    meaning={p.meaning}
-                  />
-                </>
-              )}
+              <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
+                {p.title}
+              </h3>
+              <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
+                {counts.get(id) ?? 0}
+              </span>
+              <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
             </div>
           )
         })}
