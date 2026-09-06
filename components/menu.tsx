@@ -587,6 +587,28 @@ export const Menu = ({
             Read live from GitHub, cached for five minutes. Nothing is stored;
             labels are the only thing this app writes back.
           </p>
+
+          {/*
+            What you are running, and where the notes are.
+
+            Two facts rather than one: the version is what was released, the
+            short SHA is what is actually on your screen. They usually agree —
+            and on the day a deploy lags they do not, which is the day this line
+            earns its place. Chasing a bug that turned out to be an old bundle
+            cost twenty minutes once; it would have cost a glance.
+          */}
+          <a
+            href="https://github.com/kud/your-move/releases"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 block px-2 pb-1 font-mono text-[11px] text-fg-quiet hover:text-fg-mute"
+          >
+            v{process.env.NEXT_PUBLIC_VERSION}
+            {process.env.NEXT_PUBLIC_COMMIT
+              ? ` · ${process.env.NEXT_PUBLIC_COMMIT}`
+              : " · dev"}
+            <span aria-hidden> ↗</span>
+          </a>
         </div>
       </div>
     </>
