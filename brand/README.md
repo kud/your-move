@@ -6,8 +6,17 @@ Four words that say the product better than any sentence written for it. Use it
 wherever the name alone is not enough — the README, the OAuth App page, a store
 listing. Small caps, wide tracking.
 
-Everything here is the source of truth for the mark. Take what you need from
-`svg/` when a vector will do, and from `png/` when it will not.
+## Approved handover identity
+
+The new folded **M** identity is in [`handover/`](handover/README.md), with
+font-independent SVGs, transparent PNGs, wordmark lockups, and app-icon exports.
+Its two interlocking forms express **your move / their move**.
+
+![Your Move handover identity](handover/preview.png)
+
+The files in `svg/` and `png/` below document the inherited mark still used by
+the app. The new assets are supplied separately; adopting them in the app is a
+separate change.
 
 ## What the mark means
 
