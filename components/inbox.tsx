@@ -443,36 +443,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     ? all.find((r) => `${r.repo}#${r.number}` === open)
     : undefined
 
-  /*
-   * A `?row=` link on a phone goes to GitHub, not to the desktop panel.
-   *
-   * The card handler already bails below `md` — a tap there hands over to the
-   * GitHub app, which does all of this better, and the panel says so five times
-   * over. But the panel is ALSO driven from the URL, and nothing guarded that
-   * door: a link shared to yourself, or a `?row=` restored by the browser,
-   * opened a 620px side panel on a 390px screen.
-   *
-   * Sent onward rather than merely refused, because the link means "look at
-   * this ticket" and refusing it would answer a request with a board. If the
-   * row is not on the board at all — filtered away, or closed since — the
-   * parameter is dropped instead, which lands you on the board rather than on
-   * a navigation to nowhere.
-   */
-  const narrow = useRef(false)
-  useEffect(() => {
-    narrow.current = matchMedia("(max-width: 767px)").matches
-  }, [])
-
-  useEffect(() => {
-    if (!open || !narrow.current) return
-    if (openRowData) location.replace(openRowData.url)
-    else if (all.length) {
-      const url = new URL(location.href)
-      url.searchParams.delete("row")
-      history.replaceState(null, "", url)
-      setOpen(undefined)
-    }
-  }, [open, openRowData, all.length])
+  /* A `?row=` link opens the panel at every width now, so there is no door to
+     guard: the panel IS the answer to that link rather than a desk-only
+     detour it had to be redirected around. */
 
   /* Only what has crossed into your side is worth interrupting anyone for. */
   const attention = useMemo(
@@ -871,8 +844,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               move is it — then made general.
             </span>
           </footer>
-          {/* Desktop only, by his call rather than by omission: on a phone the
-            card opens the native GitHub app, which does all of this better. */}
+          {/* Every width. The reasoning, and why the earlier desk-only call was
+            answering the wrong question, is at the top of `detail.tsx`. */}
           {openRowData ? (
             <Detail
               row={openRowData}

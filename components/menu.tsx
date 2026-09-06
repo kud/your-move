@@ -315,9 +315,11 @@ export const Menu = ({
               </span>
             </button>
 
-            {/* Desktop only, because opening a row in place is desktop only —
-              a card tap on a phone goes to the GitHub app, which does all of
-              this better. */}
+            {/* Desktop only, and now for a narrower reason than before: a row
+              opens in place at every width, but WHICH shape it takes is a desk
+              question. At 390px a side panel at 92vw is a full screen wearing a
+              border and a modal is one with margins, so a phone always gets the
+              screen and has nothing to choose between. */}
             <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
               Open as
               <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
