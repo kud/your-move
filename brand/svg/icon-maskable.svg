@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
   <title id="t">Your Move</title>
   <rect width="512" height="512" fill="#0b0c0e"/>
-  <path fill="#e9ebee" d="M 298.26 366.98 A 107.11 107.11 0 1 1 142.60 236.37 L 186.93 273.57 A 55.34 55.34 0 1 0 253.93 329.78 Z"/>
-  <path fill="#e0707c" d="M 206.27 190.91 A 107.11 107.11 0 1 0 420.48 190.91 A 107.11 107.11 0 1 0 206.27 190.91 Z"/>
+  <g transform="translate(256 256) scale(0.86) translate(-256 -256)">
+    <path d="M 389.77 135.56 A 180 180 0 1 0 389.77 376.44 L 361.64 340.31 A 126 126 0 1 1 361.64 171.69 Z" fill="#e9ebee"/>
+    <path d="M 268 146 A 110 110 0 0 0 268 366 Z" fill="#e0707c"/>
+  </g>
 </svg>

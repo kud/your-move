@@ -5,13 +5,16 @@ Everything here is the source of truth for the mark. Take what you need from
 
 ## What the mark means
 
-One circle, twice: once open and once whole, parted by a single straight cut.
-The open one is the side that has let it go; the full one is the side that holds
-it. The cut is the only thing this app actually tracks — which side of it the
-piece is currently on.
+A thick open ring with a half-disc resting in its mouth — one form that has let
+go, one that is held.
 
-An empty circle beside a full one needs no reference to trace, which is the
-point: provenance you have to look up is not provenance.
+> [!NOTE]
+> **This mark is shared with [`kud/companies`](https://github.com/kud/companies),
+> which still uses it at board.kud.io.** That is a deliberate choice rather than
+> an oversight: it was kept because it was preferred, after two alternatives were
+> designed and rejected. Both products are Erwann's, so nothing is being
+> borrowed — but they do read as one family, and the ring resolves as a "C",
+> which belonged to the other name. Worth knowing before it goes anywhere public.
 
 ## Which file to use where
 
@@ -20,7 +23,6 @@ point: provenance you have to look up is not provenance.
 | App icon, favicon, anything square                        | `svg/icon.svg`                                 |
 | Android home screen, adaptive icons                       | `svg/icon-maskable.svg`                        |
 | One-colour contexts, Safari `mask-icon`                   | `svg/icon-mono.svg`                            |
-| README, OAuth App page, anywhere with room for the name   | `svg/lockup-dark.svg` · `svg/lockup-light.svg` |
 | GitHub OAuth App, store listings, anything wanting raster | `png/icon-1024.png`                            |
 
 `png/` is generated from `svg/` — never edit a PNG. Regenerate with:
@@ -40,30 +42,25 @@ rsvg-convert -w 1024 -h 1024 brand/svg/icon.svg -o brand/png/icon-1024.png
 The accent is re-derived rather than reused on light: `#e0707c` is calibrated
 against near-black, where it reads about 7:1, and falls under 3:1 on white.
 
-> [!NOTE]
-> **Every path is a single closed contour** — no compound paths, no holes. The
-> arc is outer-arc, line, inner-arc, close. That is deliberate: a hole depends on
-> `fill-rule` and winding order, which is exactly the sort of thing a fallback
-> SVG renderer drops while exiting 0 — turning a hollow form solid with nothing
-> in the output to say so. There is no hole here to lose.
+> [!IMPORTANT]
+> **The ring is a compound path and its hole depends on winding order.** The
+> inner arc is wound against the outer, so the counterform is correct under both
+> `nonzero` and `evenodd` — but a renderer that drops path attributes while
+> exiting 0 (ImageMagick's SVG fallback is the usual culprit) would fill it in,
+> and the failure is a solid blob where a ring belongs, with nothing in the
+> output to say so. Rasterise with `rsvg-convert`, and look at the result.
 >
-> **No strokes anywhere either.** Every form is a filled path, so the mark scales
+> **No strokes anywhere.** Every form is a filled path, so the mark scales
 > without a stroke width to keep in step, and no renderer has to agree with us
 > about how a hairline should behave.
 
 ## Known limits
 
-- **16px is too small.** It holds at 32px and above — verified by rendering it,
-  not asserted. Below that the arc's aperture closes up.
-- **The maskable variant sits at 0.82, not the usual 0.88.** This composition is
-  taller than it is wide, so its corner radius grows faster and 0.88 overshot the
-  safe circle. Verified by rendering the file under an actual circular crop
-  rather than by trusting the arithmetic.
-- **The lockup's lettering is outlined**, not live text. Charter Bold, the freely
-  redistributable serif in the app's own `--font-serif` stack, with the font's
-  own kerning applied and −24/1000 em tracking. There is no font dependency and
-  nothing to install; there is also nothing to re-typeset, so a wording change
-  means going back to the source.
-- **Two lockup files rather than one self-adapting one.** GitHub strips `<style>`
-  from SVG, so a single file switching on `prefers-color-scheme` renders wrong
-  there. Wrap them in `<picture>` where both are available.
+- **16px is marginal.** The ring's aperture is generous enough to survive
+  better than the alternatives did, but check it where you use it.
+- **The maskable variant is the same composition at 0.86**, with the ground
+  bled to the edges. The original was never drawn for a launcher crop, so this
+  is derived rather than copied — and verified by rendering it under an actual
+  circular crop rather than by trusting the arithmetic.
+- **There is no wordmark lockup.** The two that existed were drawn for a mark
+  that is no longer used. Ask for one when something needs it.
