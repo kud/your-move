@@ -43,18 +43,9 @@ export const middleware = async (request: NextRequest) => {
 
 export const config = {
   /*
-   * Node, not the default Edge runtime.
-   *
-   * This middleware does AES-GCM work to open the session cookie, which is
-   * ordinary server work rather than anything that needs to run at the edge.
-   *
-   * It is also a fix. On Edge, `process.env.SESSION_SECRET` read as undefined
-   * in production while the variable was present and correctly scoped to
-   * Production — every request answered 500 "not configured". The variable was
-   * marked Sensitive in Vercel, which is the likeliest explanation, but that was
-   * never confirmed against documentation, so treat it as an observation rather
-   * than a rule. None of it reproduces locally, where .env.local is read
-   * directly.
+   * Node, not the default Edge runtime. This middleware does AES-GCM work to
+   * open the session cookie, which is ordinary server work rather than anything
+   * that needs to run at the edge.
    */
   runtime: "nodejs",
 
