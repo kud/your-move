@@ -102,7 +102,7 @@ export const sectionOf = (row: Row): string => SECTION_OF[row.source] ?? "open"
  * conflict on your own PR would say the same rose twice. Iris's call, and it is
  * the reason the loud tier is brass rather than a stronger red.
  */
-const REASON_TONE: Record<string, string> = {
+export const REASON_TONE: Record<string, string> = {
   "CI failing": "alarm",
   Conflict: "alarm",
   "Changes requested": "brass",
