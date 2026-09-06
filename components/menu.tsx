@@ -130,7 +130,7 @@ export const Menu = ({
       >
         {login ? (
           <img
-            src={`https://github.com/${login}.png?size=64`}
+            src={`https://github.com/${login}.png?size=128`}
             alt=""
             width={32}
             height={32}
@@ -155,7 +155,7 @@ export const Menu = ({
             {/* A stable URL off the login we already have — nothing new fetched
                 to know who is signed in. */}
             <img
-              src={`https://github.com/${login}.png?size=80`}
+              src={`https://github.com/${login}.png?size=144`}
               alt=""
               width={36}
               height={36}

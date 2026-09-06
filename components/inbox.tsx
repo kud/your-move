@@ -331,7 +331,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       <Sky />
 
       <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-3 md:px-6 md:pb-6 md:pt-8">
-        <header className="flex items-center gap-2 pb-2 md:flex-wrap md:items-end md:gap-x-4 md:pb-3">
+        <header className="flex items-center gap-2 pb-1 md:flex-wrap md:items-end md:gap-x-4 md:pb-2">
           {/*
             The mark sits beside the whole left stack rather than inside the
             `h1`, because the `h1` is baseline-aligned and a picture has no
@@ -339,7 +339,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             block's marker instead of as a very large piece of punctuation.
           */}
           <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
-            <Mark className="w-6 shrink-0 md:w-[30px]" />
+            <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
 
             <div className="min-w-0 flex-1">
               <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
