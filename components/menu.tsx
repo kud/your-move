@@ -461,7 +461,18 @@ export const Menu = ({
           ))}
         </div>
 
+        {/* Signing out clears the device too. `ym:last` is a full board and
+            `ym:perms` is a map of what you may write to — both private, both
+            outliving a logout that only ever cleared the cookie, on a phone
+            somebody else might pick up. */}
         <form
+          onSubmit={() => {
+            try {
+              localStorage.removeItem("ym:last")
+              localStorage.removeItem("ym:perms")
+              sessionStorage.removeItem("ym:scroll")
+            } catch {}
+          }}
           action="/api/auth/logout"
           method="post"
           className="mt-2 border-t border-line-soft pt-2"
@@ -473,7 +484,7 @@ export const Menu = ({
 
         {/* The provenance line, in the place someone actually looks for it. */}
         <p className="px-2 pt-3 text-[11.5px] leading-[1.5] text-fg-quiet">
-          Read live from GitHub, cached for a minute. Nothing is stored; labels
+          Read live from GitHub, cached for five minutes. Nothing is stored; labels
           are the only thing this app writes back.
         </p>
       </div>

@@ -52,13 +52,6 @@ const PRESENTATION: Record<string, Presentation> = {
     empty: "No open PRs.",
     meaning: "Your own pull requests, open and out for review.",
   },
-  draft: {
-    title: "Drafts",
-    tone: "slate",
-    empty: "No drafts.",
-    meaning:
-      "Your pull requests still marked draft — not yet asking anything of anyone.",
-  },
   incoming: {
     title: "Incoming",
     tone: "slate",

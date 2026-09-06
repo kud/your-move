@@ -27,25 +27,31 @@ export const GET = async (request: Request) => {
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
   const params = new URL(request.url).searchParams
-  const repo = params.get("repo") ?? undefined
+  /*
+   * `?repo=` is gone rather than validated.
+   *
+   * It went unchecked into `buildInboxQueries`, which builds a `repo:` scope and
+   * interpolates that into a GraphQL string literal — a `"` closes the literal
+   * and the rest is parsed as document. Its two siblings both guard this and
+   * say so; this one did not. Nothing ever sent it: the single caller asks for
+   * `?done=` alone. Dead surface carrying the app's only unguarded
+   * interpolation is not a thing to make safe, it is a thing to delete.
+   */
   /* Only the two windows the menu offers; anything else is someone poking at
      the URL, and a wider search than the UI can ask for is not theirs to have. */
   const doneWithinDays = params.get("done") === "30" ? 30 : 7
 
-  /* A filtered read is a different question and is not worth a second cache
-     key for one user; only the whole-board read is cached. */
   /* The window is part of the question, so it is part of the cache key: a
-     seven-day answer must never be served to someone who asked for thirty. */
+     seven-day answer must never be served to someone who asked for thirty.
+     Every read is now the whole board, so there is no second shape to key. */
   const variant = `${doneWithinDays}`
 
-  if (!repo) {
-    const hit = await cached(token, variant)
-    if (hit) return NextResponse.json(hit)
-  }
+  const hit = await cached(token, variant)
+  if (hit) return NextResponse.json(hit)
 
   try {
-    const inbox = await fetchInbox(token, { repo, doneWithinDays })
-    if (!repo) await remember(token, inbox, variant)
+    const inbox = await fetchInbox(token, { doneWithinDays })
+    await remember(token, inbox, variant)
     return NextResponse.json(inbox)
   } catch (error) {
     /*
@@ -64,7 +70,7 @@ export const GET = async (request: Request) => {
      * 401: a revoked session must send the reader to sign in, not show them a
      * board they are no longer entitled to.
      */
-    if (status !== 401 && !repo) {
+    if (status !== 401) {
       const stale = await lastResort(token, variant)
       if (stale)
         return NextResponse.json({

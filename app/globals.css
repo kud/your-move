@@ -18,7 +18,10 @@
 
   --color-fg: #e9ebee;
   --color-fg-mute: #a2aab5;
-  --color-fg-quiet: #6b7280;
+  /* Raised from #6b7280, which read about 3.7:1 on panel — under the bar, and
+     carrying every timestamp, count and legend on the board. The app should not
+     need an opt-in to be readable. */
+  --color-fg-quiet: #7f8792;
 
   --color-accent: #e0707c;
   --color-accent-dim: #3a1c21;
@@ -165,14 +168,17 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/*
+ * Motion is governed by ONE thing: `data-motion` on the root.
+ *
+ * A bare `@media (prefers-reduced-motion: reduce)` used to sit here, and it
+ * made the setting one-way on exactly the machine that needed it to be two-way:
+ * turn the switch OFF on a system that asks for reduced motion, and nothing
+ * came back, because a media query cannot be overridden by an attribute. The
+ * pre-paint script in `layout.tsx` already reads the media query when nothing
+ * is stored, so the attribute is the single source of truth its own comment
+ * claims — and the rules that act on it live further down this file.
+ */
 
 /*
  * The board is a fixed-height instrument, not a tall page.
@@ -483,12 +489,10 @@ html:has([popover]:popover-open) main {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [popover],
-  [popover]::backdrop {
-    transition: none;
-    transform: none;
-  }
+:root[data-motion="reduce"] [popover],
+:root[data-motion="reduce"] [popover]::backdrop {
+  transition: none;
+  transform: none;
 }
 
 /*
@@ -585,7 +589,7 @@ html:has([popover]:popover-open) main {
 
     --color-fg: #1a1c1f;
     --color-fg-mute: #4c525a;
-    --color-fg-quiet: #767d87;
+    --color-fg-quiet: #6a707a;
 
     --color-accent: #b03a4c;
     --color-accent-dim: #fbe9ec;
@@ -607,7 +611,7 @@ html:has([popover]:popover-open) main {
 
   --color-fg: #1a1c1f;
   --color-fg-mute: #4c525a;
-  --color-fg-quiet: #767d87;
+  --color-fg-quiet: #6a707a;
 
   --color-accent: #b03a4c;
   --color-accent-dim: #fbe9ec;
@@ -628,12 +632,53 @@ html:has([popover]:popover-open) main {
   :root:not([data-theme="dark"]) canvas[aria-hidden] {
     display: none;
   }
+
+  :root:not([data-theme="dark"]) .shadow-panel {
+    box-shadow:
+      0 1px 2px rgba(26, 28, 31, 0.04),
+      0 12px 32px -24px rgba(26, 28, 31, 0.3);
+  }
 }
 
-/* Depth on light comes from a hairline and a soft drop, never from a heavy
-   shadow — the dark panel's deep shadow reads as dirt on a pale ground. */
-:root[data-theme="light"] .shadow-panel,
-:root:not([data-theme="dark"]) .shadow-panel {
+/*
+ * Depth on light comes from a hairline and a soft drop, never from a heavy
+ * shadow — the dark panel's deep shadow reads as dirt on a pale ground.
+ *
+ * The `:not([data-theme="dark"])` half of this used to sit OUTSIDE the light
+ * media query, and the default is `data-theme="auto"` — so it matched in the
+ * ordinary dark state, at a specificity that beat the utility it was overriding.
+ * The board panel therefore lost its drop shadow and its inset top highlight
+ * for everyone who had not gone into the menu and chosen Dark by hand: the
+ * default configuration was the one wearing the light theme's depth.
+ */
+/*
+ * Higher contrast, on light.
+ *
+ * The switch reported "On" and the page did not move: `[data-contrast="high"]`
+ * is declared above the light theme, they are the same specificity, and later
+ * wins — so every token contrast raised was overwritten by light. A setting
+ * that reports a state the page does not honour is worse than a missing one.
+ *
+ * Four values rather than a fourth palette, and both forms, because light
+ * arrives two ways: chosen in the menu, and inherited from the system.
+ */
+:root[data-theme="light"][data-contrast="high"] {
+  --color-fg: #000000;
+  --color-fg-mute: #2b3038;
+  --color-fg-quiet: #4a515b;
+  --color-line: #b9b2ac;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"])[data-contrast="high"] {
+    --color-fg: #000000;
+    --color-fg-mute: #2b3038;
+    --color-fg-quiet: #4a515b;
+    --color-line: #b9b2ac;
+  }
+}
+
+:root[data-theme="light"] .shadow-panel {
   box-shadow:
     0 1px 2px rgba(26, 28, 31, 0.04),
     0 12px 32px -24px rgba(26, 28, 31, 0.3);

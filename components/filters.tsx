@@ -105,10 +105,20 @@ export const labelCounts = (rows: Row[]): Facet[] =>
 export const statusCounts = (rows: Row[], reasonFor: (row: Row) => string) =>
   tally(rows.map(reasonFor))
 
-export type Picks = { repos: string[]; status: string[]; labels: string[] }
+export type Picks = {
+  repos: string[]
+  status: string[]
+  labels: string[]
+  /* "you" and "them" — the board's own question, so it is a facet like any
+     other rather than a mode. */
+  move: string[]
+}
 
 export const countPicks = (picks: Picks) =>
-  picks.repos.length + picks.status.length + picks.labels.length
+  picks.repos.length +
+  picks.status.length +
+  picks.labels.length +
+  picks.move.length
 
 type Props = {
   repos: RepoCount[]
@@ -118,7 +128,7 @@ type Props = {
   onChange: (next: Picks) => void
 }
 
-type Tab = keyof Picks
+type Tab = "repos" | "status" | "labels"
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "repos", label: "Repos" },
@@ -271,12 +281,56 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
           {active ? (
             <button
               type="button"
-              onClick={() => onChange({ repos: [], status: [], labels: [] })}
+              onClick={() =>
+                onChange({ repos: [], status: [], labels: [], move: [] })
+              }
               className="ml-auto text-[12px] text-accent hover:underline"
             >
               Clear all
             </button>
           ) : null}
+        </div>
+
+        {/*
+          Whose move it is sits ABOVE the tabs, not inside them as a fourth.
+
+          It is the one question this whole board exists to answer, and it was
+          the only axis the filter could not express — you could approximate it
+          by ticking four statuses, which is reconstructing the app's own
+          central question out of proxies. Theo's find. A fourth tab would have
+          buried the most-used filter one press deeper than the least-used one.
+        */}
+        <div className="mb-2 flex shrink-0 gap-1.5">
+          {(
+            [
+              { id: "you", label: "Your move" },
+              { id: "them", label: "Their move" },
+            ] as const
+          ).map((side) => {
+            const picked = picks.move.includes(side.id)
+            return (
+              <button
+                key={side.id}
+                type="button"
+                aria-pressed={picked}
+                onClick={() =>
+                  onChange({
+                    ...picks,
+                    move: picked
+                      ? picks.move.filter((m) => m !== side.id)
+                      : [...picks.move, side.id],
+                  })
+                }
+                className={`flex-1 rounded-lg border px-2 py-1.5 text-[12.5px] transition-colors ${
+                  picked
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-quiet hover:text-fg"
+                }`}
+              >
+                {side.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Tabs rather than three stacked lists: stacked, the sheet would be

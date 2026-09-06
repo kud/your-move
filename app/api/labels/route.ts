@@ -32,14 +32,33 @@ const session = async () => {
   return unseal(secret, (await cookies()).get(COOKIE)?.value)
 }
 
+/*
+ * `owner/name`, and nothing else.
+ *
+ * This value goes into a URL PATH, which is worse than it looks: `fetch`
+ * normalises `..` while parsing, and a `#` or `?` truncates everything the
+ * template appends after it — so an unguarded `repo` chooses the endpoint
+ * rather than filling in a segment, on the DELETE branch as much as the others.
+ * `SameSite=Lax` and the absence of an XSS surface mean this was defence in
+ * depth rather than a live hole, but it is the same three lines its two
+ * siblings already carry, and the only route that did not.
+ */
+const NAME = /^[\w.-]+$/
+const named = (repo: string | null | undefined) => {
+  const [owner, name, ...rest] = (repo ?? "").split("/")
+  return Boolean(
+    !rest.length && owner && name && NAME.test(owner) && NAME.test(name),
+  )
+}
+
 /** The labels a repo actually has, for the picker. */
 export const GET = async (request: Request) => {
   const token = await session()
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
   const repo = new URL(request.url).searchParams.get("repo")
-  if (!repo)
-    return NextResponse.json({ error: "repo required" }, { status: 400 })
+  if (!named(repo))
+    return NextResponse.json({ error: "bad repo" }, { status: 400 })
 
   const response = await fetch(`${API}/repos/${repo}/labels?per_page=100`, {
     headers: headersFor(token),
@@ -69,7 +88,7 @@ export const POST = async (request: Request) => {
     action?: "add" | "remove"
   }
 
-  if (!repo || !number || !label || !action)
+  if (!named(repo) || !Number.isInteger(number) || !label || !action)
     return NextResponse.json({ error: "bad request" }, { status: 400 })
 
   const base = `${API}/repos/${repo}/issues/${number}/labels`
