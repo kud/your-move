@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next"
 import type { ReactNode } from "react"
 
 import { ServiceWorker } from "@/components/service-worker"
-import { Splash } from "@/components/splash"
 
 import "./globals.css"
 
@@ -66,7 +65,6 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
     </head>
     <body>
       {children}
-      <Splash />
       <ServiceWorker />
     </body>
   </html>

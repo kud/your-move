@@ -196,32 +196,6 @@ body {
 }
 
 /*
- * The launch mark rises and settles. Deliberately small movement: a splash that
- * performs is a splash you notice, and the only thing worth noticing here is
- * that the app opened.
- */
-@keyframes ym-splash-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.ym-splash {
-  animation: ym-splash-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ym-splash {
-    animation: none;
-  }
-}
-
-/*
  * The small things that separate an app from a page on a phone.
  *
  * None of these is a preference — each removes a specific browser behaviour
