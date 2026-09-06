@@ -334,7 +334,7 @@ export const Menu = ({
               choosing "Side" are not two settings that can disagree.
             */}
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:hidden">
-              Open rows
+              Open tickets
               <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
                 {(
                   [
@@ -364,7 +364,7 @@ export const Menu = ({
             </div>
 
             <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
-              Open as
+              Open tickets
               <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
                 {(["side", "modal", "full", "github"] as const).map(
                   (option) => (
