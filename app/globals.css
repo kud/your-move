@@ -395,6 +395,29 @@ h4 {
   animation: ym-in-fade 180ms ease-out both;
 }
 
+/*
+ * Nothing behind an open popover is selectable.
+ *
+ * A native popover is in the top layer but it does NOT make the rest of the
+ * page inert — that is `<dialog>` with `showModal()`, and the difference is
+ * invisible until you drag across a panel and find yourself highlighting the
+ * board through it. The backdrop takes the click, so light dismiss still works;
+ * it is selection specifically that leaks.
+ *
+ * `:has()` rather than a class toggled from JavaScript, so it is true for every
+ * popover in the app — the filter, the menu, the section notes, the lane panel
+ * — including any added later, with nothing to remember.
+ */
+html:has([popover]:popover-open) body {
+  user-select: none;
+}
+
+/* The popover's own text stays selectable: it holds a repository name someone
+   might reasonably want to copy. */
+[popover]:popover-open {
+  user-select: text;
+}
+
 /* The ground behind a modal recedes as well as darkens: a blur is what makes
    the popover read as being IN FRONT of the board rather than drawn on it. */
 [popover]::backdrop {
