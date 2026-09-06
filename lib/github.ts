@@ -155,20 +155,25 @@ const dedupe = (rows: Row[]): Row[] => {
 
 export const fetchInbox = async (
   token: string,
-  options: { repo?: string } = {},
+  options: { repo?: string; doneWithinDays?: number } = {},
 ): Promise<Inbox> => {
   const sources = [...INBOX_SOURCES]
 
   /*
-   * A week of receipts.
+   * A week of receipts by default, thirty on request.
    *
-   * Not a saving — measured, this source costs ONE point at seven days or at
-   * fourteen, because the query's cost comes from the PR sources fetching checks
-   * and threads, not from how far back the closed search reaches. So the window
-   * is purely an editorial call about how long something stays worth seeing
-   * after it is finished, and a week is the answer.
+   * Not a cost decision — measured, this source costs ONE point at either
+   * window, because the query's price comes from the PR sources fetching checks
+   * and threads rather than from how far back the closed search reaches. So it
+   * is purely editorial: how long something stays worth seeing after it is
+   * finished. A week is the answer most days; the wider window is there for the
+   * day it is not, and is why there is no separate archive screen.
    */
-  const queries = buildInboxQueries({ ...options, sources, doneWithinDays: 7 })
+  const queries = buildInboxQueries({
+    ...options,
+    sources,
+    doneWithinDays: options.doneWithinDays ?? 7,
+  })
 
   /*
    * `allSettled`, not `all`. The queries are split precisely so one source

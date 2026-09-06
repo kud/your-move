@@ -10,6 +10,7 @@ import {
   shortName,
   type Lane,
 } from "@/components/board"
+import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
 import { useInbox, type Liveness } from "@/components/use-inbox"
@@ -34,7 +35,9 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 }
 
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
-  const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial)
+  /* Declared before the hook that consumes it. */
+  const [doneDays, setDoneDays] = useState<7 | 30>(7)
+  const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial, doneDays)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
@@ -262,7 +265,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             {/* Under the name rather than instead of it: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
                 MORE space, not less. */}
-            <p className="flex items-center gap-1.5 truncate text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              aria-label="Refresh"
+              className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
               <span aria-hidden>
                 {liveness === "live"
                   ? "●"
@@ -303,7 +310,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   · {inbox.budget.remaining}
                 </span>
               ) : null}
-            </p>
+            </button>
 
           </div>
 
@@ -313,17 +320,14 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               selected={selected}
               onChange={setSelected}
             />
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              aria-label="Refresh"
-              className="rounded-lg border border-line px-2 py-1 text-[13px] text-fg-mute hover:text-fg"
-            >
-              <span className="md:hidden" aria-hidden>
-                ↻
-              </span>
-              <span className="hidden md:inline">Refresh</span>
-            </button>
+            <Menu
+              login={inbox?.login}
+              doneDays={doneDays}
+              onDoneDays={(d) => {
+                setDoneDays(d)
+                void refresh()
+              }}
+            />
           </div>
         </header>
 

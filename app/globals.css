@@ -342,3 +342,28 @@ h4 {
     transform: none;
   }
 }
+
+/*
+ * Higher contrast, for daylight.
+ *
+ * Not a light theme — see `components/menu.tsx` for why that is a second design
+ * rather than a recolour. This is the failure mode a light theme is usually
+ * asked for: near-black at full brightness outdoors, where the quiet tones
+ * disappear first and the sky's washes are what eat the remaining contrast.
+ *
+ * So: raise everything that was deliberately quiet, firm up the hairlines, and
+ * turn the ground flat.
+ */
+:root[data-contrast="high"] {
+  --color-fg: #ffffff;
+  --color-fg-mute: #cfd6e0;
+  --color-fg-quiet: #9aa4b2;
+  --color-line: #3a424c;
+  --color-line-soft: #2b323a;
+  --color-panel: #16181d;
+  --color-panel-2: #1e222a;
+}
+
+:root[data-contrast="high"] canvas[aria-hidden] {
+  display: none;
+}

@@ -46,19 +46,23 @@ const store = new Map<string, Entry>()
  * a raw credential as a key is the kind of thing that ends up in a heap dump or
  * a log line, and hashing costs nothing.
  */
-const keyFor = async (token: string): Promise<string> => {
+const keyFor = async (token: string, variant = ""): Promise<string> => {
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(token),
   )
-  return [...new Uint8Array(digest)]
+  const hash = [...new Uint8Array(digest)]
     .slice(0, 16)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")
+  return variant ? `${hash}:${variant}` : hash
 }
 
-export const cached = async (token: string): Promise<Inbox | undefined> => {
-  const entry = store.get(await keyFor(token))
+export const cached = async (
+  token: string,
+  variant?: string,
+): Promise<Inbox | undefined> => {
+  const entry = store.get(await keyFor(token, variant))
   if (!entry) return undefined
   return Date.now() - entry.at < TTL_MS ? entry.inbox : undefined
 }
@@ -70,18 +74,25 @@ export const cached = async (token: string): Promise<Inbox | undefined> => {
  * ago" rather than pretending to be current. A cache that lies about its age is
  * a mirror with extra steps.
  */
-export const lastResort = async (token: string): Promise<Inbox | undefined> => {
-  const entry = store.get(await keyFor(token))
+export const lastResort = async (
+  token: string,
+  variant?: string,
+): Promise<Inbox | undefined> => {
+  const entry = store.get(await keyFor(token, variant))
   if (!entry) return undefined
   return Date.now() - entry.at < STALE_MS ? entry.inbox : undefined
 }
 
-export const remember = async (token: string, inbox: Inbox): Promise<void> => {
+export const remember = async (
+  token: string,
+  inbox: Inbox,
+  variant?: string,
+): Promise<void> => {
   /* Never cache a partial answer as though it were whole: a board missing four
      sources would then be served to every request for the next minute. */
   if (inbox.failed.length) return
 
-  store.set(await keyFor(token), { at: Date.now(), inbox })
+  store.set(await keyFor(token, variant), { at: Date.now(), inbox })
 
   /* One user, one entry, in practice — but an unbounded map in a long-lived
      instance is a leak waiting for a second user. */

@@ -91,7 +91,7 @@ const kept = (): Inbox | undefined => {
   }
 }
 
-export const useInbox = (initial?: Inbox) => {
+export const useInbox = (initial?: Inbox, doneDays: 7 | 30 = 7) => {
   const [inbox, setInbox] = useState<Inbox | undefined>(initial)
   const [liveness, setLiveness] = useState<Liveness>(
     initial ? "live" : "refreshing",
@@ -101,6 +101,10 @@ export const useInbox = (initial?: Inbox) => {
   /* So the poll callback never closes over a stale inbox and can be a stable
      reference — a changing interval callback resubscribes on every render. */
   const inFlight = useRef(false)
+  /* Held in a ref so `refresh` stays a stable reference — a changing callback
+     resubscribes the interval on every render. */
+  const doneDaysRef = useRef(doneDays)
+  doneDaysRef.current = doneDays
   const lastFetched = useRef<number | undefined>(initial?.fetchedAt)
   const budget = useRef<number | undefined>(initial?.budget?.remaining)
 
@@ -110,7 +114,9 @@ export const useInbox = (initial?: Inbox) => {
     setLiveness((was) => (was === "expired" ? was : "refreshing"))
 
     try {
-      const response = await fetch("/api/inbox", { cache: "no-store" })
+      const response = await fetch(`/api/inbox?done=${doneDaysRef.current}`, {
+        cache: "no-store",
+      })
 
       /* A revoked token is terminal — retrying cannot fix it, and a board that
          silently keeps showing the last good answer while signed out is exactly

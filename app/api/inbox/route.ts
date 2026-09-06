@@ -26,18 +26,26 @@ export const GET = async (request: Request) => {
   const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
-  const repo = new URL(request.url).searchParams.get("repo") ?? undefined
+  const params = new URL(request.url).searchParams
+  const repo = params.get("repo") ?? undefined
+  /* Only the two windows the menu offers; anything else is someone poking at
+     the URL, and a wider search than the UI can ask for is not theirs to have. */
+  const doneWithinDays = params.get("done") === "30" ? 30 : 7
 
   /* A filtered read is a different question and is not worth a second cache
      key for one user; only the whole-board read is cached. */
+  /* The window is part of the question, so it is part of the cache key: a
+     seven-day answer must never be served to someone who asked for thirty. */
+  const variant = `${doneWithinDays}`
+
   if (!repo) {
-    const hit = await cached(token)
+    const hit = await cached(token, variant)
     if (hit) return NextResponse.json(hit)
   }
 
   try {
-    const inbox = await fetchInbox(token, { repo })
-    if (!repo) await remember(token, inbox)
+    const inbox = await fetchInbox(token, { repo, doneWithinDays })
+    if (!repo) await remember(token, inbox, variant)
     return NextResponse.json(inbox)
   } catch (error) {
     /*
@@ -57,7 +65,7 @@ export const GET = async (request: Request) => {
      * board they are no longer entitled to.
      */
     if (status !== 401 && !repo) {
-      const stale = await lastResort(token)
+      const stale = await lastResort(token, variant)
       if (stale)
         return NextResponse.json({
           ...stale,
