@@ -1,48 +1,80 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Ago } from "@/components/ago"
-import { useInbox, type Liveness } from "@/components/use-inbox"
+import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { RowLabels } from "@/components/row-labels"
+import { Sky } from "@/components/sky"
+import { useInbox, type Liveness } from "@/components/use-inbox"
 import { presentationFor } from "@/lib/sections"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
 /*
- * One view at two widths, not two products.
+ * A board: fixed columns, always drawn, scrolling sideways with snap.
  *
- * A column is a device for peripheral vision — its worth is seeing the third
- * column while your hand is in the first. On a wide screen that is real. On a
- * 390pt phone you hold one column and a sliver, so you pay the whole cost of the
- * abstraction (fixed buckets, a horizontal axis to traverse, spatial memory
- * across a gesture) and collect none of the benefit.
+ * The columns are SECTIONS, and whose move it is rides on the card. An earlier
+ * shape had it the other way round — `move` as the container, sections inside —
+ * which shredded sections across two tiers, because `move` is a property of a
+ * row rather than of a section: one column legitimately holds a PR of yours with
+ * failing CI (yours) beside one out for review (theirs). One axis for space, one
+ * for emphasis.
  *
- * So the same board becomes a list: the columns turn into section headers, in
- * board order, with their counts. Deliberately NOT one column with scroll
- * snapping — that keeps the horizontal axis and then hides the counts behind a
- * gesture, so "how much is waiting on me" needs a journey where a header answers
- * it at a glance.
+ * The column set is furniture: known, ordered, present. A set rebuilt from
+ * whichever rows arrived is a groupBy wearing a board's clothes, and can build
+ * neither the peripheral vision nor the spatial memory that justify columns at
+ * all. An empty column is information — "nothing awaits your review" answers the
+ * question this board exists to ask.
  */
 
-const MOVE_GROUPS = [
-  {
-    id: "you" as const,
-    title: "Your move",
-    blurb: "Nothing moves here until you do something.",
-  },
-  {
-    id: "them" as const,
-    title: "Their move",
-    blurb: "Waiting on someone else. Here so nothing goes quiet unnoticed.",
-  },
-]
+const TONE: Record<string, string> = {
+  accent: "text-accent border-accent bg-accent-dim",
+  brass: "text-brass border-brass/40 bg-brass/10",
+  sage: "text-sage border-sage/40 bg-sage/10",
+  slate: "text-slate border-line bg-panel-2",
+}
 
 /*
- * The one-word reason a row is in front of you.
+ * Order encodes the move axis: the sections that mostly produce "your move"
+ * come first, so left-to-right is the priority read. The boundary between the
+ * two blocks is marked in the rail, so the board is not six identical buckets.
+ */
+const YOURS_FIRST = ["review", "assigned", "open", "issues"] as const
+const THEIRS = ["incoming", "reviewed"] as const
+const ALL_COLUMNS: string[] = [...YOURS_FIRST, ...THEIRS]
+
+/** `done` is a receipt, not a stage: nothing can ever move into it. */
+const DONE = "done"
+
+const SECTION_OF: Record<string, string> = {
+  myPRs: "open",
+  reviewRequests: "review",
+  reviewed: "reviewed",
+  assigned: "assigned",
+  repoIssues: "issues",
+  authoredIssues: "issues",
+  repoPRs: "incoming",
+  recentlyDone: DONE,
+}
+
+const sectionOf = (row: Row): string => SECTION_OF[row.source] ?? "open"
+
+const REASON_TONE: Record<string, string> = {
+  "CI failing": "accent",
+  Conflict: "accent",
+  "Changes requested": "brass",
+  "Checks running": "brass",
+  Approved: "sage",
+  Merged: "sage",
+}
+
+/*
+ * The one-word reason a row is in front of you. Without it a column of titles is
+ * undifferentiated and the ordering reads as arbitrary.
  *
- * Without it a list of titles is undifferentiated, and the ordering reads as
- * arbitrary — the row has to say why it ranked where it did, or the ranking is
- * just an opinion nobody can check.
+ * Issue-versus-PR comes from `kind`, which is the fact. It used to come from
+ * comparing the section's GLYPH — a presentation token read as data, so the day
+ * a glyph was re-lettered, issues would silently have started reading "Open".
  */
 const reasonFor = (row: Row): string => {
   if (row.health === "ci-fail") return "CI failing"
@@ -55,22 +87,8 @@ const reasonFor = (row: Row): string => {
   if (row.health === "merged") return "Merged"
   if (row.health === "closed") return "Closed"
   if (row.health === "pending") return "Checks running"
-  return presentationFor(sectionKeyOf(row)).glyph === "○" ? "Issue" : "Open"
+  return row.kind === "issue" ? "Issue" : "Open"
 }
-
-/** The presentation key for a source — `lib/sections.ts` owns how it looks. */
-const SECTION_KEY: Record<string, string> = {
-    myPRs: "open",
-    reviewRequests: "review",
-    reviewed: "reviewed",
-    assigned: "assigned",
-    repoIssues: "issues",
-    authoredIssues: "issues",
-    repoPRs: "incoming",
-  recentlyDone: "done",
-}
-
-const sectionKeyOf = (row: Row): string => SECTION_KEY[row.source] ?? "open"
 
 const LIVENESS_TEXT: Record<Liveness, string> = {
   live: "Live",
@@ -80,60 +98,80 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
   expired: "Session expired",
 }
 
-/*
- * State gets a word as well as a colour. Two markers that differ only in hue are
- * one marker to a colourblind reader, and this line is the board saying whether
- * to trust itself — the last place to encode meaning in hue alone.
- */
-const Liveness = ({ liveness, at }: { liveness: Liveness; at?: number }) => (
-  <p className="flex items-center gap-1.5 text-[12px] text-fg-quiet">
-    <span aria-hidden>
-      {liveness === "live" ? "●" : liveness === "refreshing" ? "◐" : "◌"}
-    </span>
-    <span>{LIVENESS_TEXT[liveness]}</span>
-    {at ? (
-      <>
-        <span aria-hidden>·</span>
-        <span>
-          as of <Ago iso={new Date(at).toISOString()} since={new Date(at).toISOString()} />
-        </span>
-      </>
-    ) : null}
-  </p>
+const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
+  <span
+    aria-hidden
+    className={`grid size-5 shrink-0 place-items-center rounded-[5px] border font-mono text-[13.5px] leading-none ${TONE[tone] ?? TONE.slate}`}
+  >
+    {glyph}
+  </span>
 )
 
 /*
- * A card rather than one big link, because the row now has two jobs: open the
- * thing, and change a label on it. A <button> inside an <a> is invalid HTML and
- * browsers resolve it by making the whole card a link — so the title is the
- * link and the chips sit beside it.
+ * What a section means, on demand. A native popover rather than `title=`,
+ * because this board is mostly read on a phone where hover does not exist — and
+ * it renders in the top layer, so the column's overflow cannot clip it.
  */
-const RowCard = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
-  const section = presentationFor(sectionKeyOf(row))
+const About = ({
+  id,
+  title,
+  meaning,
+}: {
+  id: string
+  title: string
+  meaning: string
+}) => (
+  <>
+    <button
+      type="button"
+      popoverTarget={id}
+      aria-label={`What "${title}" means`}
+      className="grid size-5 shrink-0 place-items-center rounded-full border border-line bg-panel-2 font-mono text-[12px] leading-none text-fg-quiet transition-colors hover:border-accent hover:text-accent"
+    >
+      ?
+    </button>
+    <div
+      id={id}
+      popover="auto"
+      className="m-auto max-w-[330px] rounded-xl border border-line bg-panel p-4 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
+    >
+      <b className="text-[15px] font-semibold">{title}</b>
+      <p className="mt-2 text-[14px] leading-[1.55] text-fg-mute">{meaning}</p>
+    </div>
+  </>
+)
+
+const Card = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
+  const section = presentationFor(sectionOf(row))
+  const reason = reasonFor(row)
+  const yours = row.move === "you"
 
   return (
-    <div className="rounded-lg border border-line bg-panel-2 p-3 focus-within:border-accent hover:border-accent">
-      <p className="flex items-center gap-1.5 text-[12px] text-fg-quiet">
-        <span aria-hidden>{section.glyph}</span>
-        <span className="truncate">{row.repo}</span>
-        <span aria-hidden>·</span>
-        <span>#{row.number}</span>
-      </p>
+    <article className="group relative rounded-[9px] border border-line bg-panel-2 p-3 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise">
+      {/* Position and shape, not hue alone: a bar on the leading edge. */}
+      {yours ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-2 left-0 w-[2px] rounded-full bg-accent"
+        />
+      ) : null}
 
-      <a
-        href={row.url}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-1 block text-[14px] leading-snug hover:underline focus:underline focus:outline-none"
-      >
-        {row.title}
-      </a>
+      {/* Band 1 — the ask. The only thing here at full foreground. */}
+      <div className="flex items-start gap-2">
+        <Slot glyph={section.glyph} tone={yours ? section.tone : "slate"} />
+        <a
+          href={row.url}
+          target="_blank"
+          rel="noreferrer"
+          className="line-clamp-3 text-pretty text-[15.5px] font-semibold leading-[1.45] text-fg hover:underline focus:underline focus:outline-none"
+        >
+          {row.title}
+        </a>
+      </div>
 
-      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-fg-quiet">
-        <span className="rounded border border-line px-1.5 py-px">
-          {reasonFor(row)}
-        </span>
-        <span>{row.activityAge ?? row.age} ago</span>
+      {/* Band 2 — the identity. One string, not two spans and a dot. */}
+      <p className="mt-1.5 font-mono text-[12.5px] text-fg-quiet">
+        {row.repo}#{row.number}
       </p>
 
       <RowLabels
@@ -142,153 +180,407 @@ const RowCard = ({ row, onChanged }: { row: Row; onChanged: () => void }) => {
         labels={row.labels ?? []}
         onChanged={onChanged}
       />
-    </div>
+
+      {/* Band 3 — the state. */}
+      <div className="mt-2 flex items-center gap-2 border-t border-line-soft pt-2">
+        <span
+          className={`rounded border px-1.5 py-px text-[11px] ${
+            yours
+              ? (TONE[REASON_TONE[reason] ?? "slate"] ?? TONE.slate)
+              : TONE.slate
+          }`}
+        >
+          {reason}
+        </span>
+        <span className="ml-auto font-mono text-[12.5px] tabular-nums text-fg-quiet">
+          {row.activityAge ?? row.age}
+        </span>
+      </div>
+    </article>
   )
 }
 
-const Section = ({
+type ColumnState = "loading" | "clear" | "filtered" | "failed" | "rows"
+
+const Column = ({
   id,
   rows,
+  state,
   onChanged,
+  register,
 }: {
   id: string
   rows: Row[]
+  state: ColumnState
   onChanged: () => void
+  register: (id: string, el: HTMLElement | null) => void
 }) => {
-  const presentation = presentationFor(id)
-  const [open, setOpen] = useState(true)
+  const p = presentationFor(id)
+  const yours = rows.filter((r) => r.move === "you").length
 
   return (
-    <section className="md:w-[320px] md:shrink-0">
-      {/* The count lives in the header rather than behind a gesture: "how much
-          is in review" is the question a board answers at a glance, and it is
-          the one a single snapped column takes a journey to answer. */}
-      <button
-        type="button"
-        onClick={() => setOpen((was) => !was)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2 py-2 text-left text-[13px] font-medium"
-      >
-        <span aria-hidden>{presentation.glyph}</span>
-        <span className="capitalize">{id}</span>
-        <span className="text-fg-quiet">{rows.length}</span>
-        <span className="ml-auto text-fg-quiet md:hidden" aria-hidden>
-          {open ? "−" : "+"}
+    <section
+      ref={(el) => register(id, el)}
+      data-column={id}
+      /*
+       * Snap on the column itself, not a wrapper — a wrapper would break the
+       * gap-px-over-line-soft divider for nothing. An empty column is narrower:
+       * you pass a dead region quickly, and the board's silhouette shows where
+       * the work actually is before you read a word.
+       *
+       * The ~14vw of the next column showing past 86vw is load-bearing. It is
+       * the only thing telling a first-time reader the board HAS more; without
+       * it, a mandatory snap on a full-width column is a carousel.
+       */
+      className={`flex flex-none snap-start flex-col bg-panel ${
+        state === "rows"
+          ? "w-[min(86vw,340px)] min-w-[min(86vw,340px)] md:w-[320px] md:min-w-[320px]"
+          : "w-[220px] min-w-[220px]"
+      }`}
+    >
+      <header className="flex items-center gap-2 border-b border-line-soft p-3.5">
+        <Slot glyph={p.glyph} tone={p.tone} />
+        <h3 className="truncate text-[17px] font-semibold tracking-[-0.01em]">
+          {p.title}
+        </h3>
+        <span className="ml-auto font-mono text-[13px] tabular-nums text-fg-quiet">
+          {rows.length}
         </span>
-      </button>
+        {yours ? (
+          <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[11px] text-accent">
+            {yours} you
+          </span>
+        ) : null}
+        <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
+      </header>
 
-      {open ? (
-        <div className="flex flex-col gap-2">
-          {rows.length ? (
-            rows.map((row) => (
-              <RowCard key={row.url} row={row} onChanged={onChanged} />
-            ))
-          ) : (
-            <p className="py-1 text-[13px] text-fg-quiet">
-              {presentation.empty}
-            </p>
-          )}
-        </div>
-      ) : null}
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-3">
+        {state === "loading" ? (
+          <>
+            <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
+            <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
+          </>
+        ) : state === "failed" ? (
+          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-brass">
+            <span aria-hidden>! </span>Could not read this section.
+          </p>
+        ) : state === "filtered" ? (
+          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
+            Nothing here in the repositories you have selected.
+          </p>
+        ) : state === "clear" ? (
+          /* The `empty` sentence is a claim about REALITY, so it may only appear
+             when the board is actually showing all of reality. */
+          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
+            {p.empty}
+          </p>
+        ) : (
+          rows.map((row) => (
+            <Card key={row.url} row={row} onChanged={onChanged} />
+          ))
+        )}
+      </div>
     </section>
   )
 }
 
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const { inbox, liveness, refresh } = useInbox(initial)
+  const [selected, setSelected] = useState<string[]>([])
+  const [active, setActive] = useState<string>(ALL_COLUMNS[0]!)
 
-  const grouped = useMemo(() => {
-    const rows = inbox?.rows ?? []
-    return MOVE_GROUPS.map((group) => {
-      const mine = rows.filter((row) => row.move === group.id)
-      const sections = new Map<string, Row[]>()
-      /* Section order follows the rows, which arrive already sorted by
-         recency — so a section's position tracks what actually moved rather
-         than a fixed taxonomy nobody chose. */
-      for (const row of mine) {
-        const key = sectionKeyOf(row)
-        sections.set(key, [...(sections.get(key) ?? []), row])
-      }
-      return { ...group, count: mine.length, sections: [...sections] }
-    })
+  const rowRef = useRef<HTMLDivElement>(null)
+  const columns = useRef(new Map<string, HTMLElement>())
+
+  const register = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) columns.current.set(id, el)
+    else columns.current.delete(id)
+  }, [])
+
+  /* Restore a filter from the URL, so a filtered board is shareable and can be
+     installed to a home screen as "my ambre board". */
+  useEffect(() => {
+    const repos = new URLSearchParams(location.search).get("repos")
+    if (repos) setSelected(repos.split(",").filter(Boolean))
+  }, [])
+
+  useEffect(() => {
+    const url = new URL(location.href)
+    if (selected.length) url.searchParams.set("repos", selected.join(","))
+    else url.searchParams.delete("repos")
+    history.replaceState(null, "", url)
+  }, [selected])
+
+  /*
+   * The active chip follows what is ON SCREEN, never what was last tapped. The
+   * moment you swipe rather than tap, a last-tapped model is wrong and the rail
+   * becomes a liar — worse than having no rail at all.
+   */
+  useEffect(() => {
+    const root = rowRef.current
+    if (!root) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+        const id = visible?.target.getAttribute("data-column")
+        if (id) setActive(id)
+      },
+      { root, threshold: [0.5, 0.9] },
+    )
+
+    for (const el of columns.current.values()) observer.observe(el)
+    return () => observer.disconnect()
   }, [inbox])
 
+  const all = useMemo(() => inbox?.rows ?? [], [inbox])
+  const repos = useMemo(() => repoCounts(all), [all])
+  const filtering = selected.length > 0
+
+  const shown = useMemo(
+    () => (filtering ? all.filter((r) => selected.includes(r.repo)) : all),
+    [all, selected, filtering],
+  )
+
+  const bySection = useMemo(() => {
+    const map = new Map<string, Row[]>()
+    for (const r of shown) {
+      const key = sectionOf(r)
+      map.set(key, [...(map.get(key) ?? []), r])
+    }
+    /* `you` first inside each column: the order carries the emphasis. */
+    for (const [key, rs] of map)
+      map.set(
+        key,
+        [...rs].sort(
+          (a, b) => Number(b.move === "you") - Number(a.move === "you"),
+        ),
+      )
+    return map
+  }, [shown])
+
+  /* Unfiltered totals, so the rail can show `2/9` and never narrow silently. */
+  const totals = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of all) map.set(sectionOf(r), (map.get(sectionOf(r)) ?? 0) + 1)
+    return map
+  }, [all])
+
+  const goTo = (id: string) =>
+    columns.current.get(id)?.scrollIntoView({
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      inline: "start",
+      block: "nearest",
+    })
+
+  const stateOf = (id: string): ColumnState => {
+    if (!inbox) return "loading"
+    if ((bySection.get(id) ?? []).length) return "rows"
+    if (inbox.failed.length && !totals.get(id)) return "failed"
+    return filtering && (totals.get(id) ?? 0) > 0 ? "filtered" : "clear"
+  }
+
+  const yoursTotal = shown.filter((r) => r.move === "you").length
+  const doneRows = bySection.get(DONE) ?? []
+  const hidden = all.length - shown.length
+  const asOf = inbox ? new Date(inbox.fetchedAt).toISOString() : undefined
+
   return (
-    <main className="mx-auto min-h-safe max-w-[1400px] p-4">
-      <header className="flex items-baseline gap-3 pb-2">
-        <h1 className="text-[17px] font-semibold">Your Move</h1>
-        <Liveness liveness={liveness} at={inbox?.fetchedAt} />
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          className="ml-auto rounded-lg border border-line px-2.5 py-1 text-[13px]"
-        >
-          Refresh
-        </button>
-      </header>
+    <>
+      <Sky />
 
-      {liveness === "expired" ? (
-        <p className="rounded-lg border border-brass p-3 text-[13px]">
-          <span aria-hidden>! </span>
-          Your GitHub session has expired.{" "}
-          <a className="underline" href="/api/auth/login">
-            Sign in again
-          </a>
-          .
-        </p>
-      ) : null}
-
-      {inbox?.failed.length ? (
-        /* A partial answer is still worth rendering, but never silently — a
-           board quietly missing a source looks exactly like a board with nothing
-           in it. The reason matters as much as the fact: without it, a wrong
-           token, an over-expensive query and a timeout are the same picture. */
-        <div className="mb-2 rounded-lg border border-brass p-3 text-[12px]">
-          <p className="text-brass">
-            <span aria-hidden>! </span>
-            <strong>A source failed.</strong> An empty board below is missing
-            data, not an empty inbox.
-          </p>
-          <p className="mt-1 text-fg-quiet">
-            Did not answer: {inbox.failed.join(", ")}
-          </p>
-          {inbox.reasons?.length ? (
-            <p className="mt-1 font-mono text-fg-quiet">
-              {inbox.reasons.join(" · ")}
+      <main className="relative z-10 mx-auto min-h-safe max-w-[1360px] px-6 pb-16 pt-8">
+        <header className="flex flex-wrap items-end gap-x-4 gap-y-2 pb-4">
+          <div className="min-w-0">
+            <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-fg-quiet">
+              {yoursTotal === 0
+                ? "nothing needs you"
+                : `${yoursTotal} ${yoursTotal === 1 ? "thing needs" : "things need"} you`}
+              {asOf ? " · as of " : ""}
+              {asOf ? <Ago iso={asOf} since={asOf} /> : null}
             </p>
-          ) : null}
-        </div>
-      ) : null}
+            <h1 className="font-serif text-[27px] font-semibold tracking-[-0.015em]">
+              Your Move
+            </h1>
+            <p className="max-w-[58ch] text-[13.5px] text-fg-mute">
+              {yoursTotal === 0
+                ? "Nothing is waiting on you."
+                : "What moved, and whose move it is."}
+            </p>
+          </div>
 
-      {grouped.map((group) => (
-        <div key={group.id} className="pt-4">
-          <h2 className="text-[15px] font-semibold">
-            {group.title}{" "}
-            <span className="font-normal text-fg-quiet">{group.count}</span>
-          </h2>
-          <p className="pb-1 text-[12px] text-fg-quiet">{group.blurb}</p>
+          <div className="ml-auto flex items-center gap-2">
+            <p className="flex items-center gap-1.5 text-[12px] text-fg-quiet">
+              <span aria-hidden>
+                {liveness === "live"
+                  ? "●"
+                  : liveness === "refreshing"
+                    ? "◐"
+                    : "◌"}
+              </span>
+              <span>{LIVENESS_TEXT[liveness]}</span>
+            </p>
+            <RepoFilter
+              repos={repos}
+              selected={selected}
+              onChange={setSelected}
+            />
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="rounded-lg border border-line px-2.5 py-1 text-[13px] text-fg-mute hover:text-fg"
+            >
+              Refresh
+            </button>
+          </div>
+        </header>
 
-          {/* Stacked on a phone, columns from `md` up. One grid, two shapes. */}
-          <div className="flex flex-col md:flex-row md:gap-4 md:overflow-x-auto md:pb-2">
-            {group.sections.length ? (
-              group.sections.map(([id, rows]) => (
-                <Section
-                  key={id}
-                  id={id}
-                  rows={rows}
-                  onChanged={() => void refresh()}
-                />
-              ))
-            ) : (
-              <p className="py-2 text-[13px] text-fg-quiet">
-                {group.id === "you"
-                  ? "Nothing is waiting on you."
-                  : "Nothing outstanding elsewhere."}
+        {liveness === "expired" ? (
+          <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
+            <span aria-hidden>! </span>
+            Your GitHub session has expired.{" "}
+            <a className="underline" href="/api/auth/login">
+              Sign in again
+            </a>
+            .
+          </p>
+        ) : null}
+
+        {inbox?.failed.length ? (
+          /* A partial answer is worth rendering, but never silently: an empty
+             board and a broken one are otherwise the same picture. */
+          <div className="mb-2 rounded-lg border border-brass p-3 text-[12px]">
+            <p className="text-brass">
+              <span aria-hidden>! </span>
+              <strong>A source failed.</strong> An empty board below is missing
+              data, not an empty inbox.
+            </p>
+            <p className="mt-1 text-fg-quiet">
+              Did not answer: {inbox.failed.join(", ")}
+            </p>
+            {inbox.reasons?.length ? (
+              <p className="mt-1 font-mono text-fg-quiet">
+                {inbox.reasons.join(" · ")}
               </p>
-            )}
+            ) : null}
+          </div>
+        ) : null}
+
+        {filtering ? (
+          /* Takes layout rather than being a toast: the board must visibly be a
+             smaller thing than the app, or a filtered board lies exactly the way
+             a broken one does. */
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-3 py-2 text-[12.5px]">
+            <span>
+              Filtered to {selected.join(", ")}
+              {hidden > 0 ? ` · ${hidden} rows hidden` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelected([])}
+              className="ml-auto text-accent hover:underline"
+            >
+              Clear
+            </button>
+          </div>
+        ) : null}
+
+        <div className="overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
+          {/* The rail answers "how much is in review" from any column, and is
+              also the navigation — a tap beats six swipes. */}
+          <nav className="sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-3 py-2">
+            {ALL_COLUMNS.map((id, i) => {
+              const p = presentationFor(id)
+              const total = totals.get(id) ?? 0
+              const now = (bySection.get(id) ?? []).length
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => goTo(id)}
+                  aria-label={p.title}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-[12.5px] transition-colors ${
+                    active === id
+                      ? "border-accent bg-accent-dim text-fg"
+                      : "border-line text-fg-mute"
+                  } ${i === YOURS_FIRST.length ? "ml-3" : ""}`}
+                >
+                  <span aria-hidden className="font-mono">
+                    {p.glyph}
+                  </span>
+                  <span className="hidden md:inline">{p.title}</span>
+                  <span className="font-mono tabular-nums text-fg-quiet">
+                    {filtering ? `${now}/${total}` : total}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+
+          <div
+            ref={rowRef}
+            className="h-board flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain bg-line-soft md:snap-proximity"
+          >
+            {ALL_COLUMNS.map((id) => (
+              <Column
+                key={id}
+                id={id}
+                rows={bySection.get(id) ?? []}
+                state={stateOf(id)}
+                onChanged={() => void refresh()}
+                register={register}
+              />
+            ))}
           </div>
         </div>
-      ))}
-    </main>
+
+        {/* A receipt, not a stage: nothing can move into it — items simply
+            appear, already finished. */}
+        {doneRows.length ? (
+          <details className="mt-4 rounded-xl border border-line bg-panel">
+            <summary className="cursor-pointer px-3.5 py-2.5 text-[13px] text-fg-mute">
+              <span aria-hidden>{presentationFor(DONE).glyph} </span>
+              Recently done{" "}
+              <span className="font-mono tabular-nums text-fg-quiet">
+                {doneRows.length}
+              </span>
+            </summary>
+            <div className="divide-y divide-line-soft border-t border-line-soft">
+              {doneRows.map((r) => (
+                <a
+                  key={r.url}
+                  href={r.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-raise"
+                >
+                  <span className="min-w-0 flex-1 truncate text-[14.5px]">
+                    {r.title}
+                  </span>
+                  <span className="hidden font-mono text-[12.5px] text-fg-quiet md:inline">
+                    {r.repo}#{r.number}
+                  </span>
+                  <span className="font-mono text-[12.5px] tabular-nums text-fg-quiet">
+                    {r.age}
+                  </span>
+                  <span aria-label="Opens on GitHub" className="text-fg-quiet">
+                    ↗
+                  </span>
+                </a>
+              ))}
+            </div>
+          </details>
+        ) : null}
+
+        <footer className="mt-4 border-t border-line pt-3 text-[12px] text-fg-quiet">
+          Read live from GitHub on every load. Nothing is stored; labels are the
+          only thing written back.
+        </footer>
+      </main>
+    </>
   )
 }

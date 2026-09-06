@@ -148,3 +148,20 @@ body {
     transition: none !important;
   }
 }
+
+/*
+ * The board is a fixed-height instrument, not a tall page.
+ *
+ * With every section a column, the tallest one would otherwise set the page
+ * height and leave the rest as short strips in a mostly empty frame — the
+ * vertical version of the void the sky exists to prevent. So the row gets a
+ * height and each column scrolls inside it. Same `dvh` and safe-area arithmetic
+ * as `.min-h-safe`, minus the header and the section rail, expressed once here
+ * rather than guessed at as a magic number in a class list.
+ */
+.h-board {
+  height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 15.5rem
+  );
+  min-height: 320px;
+}

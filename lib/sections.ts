@@ -26,6 +26,8 @@
  * the glyphs are distinct but they are not self-explanatory.
  */
 export type Presentation = {
+  /** The column heading. Rendering the key gave columns headed "Open". */
+  title: string
   glyph: string
   tone: string
   empty: string
@@ -37,18 +39,21 @@ const PRESENTATION: Record<string, Presentation> = {
      an owner or a wake condition — that vocabulary belonged to the Company
      board this grew out of, and it went with it. */
   review: {
+    title: "Review requested",
     glyph: "◇",
     tone: "accent",
     empty: "Nothing awaiting your review.",
     meaning: "Someone has asked you to review their pull request.",
   },
   open: {
+    title: "Your pull requests",
     glyph: "↑",
     tone: "slate",
     empty: "No open PRs.",
     meaning: "Your own pull requests, open and out for review.",
   },
   draft: {
+    title: "Drafts",
     glyph: "▫",
     tone: "slate",
     empty: "No drafts.",
@@ -56,18 +61,21 @@ const PRESENTATION: Record<string, Presentation> = {
       "Your pull requests still marked draft — not yet asking anything of anyone.",
   },
   incoming: {
+    title: "Incoming",
     glyph: "↓",
     tone: "slate",
     empty: "Nothing incoming.",
     meaning: "Pull requests other people have opened on your repositories.",
   },
   assigned: {
+    title: "Assigned to you",
     glyph: "@",
     tone: "slate",
     empty: "Nothing assigned to you.",
     meaning: "Issues assigned to you on GitHub, wherever they live.",
   },
   reviewed: {
+    title: "Reviewed",
     glyph: "◆",
     tone: "slate",
     empty: "Nothing reviewed lately.",
@@ -75,6 +83,7 @@ const PRESENTATION: Record<string, Presentation> = {
       "Pull requests you have reviewed recently — here so a thread you replied to does not vanish.",
   },
   issues: {
+    title: "Open issues",
     glyph: "○",
     tone: "slate",
     empty: "No open issues.",
@@ -82,6 +91,7 @@ const PRESENTATION: Record<string, Presentation> = {
       "Open issues on repositories you own.",
   },
   done: {
+    title: "Recently done",
     glyph: "✓",
     tone: "sage",
     empty: "Nothing closed yet.",
@@ -90,6 +100,7 @@ const PRESENTATION: Record<string, Presentation> = {
 }
 
 const FALLBACK: Presentation = {
+  title: "Other",
   glyph: "•",
   tone: "slate",
   empty: "Nothing here.",
