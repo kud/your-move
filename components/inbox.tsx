@@ -51,7 +51,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       setSound(localStorage.getItem("ym:sound") === "1")
     } catch {}
   }, [])
-  const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial, doneDays)
+  const { inbox, liveness, refresh, applyLabel, age } = useInbox(
+    initial,
+    doneDays,
+  )
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
@@ -214,8 +217,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     const chip = strip.querySelector<HTMLElement>(`[data-chip="${active}"]`)
     if (!chip) return
 
-    const target =
-      chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2
+    const target = chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2
 
     strip.scrollTo({
       left: Math.max(0, target),
@@ -347,7 +349,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               type="button"
               onClick={() => void refresh()}
               aria-label="Refresh"
-              className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]">
+              className="flex max-w-full items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+            >
               <span aria-hidden>
                 {liveness === "live"
                   ? "●"
@@ -389,7 +392,6 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 </span>
               ) : null}
             </button>
-
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
@@ -548,7 +550,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   narrow screen cannot show all of at once. */}
               <nav
                 ref={rail}
-                className="flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden"
+                className="no-scrollbar flex gap-1.5 overflow-x-auto overscroll-x-contain border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden"
               >
                 {COLUMNS.map((id) => {
                   const p = presentationFor(id)

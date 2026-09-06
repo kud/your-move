@@ -224,6 +224,28 @@ summary,
 }
 
 /*
+ * A scrollbar on a strip that is meant to be swiped.
+ *
+ * A native app's horizontal rail has no track under it; a browser's does, and
+ * on Android it is a grey bar that appears mid-swipe directly under the chips —
+ * which reads as a page whose content did not fit, rather than as a rail you
+ * move through. Both properties are needed and neither is redundant:
+ * `scrollbar-width` is the standard one Firefox honours, the pseudo-element is
+ * what Chrome and Safari read.
+ *
+ * Only ever put this on something that says where it is by another means. The
+ * rail keeps its active chip scrolled into view, so position is still answered;
+ * the board keeps its scrollbars precisely because nothing else there does.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
  * Chrome — headers, rails, chips, counts — is furniture, and a long press on
  * furniture selecting its text or raising a callout menu is a page behaviour,
  * not an app one. Card titles are deliberately excluded: those are content, and
@@ -427,5 +449,7 @@ h4 {
    shadow — the dark panel's deep shadow reads as dirt on a pale ground. */
 :root[data-theme="light"] .shadow-panel,
 :root:not([data-theme="dark"]) .shadow-panel {
-  box-shadow: 0 1px 2px rgba(26, 28, 31, 0.04), 0 12px 32px -24px rgba(26, 28, 31, 0.3);
+  box-shadow:
+    0 1px 2px rgba(26, 28, 31, 0.04),
+    0 12px 32px -24px rgba(26, 28, 31, 0.3);
 }
