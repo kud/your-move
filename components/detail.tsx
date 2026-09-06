@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import type { OnLabelChange } from "@/components/board"
+import { Markdown } from "@/lib/markdown"
 import type { Row } from "@/lib/github"
 
 /*
@@ -292,14 +293,30 @@ export const Detail = ({
                   <h3 className="pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
                     What it says
                   </h3>
-                  {/* Plain text, not rendered markdown: rendering it invites
-                      images, tables and task lists, and from there the panel is
-                      a reader rather than a decision. */}
-                  <p className="whitespace-pre-wrap text-[13.5px] leading-[1.55] text-fg-mute">
-                    {wholeBody || !long
-                      ? detail.body
-                      : lines.slice(0, 12).join("\n")}
-                  </p>
+                  {/*
+                    Rendered, but only part way.
+
+                    This was deliberately plain text, on the reasoning that
+                    rendering markdown invites images and tables and turns the
+                    panel into a reader. The reasoning was right about the
+                    destination and wrong about the road: unrendered, a
+                    description arrives as `### 📄 Description` and backticked
+                    identifiers, so the noise it was meant to avoid was being
+                    paid up front, in every body, to prevent a thing that had
+                    not happened.
+
+                    `lib/markdown.tsx` draws the line where the old comment
+                    wanted it — headings, emphasis, code, lists, quotes, links
+                    in; images, tables and HTML out — rather than at "render
+                    nothing".
+                  */}
+                  <Markdown
+                    source={
+                      wholeBody || !long
+                        ? detail.body
+                        : lines.slice(0, 12).join("\n")
+                    }
+                  />
                   {long && !wholeBody ? (
                     <button
                       type="button"
