@@ -18,6 +18,7 @@ import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
+import { byCellOrder } from "@/lib/order"
 import { presentationFor } from "@/lib/sections"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
@@ -135,16 +136,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           const key = sectionOf(r)
           cells.set(key, [...(cells.get(key) ?? []), r])
         }
-        /* `you` first inside a cell, then most recently moved. */
-        for (const [key, rs] of cells)
-          cells.set(
-            key,
-            [...rs].sort(
-              (a, b) =>
-                Number(b.move === "you") - Number(a.move === "you") ||
-                b.ts - a.ts,
-            ),
-          )
+        /* Yours first, drafts last within their band, then recency. The rule
+           and the reasoning behind the middle key live in `lib/order.ts`. */
+        for (const [key, rs] of cells) cells.set(key, [...rs].sort(byCellOrder))
 
         return {
           repo,
