@@ -1,0 +1,421 @@
+"use client"
+
+import { Fragment, useState } from "react"
+
+import { RowLabels } from "@/components/row-labels"
+import { presentationFor } from "@/lib/sections"
+import type { Row } from "@/lib/github"
+
+/*
+ * The swimlane grid and its narrow twin.
+ *
+ * Wide: STATUS across the top as fixed columns, one PROJECT per lane down the
+ * page, the lane's name sticky at the left so scrolling sideways never leaves
+ * you looking at cards belonging to a project you can no longer name.
+ *
+ * Narrow: the same content with the horizontal axis removed entirely — lanes
+ * stacked, sections as sticky sub-headers inside them. Which axis to sacrifice
+ * was settled by the complaint that produced this board: "I can't see my
+ * projects." The phone keeps projects; status stays reachable through the
+ * sub-headers and the reason chip on every card.
+ */
+
+export const TONE: Record<string, string> = {
+  accent: "text-accent border-accent bg-accent-dim",
+  brass: "text-brass border-brass/40 bg-brass/10",
+  sage: "text-sage border-sage/40 bg-sage/10",
+  slate: "text-slate border-line bg-panel-2",
+}
+
+/*
+ * Left to right is the priority read: what mostly means "your move" first, what
+ * you are waiting on next, what already happened last. `done` is the natural
+ * terminus of that progression and the column most likely to be scrolled past —
+ * exactly right for a receipt.
+ */
+export const COLUMNS = [
+  "review",
+  "assigned",
+  "open",
+  "issues",
+  "incoming",
+  "reviewed",
+  "done",
+]
+
+export const DONE = "done"
+
+const SECTION_OF: Record<string, string> = {
+  myPRs: "open",
+  reviewRequests: "review",
+  reviewed: "reviewed",
+  assigned: "assigned",
+  repoIssues: "issues",
+  authoredIssues: "issues",
+  repoPRs: "incoming",
+  recentlyDone: DONE,
+}
+
+export const sectionOf = (row: Row): string => SECTION_OF[row.source] ?? "open"
+
+const REASON_TONE: Record<string, string> = {
+  "CI failing": "accent",
+  Conflict: "accent",
+  "Changes requested": "brass",
+  "Checks running": "brass",
+  Approved: "sage",
+  Merged: "sage",
+}
+
+/*
+ * The one-word reason a row is in front of you.
+ *
+ * Issue-versus-PR comes from `kind`, which is the fact. It used to come from
+ * comparing the section's GLYPH — a presentation token read as data, so the day
+ * a glyph was re-lettered, issues would silently have started reading "Open".
+ */
+export const reasonFor = (row: Row): string => {
+  if (row.health === "ci-fail") return "CI failing"
+  if (row.health === "conflict") return "Conflict"
+  if (row.health === "changes-req") return "Changes requested"
+  if (row.health === "threads") return `${row.unresolved} unresolved`
+  if (row.source === "reviewRequests") return "Review requested"
+  if (row.health === "approved") return "Approved"
+  if (row.health === "draft") return "Draft"
+  if (row.health === "merged") return "Merged"
+  if (row.health === "closed") return "Closed"
+  if (row.health === "pending") return "Checks running"
+  return row.kind === "issue" ? "Issue" : "Open"
+}
+
+export const shortName = (repo: string) => repo.split("/").pop() ?? repo
+
+/** A cell shows this many, then says how many it is holding back. */
+const PER_CELL = 4
+const DONE_PER_CELL = 2
+
+export const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
+  <span
+    aria-hidden
+    className={`grid size-5 shrink-0 place-items-center rounded-[5px] border font-mono text-[13.5px] leading-none ${TONE[tone] ?? TONE.slate}`}
+  >
+    {glyph}
+  </span>
+)
+
+/*
+ * What a section means, on demand. A native popover rather than `title=`,
+ * because this board is mostly read on a phone where hover does not exist — and
+ * it renders in the top layer, so the grid's overflow cannot clip it.
+ */
+export const About = ({
+  id,
+  title,
+  meaning,
+}: {
+  id: string
+  title: string
+  meaning: string
+}) => (
+  <>
+    <button
+      type="button"
+      popoverTarget={id}
+      aria-label={`What "${title}" means`}
+      className="grid size-4 shrink-0 place-items-center rounded-full border border-line font-mono text-[11px] leading-none text-fg-quiet transition-colors hover:border-accent hover:text-accent"
+    >
+      ?
+    </button>
+    <div
+      id={id}
+      popover="auto"
+      className="m-auto max-w-[330px] rounded-xl border border-line bg-panel p-4 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
+    >
+      <b className="text-[15px] font-semibold">{title}</b>
+      <p className="mt-2 text-[14px] leading-[1.55] text-fg-mute">{meaning}</p>
+    </div>
+  </>
+)
+
+/*
+ * The card carries no repository: the lane says it once, for every card in it.
+ * That is the compression a grid buys, and it is why this card is shorter than
+ * on either single-axis board that came before.
+ */
+export const Card = ({
+  row,
+  onChanged,
+}: {
+  row: Row
+  onChanged: () => void
+}) => {
+  const reason = reasonFor(row)
+  const yours = row.move === "you"
+
+  return (
+    <article className="group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise">
+      {/* Position and shape, not hue alone: a bar on the leading edge. */}
+      {yours ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-2 left-0 w-[2px] rounded-full bg-accent"
+        />
+      ) : null}
+
+      <a
+        href={row.url}
+        target="_blank"
+        rel="noreferrer"
+        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg hover:underline focus:underline focus:outline-none"
+      >
+        {row.title}
+      </a>
+
+      <RowLabels
+        repo={row.repo}
+        number={row.number}
+        labels={row.labels ?? []}
+        onChanged={onChanged}
+      />
+
+      <div className="mt-1.5 flex items-center gap-2">
+        <span
+          className={`shrink-0 rounded border px-1.5 py-px text-[11px] ${
+            yours
+              ? (TONE[REASON_TONE[reason] ?? "slate"] ?? TONE.slate)
+              : TONE.slate
+          }`}
+        >
+          {reason}
+        </span>
+        <span className="ml-auto shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
+          {row.activityAge ?? row.age}
+        </span>
+      </div>
+    </article>
+  )
+}
+
+export type Lane = {
+  repo: string
+  yours: number
+  total: number
+  cells: Map<string, Row[]>
+}
+
+/*
+ * A cell caps its contents rather than growing without limit — a lane is as tall
+ * as its fullest cell, and one busy project would otherwise make every other
+ * lane a strip in a tall empty row. Expanding happens in place, because a third
+ * scroll axis inside a grid that already has two is unusable.
+ */
+const Cell = ({
+  rows,
+  cap,
+  onChanged,
+}: {
+  rows: Row[]
+  cap: number
+  onChanged: () => void
+}) => {
+  const [all, setAll] = useState(false)
+  const shown = all ? rows : rows.slice(0, cap)
+
+  return (
+    <>
+      {shown.map((row) => (
+        <Card key={row.url} row={row} onChanged={onChanged} />
+      ))}
+      {rows.length > cap && !all ? (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="rounded-lg border border-dashed border-line py-1 text-[12px] text-fg-quiet hover:border-accent hover:text-fg-mute"
+        >
+          +{rows.length - cap} more
+        </button>
+      ) : null}
+    </>
+  )
+}
+
+/** Wide: the grid. */
+export const Swimlanes = ({
+  lanes,
+  columns,
+  counts,
+  onChanged,
+  register,
+  scroller,
+}: {
+  lanes: Lane[]
+  columns: string[]
+  counts: Map<string, number>
+  onChanged: () => void
+  register: (id: string, el: HTMLElement | null) => void
+  scroller: React.Ref<HTMLDivElement>
+}) => {
+  /*
+   * A column with nothing in it anywhere collapses to a rail. It keeps the
+   * furniture and states its zero honestly, at 56px instead of 300 — which is
+   * what makes seven columns fit a desk without the empty ones taxing the
+   * ones that have work in them.
+   */
+  const width = (id: string) => ((counts.get(id) ?? 0) > 0 ? "300px" : "56px")
+  const track = `140px ${columns.map(width).join(" ")}`
+
+  return (
+    <div
+      ref={scroller}
+      className="max-h-[76dvh] overflow-auto overscroll-x-contain md:snap-x md:snap-proximity"
+    >
+      <div className="grid min-w-max" style={{ gridTemplateColumns: track }}>
+        {/* Corner: the one cell belonging to both sticky axes. */}
+        <div className="sticky left-0 top-0 z-30 border-b border-r border-line bg-panel" />
+
+        {columns.map((id) => {
+          const p = presentationFor(id)
+          const empty = (counts.get(id) ?? 0) === 0
+          return (
+            <div
+              key={id}
+              ref={(el) => register(id, el)}
+              data-column={id}
+              className={`sticky top-0 z-20 flex snap-start items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 py-2 ${
+                empty ? "justify-center" : ""
+              }`}
+            >
+              <Slot glyph={p.glyph} tone={p.tone} />
+              {empty ? (
+                <span className="font-mono text-[12px] tabular-nums text-fg-quiet">
+                  0
+                </span>
+              ) : (
+                <>
+                  <h3 className="truncate text-[13.5px] font-semibold">
+                    {p.title}
+                  </h3>
+                  <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
+                    {counts.get(id)}
+                  </span>
+                  <About
+                    id={`about-${id}`}
+                    title={p.title}
+                    meaning={p.meaning}
+                  />
+                </>
+              )}
+            </div>
+          )
+        })}
+
+        {lanes.map((lane) => (
+          <Fragment key={lane.repo}>
+            {/* Sticky left: without it you lose which lane you are in the
+                moment you scroll right, and the grid becomes unreadable. */}
+            <div className="sticky left-0 z-10 flex flex-col justify-start gap-1 border-b border-r border-line bg-panel p-2">
+              <h4
+                className="truncate text-[13px] font-semibold"
+                title={lane.repo}
+              >
+                {shortName(lane.repo)}
+              </h4>
+              <p className="flex items-center gap-1.5">
+                {lane.yours ? (
+                  <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[10.5px] text-accent">
+                    {lane.yours} you
+                  </span>
+                ) : null}
+                <span className="font-mono text-[11.5px] tabular-nums text-fg-quiet">
+                  {lane.total}
+                </span>
+              </p>
+            </div>
+
+            {columns.map((id) => {
+              const rows = lane.cells.get(id) ?? []
+              /* An empty cell is not a box. No border, no background, no
+                 sentence — blank space between the hairlines already reads as
+                 an empty cell, where an empty bordered box reads as a broken
+                 component. */
+              return (
+                <div
+                  key={id}
+                  className="flex min-h-[44px] snap-start flex-col gap-2 border-b border-r border-line-soft p-2"
+                >
+                  {rows.length ? (
+                    <Cell
+                      rows={rows}
+                      cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                      onChanged={onChanged}
+                    />
+                  ) : null}
+                </div>
+              )
+            })}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Narrow: the same content, one axis. */
+export const Stack = ({
+  lanes,
+  columns,
+  onChanged,
+  register,
+}: {
+  lanes: Lane[]
+  columns: string[]
+  onChanged: () => void
+  register: (id: string, el: HTMLElement | null) => void
+}) => (
+  <div className="divide-y divide-line">
+    {lanes.map((lane) => (
+      <section
+        key={lane.repo}
+        ref={(el) => register(lane.repo, el)}
+        data-lane={lane.repo}
+      >
+        <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-line-soft bg-panel px-2.5 py-2">
+          <h4 className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+            {shortName(lane.repo)}
+          </h4>
+          {lane.yours ? (
+            <span className="shrink-0 rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[11px] text-accent">
+              {lane.yours} you
+            </span>
+          ) : null}
+          <span className="shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
+            {lane.total}
+          </span>
+        </header>
+
+        <div className="flex flex-col gap-2 p-2.5">
+          {columns
+            .filter((id) => (lane.cells.get(id) ?? []).length)
+            .map((id) => {
+              const p = presentationFor(id)
+              const rows = lane.cells.get(id) ?? []
+              return (
+                <Fragment key={id}>
+                  <p className="flex items-center gap-1.5 pt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-quiet">
+                    <span aria-hidden>{p.glyph}</span>
+                    <span>{p.title}</span>
+                    <span className="tabular-nums">{rows.length}</span>
+                  </p>
+                  <Cell
+                    rows={rows}
+                    cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                    onChanged={onChanged}
+                  />
+                </Fragment>
+              )
+            })}
+        </div>
+      </section>
+    ))}
+  </div>
+)
