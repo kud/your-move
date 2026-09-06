@@ -159,9 +159,11 @@ export const About = ({
 const CardBody = ({
   row,
   onChanged,
+  onOpen,
 }: {
   row: Row
   onChanged: OnLabelChange
+  onOpen: (row: Row) => void
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
@@ -180,6 +182,11 @@ const CardBody = ({
         href={row.url}
         target="_blank"
         rel="noreferrer"
+        onClick={(e) => {
+          if (!matchMedia("(min-width: 768px)").matches) return
+          e.preventDefault()
+          onOpen(row)
+        }}
         className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg hover:underline focus:underline focus:outline-none"
       >
         {row.title}
@@ -345,10 +352,12 @@ const Cell = ({
   rows,
   cap,
   onChanged,
+  onOpen,
 }: {
   rows: Row[]
   cap: number
   onChanged: OnLabelChange
+  onOpen: (row: Row) => void
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -356,7 +365,12 @@ const Cell = ({
   return (
     <>
       {shown.map((row) => (
-        <Card key={row.url} row={row} onChanged={onChanged} />
+        <Card
+          key={row.url}
+          row={row}
+          onChanged={onChanged}
+          onOpen={onOpen}
+        />
       ))}
       {rows.length > cap && !all ? (
         <button
@@ -377,6 +391,7 @@ export const Swimlanes = ({
   columns,
   counts,
   onChanged,
+  onOpen,
   register,
   scroller,
   folded,
@@ -386,6 +401,7 @@ export const Swimlanes = ({
   columns: string[]
   counts: Map<string, number>
   onChanged: OnLabelChange
+  onOpen: (row: Row) => void
   register: (id: string, el: HTMLElement | null) => void
   scroller: React.Ref<HTMLDivElement>
   folded: Set<string>
@@ -533,6 +549,7 @@ export const Swimlanes = ({
                       rows={rows}
                       cap={id === DONE ? DONE_PER_CELL : PER_CELL}
                       onChanged={onChanged}
+                      onOpen={onOpen}
                     />
                   ) : null}
                 </div>

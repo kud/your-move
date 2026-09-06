@@ -10,6 +10,7 @@ import {
   shortName,
   type Lane,
 } from "@/components/board"
+import { Detail } from "@/components/detail"
 import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
 import { Sky } from "@/components/sky"
@@ -37,6 +38,8 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
   /* Declared before the hook that consumes it. */
   const [doneDays, setDoneDays] = useState<7 | 30>(7)
+  /* `owner/repo#number`, or nothing. */
+  const [open, setOpen] = useState<string>()
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial, doneDays)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
@@ -211,6 +214,38 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     })
   }, [active])
 
+  /*
+   * The panel lives in the URL, pushed as a history entry rather than a
+   * navigation.
+   *
+   * That is what makes the browser's back gesture close it — the thing people
+   * actually reach for, and the thing that feels broken if it navigates the
+   * whole app away instead. It also makes a row shareable, which costs nothing
+   * once the state is there.
+   */
+  useEffect(() => {
+    const fromUrl = () =>
+      setOpen(new URLSearchParams(location.search).get("row") ?? undefined)
+    fromUrl()
+    addEventListener("popstate", fromUrl)
+    return () => removeEventListener("popstate", fromUrl)
+  }, [])
+
+  const openRow = useCallback((row: Row) => {
+    const key = `${row.repo}#${row.number}`
+    const url = new URL(location.href)
+    url.searchParams.set("row", key)
+    history.pushState(null, "", url)
+    setOpen(key)
+  }, [])
+
+  const closeRow = useCallback(() => {
+    /* Back rather than replaceState, so the entry pushed on open is consumed
+       instead of accumulating a history of closes. */
+    if (new URLSearchParams(location.search).get("row")) history.back()
+    else setOpen(undefined)
+  }, [])
+
   const goTo = (id: string) =>
     anchors.current.get(id)?.scrollIntoView({
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -219,6 +254,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       inline: "start",
       block: "nearest",
     })
+
+  const openRowData = open
+    ? all.find((r) => `${r.repo}#${r.number}` === open)
+    : undefined
 
   const yoursTotal = shown.filter((r) => r.move === "you").length
   const hidden = all.length - shown.length
@@ -501,6 +540,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   columns={COLUMNS}
                   counts={shownTotals}
                   onChanged={applyLabel}
+                  onOpen={openRow}
                   register={register}
                   scroller={scroller}
                   folded={folded}
@@ -515,6 +555,15 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           Read live from GitHub, cached for a minute. Nothing is stored; labels
           are the only thing written back.
         </footer>
+        {/* Desktop only, by his call rather than by omission: on a phone the
+            card opens the native GitHub app, which does all of this better. */}
+        {openRowData ? (
+          <Detail
+            row={openRowData}
+            onClose={closeRow}
+            onLabelChange={applyLabel}
+          />
+        ) : null}
       </main>
     </>
   )
