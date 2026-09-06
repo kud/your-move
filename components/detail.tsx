@@ -134,6 +134,12 @@ const SHELL: Record<OpenMode, string> = {
   full: "inset-0",
 }
 
+const ENTER: Record<OpenMode, string> = {
+  side: "ym-in-side",
+  modal: "ym-in-modal",
+  full: "ym-in-fade",
+}
+
 const MODE_LABEL: Record<OpenMode, string> = {
   side: "Side",
   modal: "Modal",
@@ -201,13 +207,13 @@ export const Detail = ({
       <div
         aria-hidden
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/40"
+        className="ym-in-fade fixed inset-0 z-40 bg-black/40"
       />
 
       <aside
         role="dialog"
         aria-label={`${row.repo}#${row.number}`}
-        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${SHELL[mode]}`}
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${ENTER[mode]} ${SHELL[mode]}`}
       >
         <header className="flex items-start gap-3 border-b border-line-soft p-4">
           <div className="min-w-0 flex-1">
