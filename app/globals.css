@@ -196,6 +196,27 @@ body {
 }
 
 /*
+ * Folded, not empty — the one distinction a collapsed lane has to make.
+ *
+ * A blank cell in an unfolded lane means "nothing here". The same blank in a
+ * folded lane would mean "something here, put away", which is the opposite
+ * fact wearing the same face. Hatching separates them by texture rather than
+ * by another colour, so it says one thing in both themes and to a reader who
+ * cannot separate two greys by hue.
+ *
+ * Drawn from `--color-line`, the same value as the grid's own hairlines: the
+ * fill reads as more of the furniture rather than as content, which is exactly
+ * what a put-away cell is.
+ */
+.hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-line) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+/*
  * The small things that separate an app from a page on a phone.
  *
  * None of these is a preference — each removes a specific browser behaviour
