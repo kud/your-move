@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
-  <title id="t">Your Move</title>
-  <rect width="512" height="512" fill="#0b0c0e"/>
-  <g transform="translate(256 256) scale(0.86) translate(-256 -256)">
-    <path d="M 389.77 135.56 A 180 180 0 1 0 389.77 376.44 L 361.64 340.31 A 126 126 0 1 1 361.64 171.69 Z" fill="#e9ebee"/>
-    <path d="M 268 146 A 110 110 0 0 0 268 366 Z" fill="#e0707c"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title id="title">Your Move</title>
+<path fill="#0b0c0e" d="M 0 0 H 512 V 512 H 0 Z"/>
+<g transform="translate(106.04 129.04) scale(0.92)">
+<path fill="#e0707c" d="M 0 37 C 0 8 28 -9 53 6 L 221 104 C 230 109 234 116 234 125 L 234 190 C 234 199 226 204 218 199 L 99 129 C 88 122 77 129 77 141 L 77 263 C 77 273 70 279 61 274 L 15 247 C 5 241 0 231 0 220 Z"/>
+<path fill="#e9ebee" d="M 180 61 L 272 7 C 296 -7 326 9 326 35 L 326 220 C 326 232 321 242 311 248 L 264 274 C 256 279 247 274 247 263 L 247 122 C 247 109 242 101 231 94 L 180 65 Q 177 63 180 61 Z M 90 151 Q 90 142 97 147 L 166 187 Q 175 192 166 198 L 97 241 Q 90 245 90 237 Z"/>
+</g>
 </svg>

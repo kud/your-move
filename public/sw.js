@@ -17,7 +17,7 @@
 
 /* Bumping this is how a shell change ships: `activate` deletes every cache that
    is not this one, so the old assets go with it. */
-const SHELL = "co-shell-v1"
+const SHELL = "ym-shell-v2"
 
 const PRECACHE = [
   "/offline",

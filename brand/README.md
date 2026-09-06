@@ -6,82 +6,56 @@ Four words that say the product better than any sentence written for it. Use it
 wherever the name alone is not enough — the README, the OAuth App page, a store
 listing. Small caps, wide tracking.
 
-## Approved handover identity
+## The mark
 
-The new folded **M** identity is in [`handover/`](handover/README.md), with
-font-independent SVGs, transparent PNGs, wordmark lockups, and app-icon exports.
-Its two interlocking forms express **your move / their move**.
+A folded **M**: two interlocking forms, one rose and one ivory, with a
+forward-pointing play triangle cut into the fold. The two halves are **your
+move** and **their move**, and the fold between them is the handover — which is
+the only thing this app is about.
 
 ![Your Move handover identity](handover/preview.png)
 
-The files in `svg/` and `png/` below document the inherited mark still used by
-the app. The new assets are supplied separately; adopting them in the app is a
-separate change.
-
-## What the mark means
-
-A thick open ring with a half-disc resting in its mouth — one form that has let
-go, one that is held.
-
-> [!NOTE]
-> **This mark was inherited from [`kud/companies`](https://github.com/kud/companies)**,
-> where it was drawn as a "co" monogram. That project's deployment has since been
-> retired, so nothing else uses it and nothing is being shared — but the ring
-> still resolves as a "C", which is where it came from rather than what it means.
-> It was kept because it was preferred, after three alternatives were designed
-> and compared side by side at 32px and in monochrome.
+It is the mark the app ships. `public/icons/` and `assets/` are rendered from
+the files below, not from anything else in this folder.
 
 ## Which file to use where
 
-| Use                                                       | File                                           |
-| --------------------------------------------------------- | ---------------------------------------------- |
-| App icon, favicon, anything square                        | `svg/icon.svg`                                 |
-| Android home screen, adaptive icons                       | `svg/icon-maskable.svg`                        |
-| One-colour contexts, Safari `mask-icon`                   | `svg/icon-mono.svg`                            |
-| GitHub OAuth App, store listings, anything wanting raster | `png/icon-1024.png`                            |
+| Use                                                       | File                                   |
+| --------------------------------------------------------- | -------------------------------------- |
+| GitHub OAuth App, store listings, anything wanting raster | `handover/png/icon-1024.png`           |
+| App icon, favicon, anything square                        | `handover/svg/icon.svg`                |
+| Android home screen, adaptive icons                       | `handover/svg/icon-maskable.svg`       |
+| A light ground                                            | `handover/svg/icon-light.svg`          |
+| Wordmark lockup, dark / light / one colour                | `handover/svg/logo{,-light,-mono}.svg` |
+| Mark alone on transparency                                | `handover/svg/mark{,-light,-mono}.svg` |
 
-`png/` is generated from `svg/` — never edit a PNG. Regenerate with:
-
-```bash
-rsvg-convert -w 1024 -h 1024 brand/svg/icon.svg -o brand/png/icon-1024.png
-```
+The full file table, the geometry and the regeneration commands are in
+[`handover/README.md`](handover/README.md). PNGs are generated — never edit one.
 
 ## Colours
 
-| Token             | Dark      | Light     |
-| ----------------- | --------- | --------- |
-| Ground            | `#0b0c0e` | `#f4f2f0` |
-| Mark, hollow form | `#e9ebee` | `#1a1c1f` |
-| Mark, filled form | `#e0707c` | `#b03a4c` |
+| Token            | Dark      | Light     |
+| ---------------- | --------- | --------- |
+| Ground           | `#0b0c0e` | `#f4f2f0` |
+| Mark, ivory form | `#e9ebee` | `#1a1c1f` |
+| Mark, rose form  | `#e0707c` | `#b03a4c` |
 
-The accent is re-derived rather than reused on light: `#e0707c` is calibrated
-against near-black, where it reads about 7:1, and falls under 3:1 on white.
+Exactly the app's own tokens. The accent is re-derived rather than reused on
+light: `#e0707c` is calibrated against near-black, where it reads about 7:1, and
+falls under 3:1 on white.
 
 > [!IMPORTANT]
-> **The ring is a compound path and its hole depends on winding order.** The
-> inner arc is wound against the outer, so the counterform is correct under both
-> `nonzero` and `evenodd` — but a renderer that drops path attributes while
-> exiting 0 (ImageMagick's SVG fallback is the usual culprit) would fill it in,
-> and the failure is a solid blob where a ring belongs, with nothing in the
-> output to say so. Rasterise with `rsvg-convert`, and look at the result.
->
-> **No strokes anywhere.** Every form is a filled path, so the mark scales
-> without a stroke width to keep in step, and no renderer has to agree with us
-> about how a hairline should behave.
+> **No strokes, no fonts, no embedded raster anywhere.** Every form is a filled
+> path and the wordmark is outlined, so the mark scales without a stroke width to
+> keep in step, and nothing depends on a font being installed where it is
+> rendered. Rasterise with `rsvg-convert` or Inkscape and **look at the result** —
+> ImageMagick's SVG fallback drops path attributes while exiting 0, so a broken
+> render has nothing in the output to say so.
 
-## Known limits
+## Superseded
 
-- **In one colour the two forms merge.** The ring and the half-disc read as a
-  single letter rather than as one thing held and one let go — verified by
-  rendering `icon-mono.svg` at 32px, not assumed. The mark stays legible; it is
-  the *meaning* that thins. Worth knowing before using the mono variant anywhere
-  the distinction is the point.
-
-- **16px is marginal.** The ring's aperture is generous enough to survive
-  better than the alternatives did, but check it where you use it.
-- **The maskable variant is the same composition at 0.86**, with the ground
-  bled to the edges. The original was never drawn for a launcher crop, so this
-  is derived rather than copied — and verified by rendering it under an actual
-  circular crop rather than by trusting the arithmetic.
-- **There is no wordmark lockup.** The two that existed were drawn for a mark
-  that is no longer used. Ask for one when something needs it.
+[`superseded/`](superseded/) holds the ring-and-half-disc "C" the app carried
+until this mark replaced it — inherited from
+[`kud/companies`](https://github.com/kud/companies), where it was drawn as a
+"co" monogram. Nothing uses it. It is kept as a record rather than an option;
+take a file from `handover/` above.
