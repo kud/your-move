@@ -425,6 +425,42 @@ export const Menu = ({
           </div>
         </div>
 
+        {/*
+          The footer, for the width that does not have one.
+
+          Narrow drops the footer on purpose — it is the least urgent thing on
+          a phone screen and it was costing board height. But "not shown" and
+          "not reachable" are different, and these are the only links out to the
+          project itself. `md:hidden`, because above that the footer carries
+          them and a menu repeating what is already on the page is noise.
+        */}
+        <div className="mt-2 border-t border-line-soft pt-2 md:hidden">
+          <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
+            Your Move
+          </p>
+          {[
+            { label: "Source", href: "https://github.com/kud/your-move" },
+            {
+              label: "Report an issue",
+              href: "https://github.com/kud/your-move/issues/new",
+            },
+            { label: "@kud", href: "https://github.com/kud" },
+          ].map((out) => (
+            <a
+              key={out.label}
+              className={link}
+              href={out.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {out.label}
+              <span aria-hidden className="ml-auto">
+                ↗
+              </span>
+            </a>
+          ))}
+        </div>
+
         <form
           action="/api/auth/logout"
           method="post"

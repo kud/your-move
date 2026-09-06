@@ -6,6 +6,7 @@ import {
   COLUMNS,
   DONE,
   Swimlanes,
+  reasonFor,
   sectionOf,
   shortName,
   type Lane,
@@ -13,7 +14,14 @@ import {
 import { Detail, type OpenMode } from "@/components/detail"
 import { Mark } from "@/components/mark"
 import { Menu } from "@/components/menu"
-import { RepoFilter, repoCounts } from "@/components/repo-filter"
+import {
+  Filters,
+  countPicks,
+  labelCounts,
+  repoCounts,
+  statusCounts,
+  type Picks,
+} from "@/components/filters"
 import { SectionMark } from "@/components/section-mark"
 import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
@@ -64,7 +72,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     initial,
     doneDays,
   )
-  const [selected, setSelected] = useState<string[]>([])
+  const [picks, setPicks] = useState<Picks>({
+    repos: [],
+    status: [],
+    labels: [],
+  })
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
 
@@ -108,27 +120,54 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     })
   }, [])
 
-  /* Restore a filter from the URL, so a filtered board is shareable and can be
-     installed to a home screen as "my ambre board". */
+  /* Restored from and written back to the URL, so a filtered board is
+     shareable and can be installed to a home screen as its own view — one per
+     facet, so a link says which dimension it narrowed. */
   useEffect(() => {
-    const repos = new URLSearchParams(location.search).get("repos")
-    if (repos) setSelected(repos.split(",").filter(Boolean))
+    const query = new URLSearchParams(location.search)
+    const read = (key: string) =>
+      (query.get(key) ?? "").split(",").filter(Boolean)
+    setPicks({
+      repos: read("repos"),
+      status: read("status"),
+      labels: read("labels"),
+    })
   }, [])
 
   useEffect(() => {
     const url = new URL(location.href)
-    if (selected.length) url.searchParams.set("repos", selected.join(","))
-    else url.searchParams.delete("repos")
+    for (const key of ["repos", "status", "labels"] as const) {
+      if (picks[key].length) url.searchParams.set(key, picks[key].join(","))
+      else url.searchParams.delete(key)
+    }
     history.replaceState(null, "", url)
-  }, [selected])
+  }, [picks])
 
   const all = useMemo(() => inbox?.rows ?? [], [inbox])
   const repos = useMemo(() => repoCounts(all), [all])
-  const filtering = selected.length > 0
+  const status = useMemo(() => statusCounts(all, reasonFor), [all])
+  const labels = useMemo(() => labelCounts(all), [all])
+  const filtering = countPicks(picks) > 0
 
+  /*
+   * AND across facets, OR within one — the reading nobody has to be told.
+   * Two repos means "either of these"; a repo and a status means "in that repo
+   * AND in that state". Counted against the UNFILTERED rows above, so every
+   * facet always offers what it would cost you rather than what is left after
+   * the other facets have had their say.
+   */
   const shown = useMemo(
-    () => (filtering ? all.filter((r) => selected.includes(r.repo)) : all),
-    [all, selected, filtering],
+    () =>
+      !filtering
+        ? all
+        : all.filter(
+            (r) =>
+              (!picks.repos.length || picks.repos.includes(r.repo)) &&
+              (!picks.status.length || picks.status.includes(reasonFor(r))) &&
+              (!picks.labels.length ||
+                (r.labels ?? []).some((l) => picks.labels.includes(l))),
+          ),
+    [all, picks, filtering],
   )
 
   /*
@@ -417,7 +456,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     <>
       <Sky />
 
-      <WritableRepos repos={repos.map((r) => r.repo)}>
+      <WritableRepos repos={repos.map((r) => r.name)}>
       <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
         <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
           {/*
@@ -497,10 +536,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
-            <RepoFilter
+            <Filters
               repos={repos}
-              selected={selected}
-              onChange={setSelected}
+              status={status}
+              labels={labels}
+              picks={picks}
+              onChange={setPicks}
             />
             <Menu
               login={inbox?.login}
@@ -558,12 +599,17 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
              a broken one does. */
           <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
             <span className="min-w-0 truncate">
-              Filtered to {selected.map(shortName).join(", ")}
+              Filtered to{" "}
+              {[
+                ...picks.repos.map(shortName),
+                ...picks.status,
+                ...picks.labels,
+              ].join(", ")}
               {hidden > 0 ? ` · ${hidden} hidden` : ""}
             </span>
             <button
               type="button"
-              onClick={() => setSelected([])}
+              onClick={() => setPicks({ repos: [], status: [], labels: [] })}
               className="ml-auto shrink-0 text-accent hover:underline"
             >
               Clear

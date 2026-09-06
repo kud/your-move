@@ -432,6 +432,28 @@ html:has([popover]:popover-open) body {
   user-select: none;
 }
 
+/*
+ * And nothing behind it is clickable either.
+ *
+ * Native light dismiss closes the popover on a pointerdown outside it — and
+ * then lets that same event carry on to whatever was underneath. So clicking
+ * the blurred ground to dismiss the filter also opened whichever card happened
+ * to be under the finger: one gesture, two outcomes, and only one of them
+ * asked for.
+ *
+ * `pointer-events` inherits, so switching it off on `main` and back on for the
+ * popover leaves the popover's own controls working while the board stops
+ * listening. Dismissal is untouched — the pointerdown still lands outside the
+ * popover, which is all the browser needs.
+ */
+html:has([popover]:popover-open) main {
+  pointer-events: none;
+}
+
+[popover]:popover-open {
+  pointer-events: auto;
+}
+
 /* The popover's own text stays selectable: it holds a repository name someone
    might reasonably want to copy. */
 [popover]:popover-open {
