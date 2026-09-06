@@ -238,9 +238,9 @@ const Column = ({
           : "w-[220px] min-w-[220px]"
       }`}
     >
-      <header className="flex items-center gap-2 border-b border-line-soft p-3.5">
+      <header className="flex items-center gap-2 border-b border-line-soft p-2.5 md:p-3.5">
         <Slot glyph={p.glyph} tone={p.tone} />
-        <h3 className="truncate text-[17px] font-semibold tracking-[-0.01em]">
+        <h3 className="truncate text-[15px] font-semibold tracking-[-0.01em] md:text-[17px]">
           {p.title}
         </h3>
         <span className="ml-auto font-mono text-[13px] tabular-nums text-fg-quiet">
@@ -254,24 +254,24 @@ const Column = ({
         <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
       </header>
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-3">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5 md:gap-2.5 md:p-3">
         {state === "loading" ? (
           <>
             <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
             <div className="shimmer h-[86px] rounded-[9px] bg-panel-2" />
           </>
         ) : state === "failed" ? (
-          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-brass">
+          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-brass">
             <span aria-hidden>! </span>Could not read this section.
           </p>
         ) : state === "filtered" ? (
-          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
+          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
             Nothing here in the repositories you have selected.
           </p>
         ) : state === "clear" ? (
           /* The `empty` sentence is a claim about REALITY, so it may only appear
              when the board is actually showing all of reality. */
-          <p className="m-auto max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
+          <p className="mx-auto mt-6 max-w-[180px] text-balance text-center text-[13.5px] leading-[1.5] text-fg-quiet">
             {p.empty}
           </p>
         ) : (
@@ -400,8 +400,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     <>
       <Sky />
 
-      <main className="relative z-10 mx-auto min-h-safe max-w-[1360px] px-6 pb-16 pt-8">
-        <header className="flex flex-wrap items-end gap-x-4 gap-y-2 pb-4">
+      <main className="relative z-10 mx-auto min-h-safe max-w-[1360px] px-3 pb-10 pt-4 md:px-6 md:pb-16 md:pt-8">
+        <header className="flex flex-wrap items-end gap-x-4 gap-y-2 pb-3">
           <div className="min-w-0">
             <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-fg-quiet">
               {yoursTotal === 0
@@ -496,14 +496,17 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 </>
               )}
             </p>
-            <p className="mt-1 text-fg-quiet">
-              Did not answer: {inbox.failed.join(", ")}
-            </p>
-            {inbox.reasons?.length ? (
-              <p className="mt-1 font-mono text-fg-quiet">
-                {inbox.reasons.join(" · ")}
-              </p>
-            ) : null}
+            <details className="mt-1">
+              <summary className="cursor-pointer text-fg-quiet">
+                {inbox.failed.length} sections affected
+              </summary>
+              <p className="mt-1 text-fg-quiet">{inbox.failed.join(", ")}</p>
+              {inbox.reasons?.length ? (
+                <p className="mt-1 font-mono text-fg-quiet">
+                  {inbox.reasons.join(" · ")}
+                </p>
+              ) : null}
+            </details>
           </div>
         ) : null}
 

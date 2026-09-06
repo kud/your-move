@@ -161,7 +161,19 @@ body {
  */
 .h-board {
   height: calc(
-    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 15.5rem
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 13rem
   );
-  min-height: 320px;
+  min-height: 260px;
+  /* A cap, because the reserve above is a guess: a warning banner or a filter
+     bar can push the board down, and without this the columns keep their full
+     height and hang off the bottom of the screen. */
+  max-height: 78dvh;
+}
+
+@media (min-width: 768px) {
+  .h-board {
+    height: calc(
+      100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16rem
+    );
+  }
 }
