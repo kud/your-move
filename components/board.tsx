@@ -614,16 +614,23 @@ export const Swimlanes = ({
              */}
             <div
               onClick={() => onFold(lane.repo)}
-              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line-soft border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
-                /* Marked INSIDE the cell, in the card's own idiom, rather than
-                   by recolouring the structural rule. A grid line that changes
-                   colour by row content is what made the lane edge read as
-                   broken into segments — and accent already carries "yours"
-                   three other ways. */
-                lane.yours
-                  ? "before:absolute before:inset-y-1 before:left-0 before:w-[2px] before:rounded-full before:bg-accent"
-                  : ""
-              }`}
+              className="sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line-soft border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none]"
+              /*
+               * No "yours" marker on this cell, and that is the second half of
+               * the same fix rather than a retreat from it.
+               *
+               * The structural rule stopped changing colour by row content —
+               * that part was right. The replacement, a 2px accent bar inside
+               * the cell's left edge, borrowed the card's idiom without the
+               * card's geometry: on a card the stripe sits inset within a
+               * rounded bordered box, here it landed flush against the panel's
+               * own border, so the repo cell read as two lines a pixel apart.
+               *
+               * And it was never needed. The `N you` pill directly below is
+               * already accent and already counts them, which is one more
+               * carrier than the argument for removing it from the rule allowed
+               * in the first place.
+               */
             >
               <div className="flex items-center gap-1">
                 <button
