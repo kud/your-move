@@ -666,8 +666,16 @@ export const Swimlanes = ({
               return (
                 <div
                   key={id}
-                  className={`relative border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] transition-[min-height] duration-200 ease-out ${
-                    shut ? "hatch min-h-[34px]" : "min-h-[44px]"
+                  /*
+                    One min-height for both states, and nothing transitioning it.
+                    Animating it from 44 to 34 while the content fell to zero put
+                    two curves on the same box: the row followed the content
+                    first and the minimum second, and the handover between them
+                    is the bounce. The content height is the only thing that
+                    should move.
+                  */
+                  className={`relative min-h-[40px] border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
+                    shut ? "hatch" : ""
                   } ${SEAM.has(id) ? "border-l-2 border-l-line" : ""}`}
                 >
                   {/* Out of flow, so it can cross-fade with the cards rather
@@ -675,7 +683,7 @@ export const Swimlanes = ({
                   {rows.length ? (
                     <span
                       className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-150 ${
-                        shut ? "opacity-100 delay-100" : "opacity-0"
+                        shut ? "opacity-100 delay-75" : "opacity-0"
                       }`}
                     >
                       {rows.length}
