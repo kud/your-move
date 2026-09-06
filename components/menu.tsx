@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+
+import { exportViews, importViews, type View } from "@/lib/views"
 
 /*
  * Everything that is about you rather than about the board.
@@ -57,6 +59,8 @@ export const Menu = ({
   permission,
   openMode,
   onOpenMode,
+  views,
+  onViews,
 }: {
   login?: string
   doneDays: 7 | 30
@@ -68,7 +72,11 @@ export const Menu = ({
   permission: "unsupported" | "default" | "granted" | "denied"
   openMode: "side" | "modal" | "full"
   onOpenMode: (mode: "side" | "modal" | "full") => void
+  views: View[]
+  onViews: (next: View[]) => void
 }) => {
+  const picker = useRef<HTMLInputElement>(null)
+  const [moved, setMoved] = useState<string>()
   const [contrast, setContrast] = useState(false)
   const [still, setStill] = useState(false)
   const [theme, setTheme] = useState<Theme>("auto")
@@ -423,6 +431,88 @@ export const Menu = ({
               ))}
             </span>
           </div>
+        </div>
+
+        {/*
+          Saved views travel as a file.
+
+          They live in this browser's storage, which means they do not follow
+          him to the other device — and that limit is stated here rather than
+          hidden, because a preference that silently exists on one machine is
+          worse than one that visibly has to be carried.
+
+          A file rather than a sync, for now: syncing without a database is
+          possible — a private gist is free, is his own data, and reaches every
+          device — but it costs a wider OAuth scope, which is a decision rather
+          than a detail. This is the same JSON that mechanism would move, so
+          nothing here is thrown away when it is taken.
+        */}
+        <div className="mt-2 border-t border-line-soft pt-2">
+            <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
+              Saved views
+            </p>
+
+            <button
+              type="button"
+              disabled={!views.length}
+              onClick={() => {
+                const blob = new Blob([exportViews(views)], {
+                  type: "application/json",
+                })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                a.href = url
+                a.download = "your-move-views.json"
+                a.click()
+                URL.revokeObjectURL(url)
+                setMoved(`Exported ${views.length}`)
+              }}
+              className={`${link} w-full disabled:opacity-50`}
+            >
+              Export
+              <span aria-hidden className="ml-auto font-mono text-[11px]">
+                {views.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => picker.current?.click()}
+              className={`${link} w-full`}
+            >
+              Import
+            </button>
+
+            {/* Merged by name rather than replacing the lot: importing on a
+                second device should add what is missing, not erase what is
+                already there. */}
+            <input
+              ref={picker}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={async (event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ""
+                if (!file) return
+                try {
+                  const incoming = importViews(await file.text())
+                  if (!incoming.length) return setMoved("Nothing in that file")
+                  const names = new Set(incoming.map((v) => v.name))
+                  onViews([
+                    ...views.filter((v) => !names.has(v.name)),
+                    ...incoming,
+                  ])
+                  setMoved(`Imported ${incoming.length}`)
+                } catch {
+                  setMoved("That file could not be read")
+                }
+              }}
+            />
+
+            {moved ? (
+              <p className="px-2 pt-1 text-[11.5px] text-fg-quiet">{moved}</p>
+            ) : null}
         </div>
 
         {/*

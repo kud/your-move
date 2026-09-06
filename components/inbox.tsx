@@ -31,6 +31,7 @@ import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
 import { presentationFor } from "@/lib/sections"
+import { readViews, writeViews, type View } from "@/lib/views"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
 /*
@@ -57,6 +58,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const [open, setOpen] = useState<string>()
   const [notify, setNotify] = useState(false)
   const [openMode, setOpenMode] = useState<OpenMode>("side")
+  const [views, setViews] = useState<View[]>([])
   const [sound, setSound] = useState(false)
 
   useEffect(() => {
@@ -66,6 +68,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       const saved = localStorage.getItem("ym:open")
       if (saved === "side" || saved === "modal" || saved === "full")
         setOpenMode(saved)
+      setViews(readViews())
     } catch {}
   }, [])
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(
@@ -100,6 +103,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       /* A private window, cleared site data, or storage refused outright — an
          unfolded board is the correct fallback and needs no explanation. */
     }
+  }, [])
+
+  /* Written on change rather than on unload: a phone is closed by being taken
+     away, and `beforeunload` is the one event you cannot rely on there. */
+  const changeViews = useCallback((next: View[]) => {
+    setViews(next)
+    writeViews(next)
   }, [])
 
   const chooseOpenMode = useCallback((next: OpenMode) => {
@@ -576,6 +586,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               labels={labels}
               picks={picks}
               onChange={setPicks}
+              views={views}
+              onViews={changeViews}
             />
             <Menu
               login={inbox?.login}
@@ -591,6 +603,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               permission={permission}
               openMode={openMode}
               onOpenMode={chooseOpenMode}
+              views={views}
+              onViews={changeViews}
             />
           </div>
         </header>
