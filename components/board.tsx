@@ -600,7 +600,7 @@ export const Swimlanes = ({
              */}
             <div
               onClick={() => onFold(lane.repo)}
-              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
+              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
                 lane.yours ? "border-r-accent/60" : ""
               }`}
             >

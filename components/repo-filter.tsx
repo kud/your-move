@@ -137,7 +137,7 @@ export const RepoFilter = ({ repos, selected, onChange }: Props) => {
       <div
         id={ID}
         popover="auto"
-        className="m-auto max-h-[70dvh] w-[min(92vw,380px)] overflow-y-auto rounded-2xl border border-line bg-panel p-3 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60 md:max-h-[60dvh]"
+        className="fade-b m-auto max-h-[70dvh] w-[min(92vw,380px)] overflow-y-auto rounded-2xl border border-line bg-panel p-3 pb-6 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60 md:max-h-[60dvh]"
       >
         <div className="flex items-center gap-2 pb-2">
           <b className="text-[15px] font-semibold">Repositories</b>
