@@ -32,6 +32,20 @@ import { useEffect, useRef, type RefObject } from "react"
 
 const KEY = "ym:scroll"
 
+/*
+ * How long a remembered position stays wholly meaningful.
+ *
+ * Within the hour, the board you come back to is the board you left, so both
+ * axes are restored. Past it, only the horizontal one is — and that is a
+ * statement about what the two axes MEAN rather than a hedge. Columns are fixed
+ * furniture: "Your pull requests" is in the same place tomorrow, so returning
+ * to it is returning to something. Lanes are ordered by urgency and reorder as
+ * work moves, so a vertical offset from yesterday points at a row that is no
+ * longer there — restoring it would land you somewhere arbitrary and look like
+ * a bug rather than a memory.
+ */
+const WHOLE_MS = 60 * 60 * 1000
+
 /** Landing within a pixel or two is landing: snap and sub-pixel layout. */
 const CLOSE = 2
 
@@ -41,6 +55,7 @@ const CLOSE = 2
 const TRIES = 60
 
 type Spot = { left: number; top: number }
+type Kept = Spot & { at: number }
 
 /*
  * Snapping overrides a programmatic scroll — set `scrollLeft` under
@@ -96,7 +111,10 @@ export const useScrollMemory = (
       clearTimeout(settle)
       settle = setTimeout(() => {
         try {
-          sessionStorage.setItem(KEY, JSON.stringify(at.current))
+          localStorage.setItem(
+            KEY,
+            JSON.stringify({ ...at.current, at: Date.now() }),
+          )
         } catch {}
       }, 150)
     }
@@ -117,7 +135,10 @@ export const useScrollMemory = (
     const save = () => {
       if (!at.current) return
       try {
-        sessionStorage.setItem(KEY, JSON.stringify(at.current))
+        localStorage.setItem(
+          KEY,
+          JSON.stringify({ ...at.current, at: Date.now() }),
+        )
       } catch {
         /* Private window, or storage refused. Losing the position is the
            correct failure; there is nothing to tell the user about. */
@@ -142,9 +163,13 @@ export const useScrollMemory = (
     if (!read.current) {
       read.current = true
       try {
-        const saved = sessionStorage.getItem(KEY)
-        const spot = saved ? (JSON.parse(saved) as Spot) : undefined
-        if (spot && (spot.left || spot.top)) want.current = spot
+        const saved = localStorage.getItem(KEY)
+        const kept = saved ? (JSON.parse(saved) as Kept) : undefined
+        if (kept) {
+          const whole = Date.now() - (kept.at ?? 0) < WHOLE_MS
+          const spot = { left: kept.left, top: whole ? kept.top : 0 }
+          if (spot.left || spot.top) want.current = spot
+        }
       } catch {}
     }
 
