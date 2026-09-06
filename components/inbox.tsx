@@ -10,7 +10,7 @@ import {
   shortName,
   type Lane,
 } from "@/components/board"
-import { Detail } from "@/components/detail"
+import { Detail, type OpenMode } from "@/components/detail"
 import { Mark } from "@/components/mark"
 import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
@@ -47,12 +47,16 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   /* `owner/repo#number`, or nothing. */
   const [open, setOpen] = useState<string>()
   const [notify, setNotify] = useState(false)
+  const [openMode, setOpenMode] = useState<OpenMode>("side")
   const [sound, setSound] = useState(false)
 
   useEffect(() => {
     try {
       setNotify(localStorage.getItem("ym:notify") === "1")
       setSound(localStorage.getItem("ym:sound") === "1")
+      const saved = localStorage.getItem("ym:open")
+      if (saved === "side" || saved === "modal" || saved === "full")
+        setOpenMode(saved)
     } catch {}
   }, [])
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(
@@ -82,6 +86,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       /* A private window, cleared site data, or storage refused outright — an
          unfolded board is the correct fallback and needs no explanation. */
     }
+  }, [])
+
+  const chooseOpenMode = useCallback((next: OpenMode) => {
+    setOpenMode(next)
+    try {
+      localStorage.setItem("ym:open", next)
+    } catch {}
   }, [])
 
   const fold = useCallback((repo: string) => {
@@ -427,6 +438,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               sound={sound}
               onSound={chooseSound}
               permission={permission}
+              openMode={openMode}
+              onOpenMode={chooseOpenMode}
             />
           </div>
         </header>
@@ -663,6 +676,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             row={openRowData}
             onClose={closeRow}
             onLabelChange={applyLabel}
+            mode={openMode}
+            onMode={chooseOpenMode}
           />
         ) : null}
       </main>
