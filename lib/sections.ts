@@ -5,8 +5,11 @@
  * `whoseMove`. This map says only how a section *looks* — so a source added to
  * the library tomorrow renders with the fallback rather than vanishing.
  *
- * Each glyph is a distinct shape. Colour only reinforces what the shape already
- * says, so the board survives being read without it.
+ * The mark for each section lives in `components/section-mark.tsx`, drawn
+ * rather than typed — a text glyph's size and vertical placement are whatever
+ * the installed font thinks, and on Android three of these were being drawn by
+ * a fallback face. Colour only reinforces what the shape already says, so the
+ * board survives being read without it.
  *
  * That last paragraph stopped being true for four days and nothing said so.
  * `d353abe` split the labels into type/status axes and renamed every section;
@@ -28,7 +31,6 @@
 export type Presentation = {
   /** The column heading. Rendering the key gave columns headed "Open". */
   title: string
-  glyph: string
   tone: string
   empty: string
   meaning: string
@@ -40,21 +42,18 @@ const PRESENTATION: Record<string, Presentation> = {
      board this grew out of, and it went with it. */
   review: {
     title: "Review requested",
-    glyph: "◇",
     tone: "accent",
     empty: "Nothing awaiting your review.",
     meaning: "Someone has asked you to review their pull request.",
   },
   open: {
     title: "Your pull requests",
-    glyph: "↑",
     tone: "slate",
     empty: "No open PRs.",
     meaning: "Your own pull requests, open and out for review.",
   },
   draft: {
     title: "Drafts",
-    glyph: "▫",
     tone: "slate",
     empty: "No drafts.",
     meaning:
@@ -62,21 +61,18 @@ const PRESENTATION: Record<string, Presentation> = {
   },
   incoming: {
     title: "Incoming",
-    glyph: "↓",
     tone: "slate",
     empty: "Nothing incoming.",
     meaning: "Pull requests other people have opened on your repositories.",
   },
   assigned: {
     title: "Assigned to you",
-    glyph: "@",
     tone: "slate",
     empty: "Nothing assigned to you.",
     meaning: "Issues assigned to you on GitHub, wherever they live.",
   },
   reviewed: {
     title: "Reviewed",
-    glyph: "◆",
     tone: "slate",
     empty: "Nothing reviewed lately.",
     meaning:
@@ -84,7 +80,6 @@ const PRESENTATION: Record<string, Presentation> = {
   },
   issues: {
     title: "Open issues",
-    glyph: "○",
     tone: "slate",
     empty: "No open issues.",
     meaning:
@@ -92,7 +87,6 @@ const PRESENTATION: Record<string, Presentation> = {
   },
   done: {
     title: "Recently done",
-    glyph: "✓",
     tone: "sage",
     empty: "Nothing closed yet.",
     meaning: "Closed recently. Kept briefly so you can see what moved.",
@@ -101,7 +95,6 @@ const PRESENTATION: Record<string, Presentation> = {
 
 const FALLBACK: Presentation = {
   title: "Other",
-  glyph: "•",
   tone: "slate",
   empty: "Nothing here.",
   meaning: "A section this board does not have a description for yet.",

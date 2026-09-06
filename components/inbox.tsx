@@ -14,6 +14,7 @@ import { Detail, type OpenMode } from "@/components/detail"
 import { Mark } from "@/components/mark"
 import { Menu } from "@/components/menu"
 import { RepoFilter, repoCounts } from "@/components/repo-filter"
+import { SectionMark } from "@/components/section-mark"
 import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
 import { WritableRepos } from "@/components/use-writable"
@@ -631,9 +632,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   const p = presentationFor(s)
                   return (
                     <span key={s} className="flex items-center gap-1.5">
-                      <span aria-hidden className="font-mono">
-                        {p.glyph}
-                      </span>
+                      <SectionMark id={s} className="size-3 shrink-0" />
                       {p.title}
                     </span>
                   )
@@ -671,9 +670,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                           : "border-line text-fg-mute"
                       }`}
                     >
-                      <span aria-hidden className="font-mono">
-                        {p.glyph}
-                      </span>
+                      <SectionMark id={id} className="size-3 shrink-0" />
                       <span>{p.title}</span>
                       <span className="font-mono tabular-nums text-fg-quiet">
                         {now}

@@ -3,6 +3,7 @@
 import { Fragment, memo, useEffect, useRef, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
+import { SectionMark } from "@/components/section-mark"
 import { presentationFor } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
@@ -140,12 +141,12 @@ const DONE_PER_CELL = 2
 /** The fold transition, shared by the CSS below and the unmount that follows. */
 const FOLD_MS = 200
 
-export const Slot = ({ glyph, tone }: { glyph: string; tone: string }) => (
+export const Slot = ({ id, tone }: { id: string; tone: string }) => (
   <span
     aria-hidden
-    className={`grid size-5 shrink-0 place-items-center rounded-[5px] border font-mono text-[13.5px] leading-none ${TONE[tone] ?? TONE.slate}`}
+    className={`grid size-5 shrink-0 place-items-center rounded-[5px] border ${TONE[tone] ?? TONE.slate}`}
   >
-    {glyph}
+    <SectionMark id={id} />
   </span>
 )
 
@@ -357,9 +358,7 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
                   key={c}
                   className="flex items-center gap-2 py-0.5 text-[13px] text-fg-mute"
                 >
-                  <span aria-hidden className="font-mono text-fg-quiet">
-                    {p.glyph}
-                  </span>
+                  <SectionMark id={c} className="size-3 shrink-0 text-fg-quiet" />
                   {p.title}
                   <span className="ml-auto font-mono tabular-nums text-fg-quiet">
                     {(lane.cells.get(c) ?? []).length}
@@ -588,7 +587,7 @@ export const Swimlanes = ({
                   : "border-r border-r-line-soft"
               }`}
             >
-              <Slot glyph={p.glyph} tone={p.tone} />
+              <Slot id={id} tone={p.tone} />
               <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
                 {p.title}
               </h3>
