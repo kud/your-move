@@ -679,7 +679,7 @@ export const Menu = ({
               try {
                 localStorage.removeItem("ym:last")
                 localStorage.removeItem("ym:perms")
-                sessionStorage.removeItem("ym:scroll")
+                localStorage.removeItem("ym:scroll")
               } catch {}
             }}
             action="/api/auth/logout"
