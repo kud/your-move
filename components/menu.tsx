@@ -174,12 +174,18 @@ export const Menu = ({
       <div
         id={ID}
         popover="auto"
-        /* Bottom sheet on a phone, anchored card on a desk — the same two-frame
-           pattern as the filter, so there is one behaviour to learn. */
-        className="m-0 mt-auto w-full rounded-t-2xl border border-line bg-panel p-3 text-fg shadow-[0_-20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/40 md:m-auto md:mr-6 md:mt-16 md:w-[300px] md:rounded-2xl"
+        /*
+          Bottom sheet on a phone, anchored card on a desk — the same two-frame
+          pattern as the filter, so there is one behaviour to learn. And now the
+          same INTERNAL one: a bounded frame with the list scrolling inside it.
+          A popover has no default height limit, so this grew with every section
+          added until it ran off the top of a phone and took the identity row —
+          the one thing the menu exists to show first — with it.
+        */
+        className="m-0 mt-auto flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-panel p-3 text-fg shadow-[0_-20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/40 md:m-auto md:mr-6 md:mt-16 md:max-h-[80dvh] md:w-[300px] md:rounded-2xl"
       >
         {login ? (
-          <div className="flex items-center gap-2.5 px-2 pb-3">
+          <div className="flex shrink-0 items-center gap-2.5 px-2 pb-3">
             {/* A stable URL off the login we already have — nothing new fetched
                 to know who is signed in. */}
             <img
@@ -196,244 +202,248 @@ export const Menu = ({
           </div>
         ) : null}
 
-        <div className="border-t border-line-soft pt-2">
-          {login ? (
-            <>
-              <a
-                className={link}
-                href={`https://github.com/${login}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Your profile{" "}
-                <span aria-hidden className="ml-auto">
-                  ↗
-                </span>
-              </a>
-              <a
-                className={link}
-                href="https://github.com/pulls"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Your pull requests{" "}
-                <span aria-hidden className="ml-auto">
-                  ↗
-                </span>
-              </a>
-              {/* The archive, owned by the thing that already does it well. */}
-              <a
-                className={link}
-                href={`https://github.com/search?q=involves%3A${login}+is%3Aclosed&type=issues&s=updated`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Closed recently{" "}
-                <span aria-hidden className="ml-auto">
-                  ↗
-                </span>
-              </a>
-            </>
-          ) : null}
-        </div>
+        {/* The list, and the only part that moves. `min-h-0` is what lets a flex
+            child shrink below its content; without it the frame's height is a
+            suggestion and the overflow goes back to being a clip. */}
+        <div className="fade-b -mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-4">
+          <div className="border-t border-line-soft pt-2">
+            {login ? (
+              <>
+                <a
+                  className={link}
+                  href={`https://github.com/${login}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Your profile{" "}
+                  <span aria-hidden className="ml-auto">
+                    ↗
+                  </span>
+                </a>
+                <a
+                  className={link}
+                  href="https://github.com/pulls"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Your pull requests{" "}
+                  <span aria-hidden className="ml-auto">
+                    ↗
+                  </span>
+                </a>
+                {/* The archive, owned by the thing that already does it well. */}
+                <a
+                  className={link}
+                  href={`https://github.com/search?q=involves%3A${login}+is%3Aclosed&type=issues&s=updated`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Closed recently{" "}
+                  <span aria-hidden className="ml-auto">
+                    ↗
+                  </span>
+                </a>
+              </>
+            ) : null}
+          </div>
 
-        <div className="mt-2 border-t border-line-soft pt-2">
-          <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
-            Settings
-          </p>
+          <div className="mt-2 border-t border-line-soft pt-2">
+            <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
+              Settings
+            </p>
 
-          {/*
-           * Only while the app is open, and the label says so.
-           *
-           * Anything else means Web Push: a service worker handler, a key pair,
-           * a store of subscriptions, and something scheduled asking GitHub on
-           * your behalf while nobody is looking — which is exactly the spend the
-           * polling work went to remove. Promising "notifications" and
-           * delivering only the open-tab kind would be the lie; naming it is
-           * free.
-           */}
-          <button
-            type="button"
-            onClick={() => onNotify(!notify)}
-            aria-pressed={notify}
-            disabled={permission === "denied" || permission === "unsupported"}
-            className={`${link} w-full disabled:opacity-50`}
-          >
-            <span className="text-left">
-              Notify me
-              <span className="block text-[11.5px] text-fg-quiet">
-                {permission === "denied"
-                  ? "Blocked in your browser settings"
-                  : permission === "unsupported"
-                    ? "Not supported here"
-                    : "While the app is open"}
+            {/*
+             * Only while the app is open, and the label says so.
+             *
+             * Anything else means Web Push: a service worker handler, a key pair,
+             * a store of subscriptions, and something scheduled asking GitHub on
+             * your behalf while nobody is looking — which is exactly the spend the
+             * polling work went to remove. Promising "notifications" and
+             * delivering only the open-tab kind would be the lie; naming it is
+             * free.
+             */}
+            <button
+              type="button"
+              onClick={() => onNotify(!notify)}
+              aria-pressed={notify}
+              disabled={permission === "denied" || permission === "unsupported"}
+              className={`${link} w-full disabled:opacity-50`}
+            >
+              <span className="text-left">
+                Notify me
+                <span className="block text-[11.5px] text-fg-quiet">
+                  {permission === "denied"
+                    ? "Blocked in your browser settings"
+                    : permission === "unsupported"
+                      ? "Not supported here"
+                      : "While the app is open"}
+                </span>
               </span>
-            </span>
-            <span
-              aria-hidden
-              className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
-                notify
-                  ? "border-accent bg-accent-dim text-accent"
-                  : "border-line text-fg-quiet"
-              }`}
-            >
-              {notify ? "On" : "Off"}
-            </span>
-          </button>
+              <span
+                aria-hidden
+                className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
+                  notify
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-quiet"
+                }`}
+              >
+                {notify ? "On" : "Off"}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => onSound(!sound)}
-            aria-pressed={sound}
-            disabled={!notify}
-            className={`${link} w-full disabled:opacity-50`}
-          >
-            Sound
-            <span
-              aria-hidden
-              className={`ml-auto rounded-full border px-2 py-px text-[11px] ${
-                sound
-                  ? "border-accent bg-accent-dim text-accent"
-                  : "border-line text-fg-quiet"
-              }`}
+            <button
+              type="button"
+              onClick={() => onSound(!sound)}
+              aria-pressed={sound}
+              disabled={!notify}
+              className={`${link} w-full disabled:opacity-50`}
             >
-              {sound ? "On" : "Off"}
-            </span>
-          </button>
+              Sound
+              <span
+                aria-hidden
+                className={`ml-auto rounded-full border px-2 py-px text-[11px] ${
+                  sound
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-quiet"
+                }`}
+              >
+                {sound ? "On" : "Off"}
+              </span>
+            </button>
 
-          {/* Desktop only, because opening a row in place is desktop only —
+            {/* Desktop only, because opening a row in place is desktop only —
               a card tap on a phone goes to the GitHub app, which does all of
               this better. */}
-          <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
-            Open as
-            <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
-              {(["side", "modal", "full"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => onOpenMode(option)}
-                  aria-pressed={openMode === option}
-                  className={`px-2 py-0.5 text-[12px] capitalize ${
-                    openMode === option
-                      ? "bg-accent-dim text-accent"
-                      : "text-fg-quiet"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
-            Theme
-            <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
-              {(["auto", "light", "dark"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => chooseTheme(option)}
-                  aria-pressed={theme === option}
-                  className={`px-2 py-0.5 text-[12px] capitalize ${
-                    theme === option
-                      ? "bg-accent-dim text-accent"
-                      : "text-fg-quiet"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </span>
-          </div>
-
-          {/*
-           * Kept alongside the light theme rather than replaced by it: they
-           * answer different failures. Light is for a bright room; this is for
-           * direct sunlight on the dark theme, where the quiet tones go first
-           * and the sky's washes eat what contrast is left. The palette is calibrated against
-           * near-black — the accent reads about 7:1 there and under 3:1 on
-           * white, which is a failure exactly where colour carries meaning —
-           * and the sky is additive glow, which is invisible on a light ground.
-           * A light theme is a second design, not a recolour.
-           *
-           * What that request is usually reaching for is daylight, and this
-           * serves it directly: quiet tones raised, sky off.
-           */}
-          <button
-            type="button"
-            onClick={toggleContrast}
-            aria-pressed={contrast}
-            className={`${link} w-full`}
-          >
-            Higher contrast
-            <span
-              aria-hidden
-              className={`ml-auto rounded-full border px-2 py-px text-[11px] ${
-                contrast
-                  ? "border-accent bg-accent-dim text-accent"
-                  : "border-line text-fg-quiet"
-              }`}
-            >
-              {contrast ? "On" : "Off"}
-            </span>
-          </button>
-
-          {/*
-           * Comfort and speed at once, which is why it is worth its own switch
-           * rather than being left to the system setting alone.
-           *
-           * Off go the transitions, the popover backdrop blur — the one effect
-           * here that makes a whole viewport recomposite — and the drifting
-           * sky, which stops rather than merely hiding. It starts wherever the
-           * operating system has it and stays wherever you put it.
-           */}
-          <button
-            type="button"
-            onClick={toggleMotion}
-            aria-pressed={still}
-            className={`${link} w-full`}
-          >
-            <span className="text-left">
-              Reduce motion
-              <span className="block text-[11.5px] text-fg-quiet">
-                Faster on a slow machine
+            <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
+              Open as
+              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+                {(["side", "modal", "full"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => onOpenMode(option)}
+                    aria-pressed={openMode === option}
+                    className={`px-2 py-0.5 text-[12px] capitalize ${
+                      openMode === option
+                        ? "bg-accent-dim text-accent"
+                        : "text-fg-quiet"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
               </span>
-            </span>
-            <span
-              aria-hidden
-              className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
-                still
-                  ? "border-accent bg-accent-dim text-accent"
-                  : "border-line text-fg-quiet"
-              }`}
+            </div>
+
+            <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
+              Theme
+              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+                {(["auto", "light", "dark"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => chooseTheme(option)}
+                    aria-pressed={theme === option}
+                    className={`px-2 py-0.5 text-[12px] capitalize ${
+                      theme === option
+                        ? "bg-accent-dim text-accent"
+                        : "text-fg-quiet"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </span>
+            </div>
+
+            {/*
+             * Kept alongside the light theme rather than replaced by it: they
+             * answer different failures. Light is for a bright room; this is for
+             * direct sunlight on the dark theme, where the quiet tones go first
+             * and the sky's washes eat what contrast is left. The palette is calibrated against
+             * near-black — the accent reads about 7:1 there and under 3:1 on
+             * white, which is a failure exactly where colour carries meaning —
+             * and the sky is additive glow, which is invisible on a light ground.
+             * A light theme is a second design, not a recolour.
+             *
+             * What that request is usually reaching for is daylight, and this
+             * serves it directly: quiet tones raised, sky off.
+             */}
+            <button
+              type="button"
+              onClick={toggleContrast}
+              aria-pressed={contrast}
+              className={`${link} w-full`}
             >
-              {still ? "On" : "Off"}
-            </span>
-          </button>
+              Higher contrast
+              <span
+                aria-hidden
+                className={`ml-auto rounded-full border px-2 py-px text-[11px] ${
+                  contrast
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-quiet"
+                }`}
+              >
+                {contrast ? "On" : "Off"}
+              </span>
+            </button>
 
-          <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
-            Recently done
-            <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
-              {([7, 30] as const).map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => onDoneDays(days)}
-                  aria-pressed={doneDays === days}
-                  className={`px-2 py-0.5 text-[12px] ${
-                    doneDays === days
-                      ? "bg-accent-dim text-accent"
-                      : "text-fg-quiet"
-                  }`}
-                >
-                  {days}d
-                </button>
-              ))}
-            </span>
+            {/*
+             * Comfort and speed at once, which is why it is worth its own switch
+             * rather than being left to the system setting alone.
+             *
+             * Off go the transitions, the popover backdrop blur — the one effect
+             * here that makes a whole viewport recomposite — and the drifting
+             * sky, which stops rather than merely hiding. It starts wherever the
+             * operating system has it and stays wherever you put it.
+             */}
+            <button
+              type="button"
+              onClick={toggleMotion}
+              aria-pressed={still}
+              className={`${link} w-full`}
+            >
+              <span className="text-left">
+                Reduce motion
+                <span className="block text-[11.5px] text-fg-quiet">
+                  Faster on a slow machine
+                </span>
+              </span>
+              <span
+                aria-hidden
+                className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
+                  still
+                    ? "border-accent bg-accent-dim text-accent"
+                    : "border-line text-fg-quiet"
+                }`}
+              >
+                {still ? "On" : "Off"}
+              </span>
+            </button>
+
+            <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
+              Recently done
+              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+                {([7, 30] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => onDoneDays(days)}
+                    aria-pressed={doneDays === days}
+                    className={`px-2 py-0.5 text-[12px] ${
+                      doneDays === days
+                        ? "bg-accent-dim text-accent"
+                        : "text-fg-quiet"
+                    }`}
+                  >
+                    {days}d
+                  </button>
+                ))}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/*
+          {/*
           Saved views travel as a file.
 
           They live in this browser's storage, which means they do not follow
@@ -447,7 +457,7 @@ export const Menu = ({
           than a detail. This is the same JSON that mechanism would move, so
           nothing here is thrown away when it is taken.
         */}
-        <div className="mt-2 border-t border-line-soft pt-2">
+          <div className="mt-2 border-t border-line-soft pt-2">
             <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
               Saved views
             </p>
@@ -513,9 +523,9 @@ export const Menu = ({
             {moved ? (
               <p className="px-2 pt-1 text-[11.5px] text-fg-quiet">{moved}</p>
             ) : null}
-        </div>
+          </div>
 
-        {/*
+          {/*
           The footer, for the width that does not have one.
 
           Narrow drops the footer on purpose — it is the least urgent thing on
@@ -524,59 +534,60 @@ export const Menu = ({
           project itself. `md:hidden`, because above that the footer carries
           them and a menu repeating what is already on the page is noise.
         */}
-        <div className="mt-2 border-t border-line-soft pt-2 md:hidden">
-          <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
-            Your Move
-          </p>
-          {[
-            { label: "Source", href: "https://github.com/kud/your-move" },
-            {
-              label: "Report an issue",
-              href: "https://github.com/kud/your-move/issues/new",
-            },
-            { label: "@kud", href: "https://github.com/kud" },
-          ].map((out) => (
-            <a
-              key={out.label}
-              className={link}
-              href={out.href}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {out.label}
-              <span aria-hidden className="ml-auto">
-                ↗
-              </span>
-            </a>
-          ))}
-        </div>
+          <div className="mt-2 border-t border-line-soft pt-2 md:hidden">
+            <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
+              Your Move
+            </p>
+            {[
+              { label: "Source", href: "https://github.com/kud/your-move" },
+              {
+                label: "Report an issue",
+                href: "https://github.com/kud/your-move/issues/new",
+              },
+              { label: "@kud", href: "https://github.com/kud" },
+            ].map((out) => (
+              <a
+                key={out.label}
+                className={link}
+                href={out.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {out.label}
+                <span aria-hidden className="ml-auto">
+                  ↗
+                </span>
+              </a>
+            ))}
+          </div>
 
-        {/* Signing out clears the device too. `ym:last` is a full board and
+          {/* Signing out clears the device too. `ym:last` is a full board and
             `ym:perms` is a map of what you may write to — both private, both
             outliving a logout that only ever cleared the cookie, on a phone
             somebody else might pick up. */}
-        <form
-          onSubmit={() => {
-            try {
-              localStorage.removeItem("ym:last")
-              localStorage.removeItem("ym:perms")
-              sessionStorage.removeItem("ym:scroll")
-            } catch {}
-          }}
-          action="/api/auth/logout"
-          method="post"
-          className="mt-2 border-t border-line-soft pt-2"
-        >
-          <button type="submit" className={`${link} w-full`}>
-            Sign out
-          </button>
-        </form>
+          <form
+            onSubmit={() => {
+              try {
+                localStorage.removeItem("ym:last")
+                localStorage.removeItem("ym:perms")
+                sessionStorage.removeItem("ym:scroll")
+              } catch {}
+            }}
+            action="/api/auth/logout"
+            method="post"
+            className="mt-2 border-t border-line-soft pt-2"
+          >
+            <button type="submit" className={`${link} w-full`}>
+              Sign out
+            </button>
+          </form>
 
-        {/* The provenance line, in the place someone actually looks for it. */}
-        <p className="px-2 pt-3 text-[11.5px] leading-[1.5] text-fg-quiet">
-          Read live from GitHub, cached for five minutes. Nothing is stored; labels
-          are the only thing this app writes back.
-        </p>
+          {/* The provenance line, in the place someone actually looks for it. */}
+          <p className="px-2 pb-1 pt-3 text-[11.5px] leading-[1.5] text-fg-quiet">
+            Read live from GitHub, cached for five minutes. Nothing is stored;
+            labels are the only thing this app writes back.
+          </p>
+        </div>
       </div>
     </>
   )
