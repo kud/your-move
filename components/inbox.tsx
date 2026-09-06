@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { Ago } from "@/components/ago"
 import {
   COLUMNS,
   DONE,
@@ -35,7 +34,7 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 }
 
 export const Inbox = ({ initial }: { initial?: InboxData }) => {
-  const { inbox, liveness, refresh, applyLabel } = useInbox(initial)
+  const { inbox, liveness, refresh, applyLabel, age } = useInbox(initial)
   const [selected, setSelected] = useState<string[]>([])
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
@@ -220,7 +219,23 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
   const yoursTotal = shown.filter((r) => r.move === "you").length
   const hidden = all.length - shown.length
-  const asOf = inbox ? new Date(inbox.fetchedAt).toISOString() : undefined
+  /*
+   * How old the answer is, coarsely.
+   *
+   * This used to render through `Ago`, which keeps a one-second interval so a
+   * card can count "40s". In a header that never changes otherwise, a number
+   * moving every second reads as a stopwatch — as though the app were timing
+   * something — when all it is saying is "this is current". Minutes are the
+   * smallest unit worth a redraw here, and under a minute there is no number
+   * worth showing at all.
+   */
+  const freshness = !inbox
+    ? undefined
+    : age < 60_000
+      ? "just now"
+      : age < 3_600_000
+        ? `${Math.round(age / 60_000)}m ago`
+        : `${Math.round(age / 3_600_000)}h ago`
   const rateLimited = (inbox?.reasons ?? []).some((r) => /rate limit/i.test(r))
   const allFailed = Boolean(
     inbox && inbox.failed.length > 0 && all.length === 0,
@@ -274,10 +289,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   </span>
                 </>
               ) : null}
-              {asOf ? (
+              {freshness ? (
                 <>
                   <span aria-hidden>·</span>
-                  <Ago iso={asOf} since={asOf} />
+                  <span>{freshness}</span>
                 </>
               ) : null}
               {inbox?.budget ? (
