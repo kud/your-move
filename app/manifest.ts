@@ -16,7 +16,24 @@ import type { MetadataRoute } from "next"
  * than a redirect.
  */
 const manifest = (): MetadataRoute.Manifest => ({
-  name: "Your Move",
+  /*
+   * A blank `name`, on purpose, and it is the only lever there is.
+   *
+   * Chrome's splash is painted before the page exists — no DOM, no CSS, nothing
+   * of ours running — so its typeface is not ours to choose. What it prints IS
+   * ours: it prints `name`. Blank, the splash is the mark alone, and the
+   * wordmark arrives a moment later in our own serif, on our own shell, which
+   * is the only place it can be set in the right face.
+   *
+   * `short_name` carries the launcher label, so the icon on the home screen is
+   * unaffected. What this does cost is the install prompt's title, which is the
+   * one other place Chrome reads `name` — a screen seen once per device.
+   *
+   * If Chrome trims this and falls back to `short_name`, the old text simply
+   * returns and nothing else changes. That is the whole of the downside risk,
+   * and it is why this is worth trying rather than reasoning about.
+   */
+  name: " ",
   short_name: "Your Move",
   description: "What moved on GitHub, and whose move it is.",
   start_url: "/",
