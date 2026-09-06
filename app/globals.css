@@ -691,3 +691,18 @@ html:has([popover]:popover-open) main {
 .fade-b {
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
+
+/* The hand-off bar. Indeterminate on purpose: nothing here knows how long an
+   Android intent will take, and a bar that pretends to is lying twice. */
+@keyframes ym-crawl {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.ym-crawl {
+  animation: ym-crawl 1.1s ease-in-out infinite;
+}
