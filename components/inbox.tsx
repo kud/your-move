@@ -41,6 +41,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const [folded, setFolded] = useState<Set<string>>(new Set())
 
   const scroller = useRef<HTMLDivElement>(null)
+  const rail = useRef<HTMLElement>(null)
   const anchors = useRef(new Map<string, HTMLElement>())
 
   const register = useCallback((id: string, el: HTMLElement | null) => {
@@ -178,6 +179,35 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     for (const el of anchors.current.values()) observer.observe(el)
     return () => observer.disconnect()
   }, [lanes])
+
+  /*
+   * The rail follows the grid.
+   *
+   * Without this it shows the destination but never the journey: you swipe two
+   * columns across and the highlight simply teleports, or worse sits on a chip
+   * that has scrolled out of the rail entirely. Keeping the active chip in view
+   * is what makes the rail read as a position indicator rather than a menu.
+   *
+   * scrollLeft rather than scrollIntoView on the chip: the latter walks up to
+   * every scrollable ancestor, so it would drag the page as well as the rail.
+   */
+  useEffect(() => {
+    const strip = rail.current
+    if (!strip || !active) return
+
+    const chip = strip.querySelector<HTMLElement>(`[data-chip="${active}"]`)
+    if (!chip) return
+
+    const target =
+      chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2
+
+    strip.scrollTo({
+      left: Math.max(0, target),
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    })
+  }, [active])
 
   const goTo = (id: string) =>
     anchors.current.get(id)?.scrollIntoView({
@@ -407,7 +437,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                */}
               {/* The rail navigates the horizontal axis, which is the one a
                   narrow screen cannot show all of at once. */}
-              <nav className="flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden">
+              <nav
+                ref={rail}
+                className="flex gap-1.5 overflow-x-auto border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden"
+              >
                 {COLUMNS.map((id) => {
                   const p = presentationFor(id)
                   const now = shownTotals.get(id) ?? 0
@@ -415,6 +448,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                     <button
                       key={id}
                       type="button"
+                      data-chip={id}
                       onClick={() => goTo(id)}
                       aria-label={p.title}
                       className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
