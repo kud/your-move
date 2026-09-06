@@ -52,6 +52,13 @@ export type Inbox = {
   fetchedAt: number
   /** Sources GitHub refused. A partial answer is still worth rendering. */
   failed: InboxSource[]
+  /*
+   * Why they failed, deduplicated. Without this an empty board and a broken one
+   * are the same picture: the first version of this swallowed every reason into
+   * allSettled and reported eight failed sources with no way to tell whether the
+   * token was wrong, the query too expensive, or the function simply timed out.
+   */
+  reasons: string[]
 }
 
 class GitHubError extends Error {
@@ -91,7 +98,15 @@ const ask = async (token: string, query: string): Promise<any> => {
    * would lose sources that answered perfectly well, so `data` is returned
    * whenever there is any, and only a response with nothing usable fails.
    */
-  if (!body.data) throw new GitHubError("graphql returned no data", 502)
+  if (!body.data) {
+    const detail = Array.isArray(body.errors)
+      ? body.errors
+          .map((e: any) => e?.message ?? JSON.stringify(e))
+          .join("; ")
+          .slice(0, 300)
+      : "no errors reported"
+    throw new GitHubError(`graphql returned no data: ${detail}`, 502)
+  }
 
   return body.data
 }
@@ -158,6 +173,16 @@ export const fetchInbox = async (
     .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
     .map((r) => r.value)
 
+  const reasons = [
+    ...new Set(
+      settled
+        .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+        .map((r) =>
+          r.reason instanceof Error ? r.reason.message : String(r.reason),
+        ),
+    ),
+  ]
+
   const data = mergeInboxData(parts)
   const login: string | undefined = data?.viewer?.login
 
@@ -170,6 +195,7 @@ export const fetchInbox = async (
     login,
     fetchedAt: Date.now(),
     failed: INBOX_SOURCES.filter((source) => !answered.has(source)),
+    reasons,
   }
 }
 

@@ -240,12 +240,24 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
       {inbox?.failed.length ? (
         /* A partial answer is still worth rendering, but never silently — a
-           board quietly missing a source looks exactly like a board with
-           nothing in it. */
-        <p className="mb-2 text-[12px] text-brass">
-          <span aria-hidden>! </span>
-          GitHub did not answer for: {inbox.failed.join(", ")}
-        </p>
+           board quietly missing a source looks exactly like a board with nothing
+           in it. The reason matters as much as the fact: without it, a wrong
+           token, an over-expensive query and a timeout are the same picture. */
+        <div className="mb-2 rounded-lg border border-brass p-3 text-[12px]">
+          <p className="text-brass">
+            <span aria-hidden>! </span>
+            <strong>A source failed.</strong> An empty board below is missing
+            data, not an empty inbox.
+          </p>
+          <p className="mt-1 text-fg-quiet">
+            Did not answer: {inbox.failed.join(", ")}
+          </p>
+          {inbox.reasons?.length ? (
+            <p className="mt-1 font-mono text-fg-quiet">
+              {inbox.reasons.join(" · ")}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {grouped.map((group) => (
