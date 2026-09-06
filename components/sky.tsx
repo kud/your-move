@@ -135,6 +135,33 @@ export const Sky = () => {
             "radial-gradient(120% 80% at 50% 0%, transparent 20%, var(--color-void) 78%)",
         }}
       />
+
+      {/*
+        The page meets the system bars in flat ground, not in a gradient.
+
+        Android paints the status bar with a single colour from the manifest's
+        theme_color, so a wash running all the way to the top edge butts against
+        an aplat and reads as a seam — the app looking pasted onto the phone
+        rather than part of it. Fading to exactly --color-void over the first
+        inch puts the boundary where both sides are the same colour and there is
+        nothing left to see. Same at the bottom, for the gesture bar.
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-[1] h-[max(96px,calc(env(safe-area-inset-top)+72px))]"
+        style={{
+          background:
+            "linear-gradient(to bottom, var(--color-void) 0%, var(--color-void) 34%, transparent 100%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-[max(72px,calc(env(safe-area-inset-bottom)+56px))]"
+        style={{
+          background:
+            "linear-gradient(to top, var(--color-void) 0%, var(--color-void) 34%, transparent 100%)",
+        }}
+      />
     </>
   )
 }
