@@ -279,26 +279,35 @@ const LaneName = ({ repo }: { repo: string }) => {
 
   return (
     <>
-      <h4
+      {/*
+        A <button>, and that is not a style choice.
+
+        `popovertarget` is only honoured on a button or an input of type button.
+        On anything else — an <h4>, say — the browser ignores the attribute
+        entirely and silently: no error, no warning, and a tap that does
+        nothing. Which is exactly what it did.
+      */}
+      <button
+        type="button"
         title={repo}
         aria-label={repo}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={() => clearTimeout(timer.current)}
         onPointerUp={arm}
-        className="min-w-0 cursor-pointer truncate text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
+        className="min-w-0 truncate text-left text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
       >
         {short.slice(0, FITS)}
         <span className="text-accent">…</span>
-      </h4>
+      </button>
 
       <div
         id={id}
         popover="auto"
         onToggle={arm}
-        className="m-2 rounded-lg border border-line bg-panel px-3 py-2 shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-transparent"
+        className="m-auto rounded-lg border border-line bg-panel px-3 py-2 text-fg shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
       >
-        <p className="font-mono text-[12.5px] text-fg">{repo}</p>
+        <p className="font-mono text-[13px]">{repo}</p>
       </div>
     </>
   )
