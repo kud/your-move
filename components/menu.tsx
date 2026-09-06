@@ -18,6 +18,7 @@ const ID = "ym-menu"
    learning about a preference. */
 const CONTRAST = "ym:contrast"
 const THEME = "ym:theme"
+const MOTION = "ym:motion"
 
 type Theme = "auto" | "light" | "dark"
 
@@ -65,6 +66,7 @@ export const Menu = ({
   permission: "unsupported" | "default" | "granted" | "denied"
 }) => {
   const [contrast, setContrast] = useState(false)
+  const [still, setStill] = useState(false)
   const [theme, setTheme] = useState<Theme>("auto")
 
   useEffect(() => {
@@ -72,6 +74,11 @@ export const Menu = ({
       const on = localStorage.getItem(CONTRAST) === "1"
       setContrast(on)
       document.documentElement.dataset.contrast = on ? "high" : ""
+
+      /* Unset means follow the operating system, which is what `layout.tsx`
+         already resolved before paint. Read the result rather than the
+         preference, so the switch shows what is actually in force. */
+      setStill(document.documentElement.dataset.motion === "reduce")
 
       const saved = (localStorage.getItem(THEME) as Theme | null) ?? "auto"
       setTheme(saved)
@@ -97,6 +104,15 @@ export const Menu = ({
     paintChrome(next)
     try {
       localStorage.setItem(THEME, next)
+    } catch {}
+  }
+
+  const toggleMotion = () => {
+    const next = !still
+    setStill(next)
+    document.documentElement.dataset.motion = next ? "reduce" : ""
+    try {
+      localStorage.setItem(MOTION, next ? "1" : "0")
     } catch {}
   }
 
@@ -323,6 +339,39 @@ export const Menu = ({
               }`}
             >
               {contrast ? "On" : "Off"}
+            </span>
+          </button>
+
+          {/*
+           * Comfort and speed at once, which is why it is worth its own switch
+           * rather than being left to the system setting alone.
+           *
+           * Off go the transitions, the popover backdrop blur — the one effect
+           * here that makes a whole viewport recomposite — and the drifting
+           * sky, which stops rather than merely hiding. It starts wherever the
+           * operating system has it and stays wherever you put it.
+           */}
+          <button
+            type="button"
+            onClick={toggleMotion}
+            aria-pressed={still}
+            className={`${link} w-full`}
+          >
+            <span className="text-left">
+              Reduce motion
+              <span className="block text-[11.5px] text-fg-quiet">
+                Faster on a slow machine
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className={`ml-auto shrink-0 rounded-full border px-2 py-px text-[11px] ${
+                still
+                  ? "border-accent bg-accent-dim text-accent"
+                  : "border-line text-fg-quiet"
+              }`}
+            >
+              {still ? "On" : "Off"}
             </span>
           </button>
 
