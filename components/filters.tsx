@@ -330,96 +330,57 @@ export const Filters = ({
           nothing for it to disagree with.
         */}
         {/*
-          Always present, always the same height.
+          Saved views are NAVIGATION, and navigation goes at the top.
 
-          It used to appear the moment you ticked anything and vanish when you
-          cleared, so the tabs and the list jumped under your thumb at exactly
-          the point you were aiming at them — the same fault as the sheet that
-          resized per tab, one row higher. Reserved space costs 30px of a sheet
-          that has a fixed height anyway; movement costs a mis-tap.
+          Creating one is the opposite act — the end of composing rather than
+          the start of choosing — and the two shared a row until now, which
+          asked you to read the same strip at two opposite moments. The save
+          control is in the footer instead.
+
+          Rendered only when there is something to navigate between, which is
+          stable in the way that matters: it changes when you save or delete a
+          view, which is rare and deliberate, and never while you are ticking
+          filters, which is constant.
         */}
-        <div className="mb-2 flex min-h-[30px] shrink-0 flex-wrap items-center gap-1.5">
-          {views.map((view) => {
-            const on = current?.name === view.name
-            return (
-              <span
-                key={view.name}
-                className={`flex items-center rounded-full border text-[12.5px] ${
-                  on
-                    ? "border-accent bg-accent-dim text-accent"
-                    : "border-line text-fg-mute"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => onChange(view.picks)}
-                  className="py-1 pl-2.5 pr-1.5"
+        {views.length ? (
+          <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
+            {views.map((view) => {
+              const on = current?.name === view.name
+              return (
+                <span
+                  key={view.name}
+                  className={`flex items-center rounded-full border text-[12.5px] ${
+                    on
+                      ? "border-accent bg-accent-dim text-accent"
+                      : "border-line text-fg-mute"
+                  }`}
                 >
-                  {view.name}
-                </button>
-                {/* Only the applied view can be deleted, so a mis-tap costs a
-                      switch rather than a view. */}
-                {on ? (
                   <button
                     type="button"
-                    aria-label={`Delete ${view.name}`}
-                    onClick={() =>
-                      onViews(views.filter((v) => v.name !== view.name))
-                    }
-                    className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+                    onClick={() => onChange(view.picks)}
+                    className="py-1 pl-2.5 pr-1.5"
                   >
-                    ×
+                    {view.name}
                   </button>
-                ) : null}
-              </span>
-            )
-          })}
-
-          {/* The button holds its slot whether or not it can act, so the
-                row's height never depends on what you have ticked. Disabled
-                rather than hidden: absent, it would take the row with it. */}
-          {!naming ? (
-            <button
-              type="button"
-              disabled={!savable}
-              onClick={() => setNaming(true)}
-              title={
-                savable
-                  ? undefined
-                  : isEmptyPicks(picks)
-                    ? "Pick a filter first"
-                    : "Already saved as a view"
-              }
-              className="rounded-full border border-dashed border-line px-2.5 py-1 text-[12.5px] text-fg-quiet transition-opacity hover:text-fg disabled:opacity-40 disabled:hover:text-fg-quiet"
-            >
-              Save this view
-            </button>
-          ) : null}
-
-          {naming ? (
-            <span className="flex flex-1 items-center gap-1.5">
-              <input
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") save()
-                  if (e.key === "Escape") setNaming(false)
-                }}
-                placeholder="At work"
-                aria-label="Name this view"
-                className="h-[26px] min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2 text-[12.5px] outline-none focus:border-accent"
-              />
-              <button
-                type="button"
-                onClick={save}
-                className="h-[26px] rounded-lg border border-accent bg-accent-dim px-2 text-[12.5px] text-accent"
-              >
-                Save
-              </button>
-            </span>
-          ) : null}
-        </div>
+                  {/* Only the applied view can be deleted, so a mis-tap costs a
+                      switch rather than a view. */}
+                  {on ? (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${view.name}`}
+                      onClick={() =>
+                        onViews(views.filter((v) => v.name !== view.name))
+                      }
+                      className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </span>
+              )
+            })}
+          </div>
+        ) : null}
 
         {/*
           Whose move it is sits ABOVE the tabs, not inside them as a fourth.
@@ -546,6 +507,55 @@ export const Filters = ({
               Nothing matches that.
             </p>
           ) : null}
+        </div>
+
+        {/*
+          Saving is the last thing you do, so it is the last thing here — and on
+          a bottom sheet that also puts it where the thumb already is. Outside
+          the scrolling list, so it is reachable without scrolling past
+          twenty-two repositories, and at a fixed height so nothing above it
+          moves when it changes state.
+        */}
+        <div className="flex h-[38px] shrink-0 items-center gap-1.5 border-t border-line-soft pt-2">
+          {naming ? (
+            <>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") save()
+                  if (e.key === "Escape") setNaming(false)
+                }}
+                placeholder="At work"
+                aria-label="Name this view"
+                className="h-[28px] min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2 text-[12.5px] outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={save}
+                className="h-[28px] shrink-0 rounded-lg border border-accent bg-accent-dim px-2.5 text-[12.5px] text-accent"
+              >
+                Save
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={!savable}
+              onClick={() => setNaming(true)}
+              title={
+                savable
+                  ? undefined
+                  : isEmptyPicks(picks)
+                    ? "Pick a filter first"
+                    : "Already saved as a view"
+              }
+              className="h-[28px] w-full rounded-lg border border-dashed border-line text-[12.5px] text-fg-quiet transition-opacity hover:text-fg disabled:opacity-40 disabled:hover:text-fg-quiet"
+            >
+              Save this view
+            </button>
+          )}
         </div>
       </div>
     </>
