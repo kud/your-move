@@ -386,6 +386,39 @@ h4 {
 }
 
 /*
+ * Motion off, and it is a performance setting as much as a comfort one.
+ *
+ * Set from `layout.tsx` before first paint, following the operating system
+ * unless the menu has overridden it, so the attribute is the single source of
+ * truth and nothing here has to repeat the media query.
+ *
+ * The canvas is hidden by the same rule the other two modes use, and `Sky`
+ * watches its own computed display rather than re-deriving the conditions —
+ * so hiding it here really does stop the loop, which is what makes this a
+ * speed-up rather than a preference.
+ */
+:root[data-motion="reduce"] canvas[aria-hidden] {
+  display: none;
+}
+
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after,
+:root[data-motion="reduce"] *::backdrop {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Separately from the durations above: a backdrop blur is expensive while it
+   is on screen, not only while it animates, and it is the one effect here that
+   makes a whole viewport recomposite. */
+:root[data-motion="reduce"] [popover]:popover-open::backdrop {
+  backdrop-filter: none;
+}
+
+/*
  * A light theme, and it is a second design rather than a recolour.
  *
  * Three things had to be re-derived rather than inverted:

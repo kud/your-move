@@ -100,23 +100,53 @@ export const Sky = () => {
       }
     }
 
-    /* Nothing to animate for a tab nobody is looking at, and browsers throttle
-       rAF there inconsistently rather than reliably stopping it. */
-    const visibility = () => {
+    /*
+     * Nothing to animate for a tab nobody is looking at, and browsers throttle
+     * rAF there inconsistently rather than reliably stopping it.
+     *
+     * And nothing to animate when the canvas is not on screen at all. Three
+     * modes hide it in CSS — high contrast, the light theme, reduced motion —
+     * and every one of them left this loop running: allocating three radial
+     * gradients and filling the viewport, eight times a second, to paint an
+     * element with `display: none`. Hidden is not stopped, and the bill was
+     * being paid by exactly the people who asked for less.
+     *
+     * Read from the computed style rather than re-deriving those conditions
+     * here, so the CSS stays the only place that decides, and a fourth mode
+     * added later needs nothing in this file.
+     */
+    const wanted = () =>
+      document.visibilityState === "visible" &&
+      getComputedStyle(element).display !== "none"
+
+    const settle = () => {
       cancelAnimationFrame(frame)
-      if (document.visibilityState === "visible")
-        frame = requestAnimationFrame(draw)
+      if (wanted()) frame = requestAnimationFrame(draw)
     }
 
     fit()
     addEventListener("resize", fit)
-    document.addEventListener("visibilitychange", visibility)
-    frame = requestAnimationFrame(draw)
+    document.addEventListener("visibilitychange", settle)
+
+    /* The attributes those CSS rules key off. Cheap: they change when someone
+       taps a setting, not on a timer. */
+    const modes = new MutationObserver(settle)
+    modes.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme", "data-contrast", "data-motion"],
+    })
+
+    const scheme = matchMedia("(prefers-color-scheme: light)")
+    scheme.addEventListener("change", settle)
+
+    settle()
 
     return () => {
       cancelAnimationFrame(frame)
       removeEventListener("resize", fit)
-      document.removeEventListener("visibilitychange", visibility)
+      document.removeEventListener("visibilitychange", settle)
+      modes.disconnect()
+      scheme.removeEventListener("change", settle)
     }
   }, [])
 

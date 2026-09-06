@@ -194,6 +194,21 @@ const CardBody = ({
         />
       ) : null}
 
+      {/*
+        The whole card opens the row, not just the title.
+
+        `after:absolute after:inset-0` stretches this link over the card rather
+        than wrapping the card in an anchor — wrapping would put the label
+        buttons inside a link, which is invalid and which browsers resolve by
+        guessing. This keeps one anchor, one accessible name, one tab stop, and
+        a hit area the size of the thing you are aiming at.
+
+        No hover underline: with the link covering the card, hovering anywhere
+        would underline the title, so the cue would fire nowhere near the
+        pointer. The card's own lift and background already answer the hover.
+        `focus-visible` keeps it, because a keyboard user has no pointer to say
+        where they are.
+      */}
       <a
         href={row.url}
         target="_blank"
@@ -203,17 +218,20 @@ const CardBody = ({
           e.preventDefault()
           onOpen(row)
         }}
-        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg hover:underline focus:underline focus:outline-none"
+        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none focus-visible:underline"
       >
         {row.title}
       </a>
 
-      <RowLabels
-        repo={row.repo}
-        number={row.number}
-        labels={row.labels ?? []}
-        onChanged={onChanged}
-      />
+      {/* Above the stretched link, or the labels stop being clickable. */}
+      <div className="relative z-[1]">
+        <RowLabels
+          repo={row.repo}
+          number={row.number}
+          labels={row.labels ?? []}
+          onChanged={onChanged}
+        />
+      </div>
 
       <div className="mt-1.5 flex items-center gap-2">
         {/*
@@ -417,7 +435,7 @@ export const Swimlanes = ({
   return (
     <div
       ref={scroller}
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-4rem-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start"
@@ -524,9 +542,11 @@ export const Swimlanes = ({
               threw away the thing the fold is meant to preserve: the matrix.
               Reading "3 open, 1 review" as a sentence is work; seeing which
               columns are filled, in the same places they always are, is not.
-              So the cells stay, hatched where they hold something and blank
-              where they do not — the counts land under the same sticky headers
-              as everything else, and folding costs detail rather than position.
+              So the cells stay, and the hatch runs the whole row rather than only
+              the cells with something in them: one patch mid-row reads as an
+              anomaly, where a hatched row reads as a state. The counts still
+              land under the same sticky headers as everything else, so folding
+              costs detail rather than position.
             */}
             {columns.map((id) => {
               const rows = lane.cells.get(id) ?? []
@@ -540,10 +560,8 @@ export const Swimlanes = ({
                 <div
                   key={id}
                   className={`flex flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
-                    shut ? "min-h-[34px] justify-center" : "min-h-[44px]"
-                  } ${rows.length && shut ? "hatch" : ""} ${
-                    SEAM.has(id) ? "border-l border-l-accent/40" : ""
-                  }`}
+                    shut ? "hatch min-h-[34px] justify-center" : "min-h-[44px]"
+                  } ${SEAM.has(id) ? "border-l border-l-accent/40" : ""}`}
                 >
                   {!rows.length ? null : shut ? (
                     <span className="font-mono text-[12px] tabular-nums leading-none text-fg-quiet">
@@ -560,7 +578,9 @@ export const Swimlanes = ({
                 </div>
               )
             })}
-            <div className="border-b border-line-soft" />
+            <div
+              className={`border-b border-line-soft ${folded.has(lane.repo) ? "hatch" : ""}`}
+            />
           </Fragment>
         ))}
       </div>
