@@ -37,9 +37,14 @@ export const GET = async (request: Request) => {
    * `?done=` alone. Dead surface carrying the app's only unguarded
    * interpolation is not a thing to make safe, it is a thing to delete.
    */
-  /* Only the two windows the menu offers; anything else is someone poking at
-     the URL, and a wider search than the UI can ask for is not theirs to have. */
-  const doneWithinDays = params.get("done") === "30" ? 30 : 7
+  /* Only the windows the menu offers; anything else is someone poking at the
+     URL, and a wider search than the UI can ask for is not theirs to have. An
+     allowlist rather than a parse, so a new window has to be added in both
+     places deliberately. */
+  const asked = Number(params.get("done"))
+  const doneWithinDays = ([7, 14, 30] as const).includes(asked as 7 | 14 | 30)
+    ? (asked as 7 | 14 | 30)
+    : 7
 
   /* The window is part of the question, so it is part of the cache key: a
      seven-day answer must never be served to someone who asked for thirty.
