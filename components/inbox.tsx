@@ -59,6 +59,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const [notify, setNotify] = useState(false)
   const [openMode, setOpenMode] = useState<OpenMode>("side")
   const [views, setViews] = useState<View[]>([])
+  const [order, setOrder] = useState<"urgency" | "name">("urgency")
   const [sound, setSound] = useState(false)
 
   useEffect(() => {
@@ -69,6 +70,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       if (saved === "side" || saved === "modal" || saved === "full")
         setOpenMode(saved)
       setViews(readViews())
+      const how = localStorage.getItem("ym:order")
+      if (how === "name" || how === "urgency") setOrder(how)
     } catch {}
   }, [])
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(
@@ -110,6 +113,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const changeViews = useCallback((next: View[]) => {
     setViews(next)
     writeViews(next)
+  }, [])
+
+  const chooseOrder = useCallback((next: "urgency" | "name") => {
+    setOrder(next)
+    try {
+      localStorage.setItem("ym:order", next)
+    } catch {}
   }, [])
 
   const chooseOpenMode = useCallback((next: OpenMode) => {
@@ -195,31 +205,51 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     for (const r of shown)
       byRepo.set(r.repo, [...(byRepo.get(r.repo) ?? []), r])
 
-    return [...byRepo]
-      .map(([repo, rows]): Lane => {
-        const cells = new Map<string, Row[]>()
-        for (const r of rows) {
-          const key = sectionOf(r)
-          cells.set(key, [...(cells.get(key) ?? []), r])
-        }
-        /* Yours first, drafts last within their band, then recency. The rule
+    return (
+      [...byRepo]
+        .map(([repo, rows]): Lane => {
+          const cells = new Map<string, Row[]>()
+          for (const r of rows) {
+            const key = sectionOf(r)
+            cells.set(key, [...(cells.get(key) ?? []), r])
+          }
+          /* Yours first, drafts last within their band, then recency. The rule
            and the reasoning behind the middle key live in `lib/order.ts`. */
-        for (const [key, rs] of cells) cells.set(key, [...rs].sort(byCellOrder))
+          for (const [key, rs] of cells)
+            cells.set(key, [...rs].sort(byCellOrder))
 
-        return {
-          repo,
-          cells,
-          total: rows.length,
-          yours: rows.filter((r) => r.move === "you").length,
-        }
-      })
-      .sort(
-        (a, b) =>
-          Number(b.yours > 0) - Number(a.yours > 0) ||
-          b.yours - a.yours ||
-          b.total - a.total,
-      )
-  }, [shown])
+          return {
+            repo,
+            cells,
+            total: rows.length,
+            yours: rows.filter((r) => r.move === "you").length,
+          }
+        })
+        /*
+         * Urgency by default, and that is the app's name rather than an arbitrary
+         * choice: Your Move puts the thing that wants you at position one. Sorted
+         * by name it would be a repository list, and there are a great many
+         * repository lists.
+         *
+         * The alternative exists for the opposite want — a project always being
+         * in the same place, for when you arrive looking for one by name rather
+         * than reading down what is in front of you. By the name you can SEE,
+         * not `owner/repo`, since the owner is not on screen.
+         *
+         * Two states only. A third dynamic order — "recently active" — would
+         * deliver none of the stability that motivates the second one, and would
+         * need "active by whom, on what" answered first: a data decision wearing
+         * a sort's costume. Theo's call.
+         */
+        .sort((a, b) =>
+          order === "name"
+            ? shortName(a.repo).localeCompare(shortName(b.repo))
+            : Number(b.yours > 0) - Number(a.yours > 0) ||
+              b.yours - a.yours ||
+              b.total - a.total,
+        )
+    )
+  }, [shown, order])
 
   /* Tapping a card leaves the app entirely on a phone; this is what brings you
      back to the same place rather than to the first column. */
@@ -307,7 +337,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       (entries) => {
         for (const entry of entries) {
           const id = entry.target.getAttribute("data-column")
-          if (id) ratios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0)
+          if (id)
+            ratios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0)
         }
 
         let best: string | undefined
@@ -501,352 +532,357 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       <Sky />
 
       <WritableRepos repos={repos.map((r) => r.name)}>
-      <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
-        <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
-          {/*
+        <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
+          <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
+            {/*
             The mark sits beside the whole left stack rather than inside the
             `h1`, because the `h1` is baseline-aligned and a picture has no
             baseline to sit on. Centred against both lines, it reads as the
             block's marker instead of as a very large piece of punctuation.
           */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
-            <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
+            <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
+              <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
 
-            <div className="min-w-0 flex-1">
-              <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
-                Your Move
-                {/* Wide only: a baseline orients someone meeting the app for the
+              <div className="min-w-0 flex-1">
+                <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
+                  Your Move
+                  {/* Wide only: a baseline orients someone meeting the app for the
                   first time, and on his own phone he is never that reader. It
                   sits ON the title baseline rather than under it, so where it
                   does show it costs no vertical space. */}
-                <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
-                  GitHub moves. Your turn.
-                </span>
-              </h1>
-              {/* Under the name rather than instead of it: it answers "what's on my
+                  <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
+                    GitHub moves. Your turn.
+                  </span>
+                </h1>
+                {/* Under the name rather than instead of it: it answers "what's on my
                 board" better than a title that says less. A degraded state gets
                 MORE space, not less. */}
-              <button
-                type="button"
-                onClick={() => void refresh()}
-                aria-label="Refresh"
-                className="flex max-w-full mt-1 items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
-              >
-                <span aria-hidden>
-                  {liveness === "live"
-                    ? "●"
-                    : liveness === "refreshing"
-                      ? "◐"
-                      : "◌"}
-                </span>
-                {healthy ? null : (
-                  <span className="text-brass">
-                    {LIVENESS_TEXT[liveness]} ·
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  aria-label="Refresh"
+                  className="flex max-w-full mt-1 items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+                >
+                  <span aria-hidden>
+                    {liveness === "live"
+                      ? "●"
+                      : liveness === "refreshing"
+                        ? "◐"
+                        : "◌"}
                   </span>
-                )}
-                {yoursTotal > 0 ? (
-                  <>
-                    <b className="font-semibold text-accent">{yoursTotal}</b>
-                    <span>need{yoursTotal === 1 ? "s" : ""} you</span>
-                  </>
-                ) : (
-                  <span>nothing needs you</span>
-                )}
-                {lanes.length ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="font-mono tabular-nums">
-                      {lanes.length}{" "}
-                      {lanes.length === 1 ? "project" : "projects"}
+                  {healthy ? null : (
+                    <span className="text-brass">
+                      {LIVENESS_TEXT[liveness]} ·
                     </span>
-                  </>
-                ) : null}
-                {freshness ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>{freshness}</span>
-                  </>
-                ) : null}
-                {inbox?.budget ? (
-                  <span
-                    className="hidden font-mono tabular-nums md:inline"
-                    title="GitHub GraphQL points left this hour"
-                  >
-                    · {inbox.budget.remaining}
-                  </span>
-                ) : null}
-              </button>
+                  )}
+                  {yoursTotal > 0 ? (
+                    <>
+                      <b className="font-semibold text-accent">{yoursTotal}</b>
+                      <span>need{yoursTotal === 1 ? "s" : ""} you</span>
+                    </>
+                  ) : (
+                    <span>nothing needs you</span>
+                  )}
+                  {lanes.length ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="font-mono tabular-nums">
+                        {lanes.length}{" "}
+                        {lanes.length === 1 ? "project" : "projects"}
+                      </span>
+                    </>
+                  ) : null}
+                  {freshness ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span>{freshness}</span>
+                    </>
+                  ) : null}
+                  {inbox?.budget ? (
+                    <span
+                      className="hidden font-mono tabular-nums md:inline"
+                      title="GitHub GraphQL points left this hour"
+                    >
+                      · {inbox.budget.remaining}
+                    </span>
+                  ) : null}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
-            <Filters
-              repos={repos}
-              status={status}
-              labels={labels}
-              picks={picks}
-              onChange={setPicks}
-              views={views}
-              onViews={changeViews}
-            />
-            <Menu
-              login={inbox?.login}
-              doneDays={doneDays}
-              onDoneDays={(d) => {
-                setDoneDays(d)
-                void refresh()
-              }}
-              notify={notify}
-              onNotify={(on) => void chooseNotify(on)}
-              sound={sound}
-              onSound={chooseSound}
-              permission={permission}
-              openMode={openMode}
-              onOpenMode={chooseOpenMode}
-              views={views}
-              onViews={changeViews}
-            />
-          </div>
-        </header>
+            <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
+              <Filters
+                repos={repos}
+                status={status}
+                labels={labels}
+                picks={picks}
+                onChange={setPicks}
+                views={views}
+                onViews={changeViews}
+              />
+              <Menu
+                login={inbox?.login}
+                doneDays={doneDays}
+                onDoneDays={(d) => {
+                  setDoneDays(d)
+                  void refresh()
+                }}
+                notify={notify}
+                onNotify={(on) => void chooseNotify(on)}
+                sound={sound}
+                onSound={chooseSound}
+                permission={permission}
+                openMode={openMode}
+                onOpenMode={chooseOpenMode}
+                views={views}
+                onViews={changeViews}
+                order={order}
+                onOrder={chooseOrder}
+              />
+            </div>
+          </header>
 
-        {liveness === "expired" ? (
-          <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
-            <span aria-hidden>! </span>
-            Your GitHub session has expired.{" "}
-            <a className="underline" href="/api/auth/login">
-              Sign in again
-            </a>
-            .
-          </p>
-        ) : null}
-
-        {inbox?.failed.length && !allFailed ? (
-          <div className="mb-2 rounded-lg border border-brass p-2.5 text-[12px]">
-            <p className="text-brass">
+          {liveness === "expired" ? (
+            <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
               <span aria-hidden>! </span>
-              <strong>A source failed.</strong> An empty column below is missing
-              data, not an empty status.
+              Your GitHub session has expired.{" "}
+              <a className="underline" href="/api/auth/login">
+                Sign in again
+              </a>
+              .
             </p>
-            <details className="mt-1">
-              <summary className="cursor-pointer text-fg-quiet">
-                {inbox.failed.length} sections affected
-              </summary>
-              <p className="mt-1 text-fg-quiet">{inbox.failed.join(", ")}</p>
-              {inbox.reasons?.length ? (
-                <p className="mt-1 font-mono text-fg-quiet">
-                  {inbox.reasons.join(" · ")}
-                </p>
-              ) : null}
-            </details>
-          </div>
-        ) : null}
+          ) : null}
 
-        {filtering ? (
-          /* Takes layout rather than being a toast: the board must visibly be a
+          {inbox?.failed.length && !allFailed ? (
+            <div className="mb-2 rounded-lg border border-brass p-2.5 text-[12px]">
+              <p className="text-brass">
+                <span aria-hidden>! </span>
+                <strong>A source failed.</strong> An empty column below is
+                missing data, not an empty status.
+              </p>
+              <details className="mt-1">
+                <summary className="cursor-pointer text-fg-quiet">
+                  {inbox.failed.length} sections affected
+                </summary>
+                <p className="mt-1 text-fg-quiet">{inbox.failed.join(", ")}</p>
+                {inbox.reasons?.length ? (
+                  <p className="mt-1 font-mono text-fg-quiet">
+                    {inbox.reasons.join(" · ")}
+                  </p>
+                ) : null}
+              </details>
+            </div>
+          ) : null}
+
+          {filtering ? (
+            /* Takes layout rather than being a toast: the board must visibly be a
              smaller thing than the app, or a filtered board lies exactly the way
              a broken one does. */
-          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
-            <span className="min-w-0 truncate">
-              Filtered to{" "}
-              {[
-                ...picks.move.map((m) =>
-                  m === "you" ? "your move" : "their move",
-                ),
-                ...picks.repos.map(shortName),
-                ...picks.status,
-                ...picks.labels,
-              ].join(", ")}
-              {hidden > 0 ? ` · ${hidden} hidden` : ""}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                setPicks({ repos: [], status: [], labels: [], move: [] })
-              }
-              className="ml-auto shrink-0 text-accent hover:underline"
-            >
-              Clear
-            </button>
-          </div>
-        ) : null}
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
-          {allFailed ? (
-            /* One block, one fact, one way out. Redundancy reads as panic. */
-            <div className="flex flex-col items-start gap-3 p-5">
-              <p className="text-[15px] font-semibold text-brass">
-                <span aria-hidden>! </span>
-                {rateLimited
-                  ? "GitHub's hourly budget is spent."
-                  : "GitHub did not answer."}
-              </p>
-              <p className="max-w-[52ch] text-[13.5px] leading-[1.5] text-fg-mute">
-                {rateLimited ? (
-                  <>
-                    This board is empty because nothing could be read, not
-                    because nothing is waiting. The budget refills on its own
-                    {inbox?.budget?.resetAt ? (
-                      <>
-                        {" "}
-                        at{" "}
-                        {new Date(inbox.budget.resetAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </>
-                    ) : (
-                      " within the hour"
-                    )}
-                    .
-                  </>
-                ) : (
-                  "This board is empty because nothing could be read, not because nothing is waiting."
-                )}
-              </p>
+            <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
+              <span className="min-w-0 truncate">
+                Filtered to{" "}
+                {[
+                  ...picks.move.map((m) =>
+                    m === "you" ? "your move" : "their move",
+                  ),
+                  ...picks.repos.map(shortName),
+                  ...picks.status,
+                  ...picks.labels,
+                ].join(", ")}
+                {hidden > 0 ? ` · ${hidden} hidden` : ""}
+              </span>
               <button
                 type="button"
-                onClick={() => void refresh()}
-                className="rounded-lg border border-line px-2.5 py-1 text-[13px] text-fg-mute hover:text-fg"
+                onClick={() =>
+                  setPicks({ repos: [], status: [], labels: [], move: [] })
+                }
+                className="ml-auto shrink-0 text-accent hover:underline"
               >
-                Try again
+                Clear
               </button>
             </div>
-          ) : !inbox ? (
-            <div className="flex flex-col gap-2 p-3">
-              <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-              <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-              <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-            </div>
-          ) : lanes.length === 0 ? (
-            /* The restful empty board. The section vocabulary survives here — it
+          ) : null}
+
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
+            {allFailed ? (
+              /* One block, one fact, one way out. Redundancy reads as panic. */
+              <div className="flex flex-col items-start gap-3 p-5">
+                <p className="text-[15px] font-semibold text-brass">
+                  <span aria-hidden>! </span>
+                  {rateLimited
+                    ? "GitHub's hourly budget is spent."
+                    : "GitHub did not answer."}
+                </p>
+                <p className="max-w-[52ch] text-[13.5px] leading-[1.5] text-fg-mute">
+                  {rateLimited ? (
+                    <>
+                      This board is empty because nothing could be read, not
+                      because nothing is waiting. The budget refills on its own
+                      {inbox?.budget?.resetAt ? (
+                        <>
+                          {" "}
+                          at{" "}
+                          {new Date(inbox.budget.resetAt).toLocaleTimeString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </>
+                      ) : (
+                        " within the hour"
+                      )}
+                      .
+                    </>
+                  ) : (
+                    "This board is empty because nothing could be read, not because nothing is waiting."
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  className="rounded-lg border border-line px-2.5 py-1 text-[13px] text-fg-mute hover:text-fg"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : !inbox ? (
+              <div className="flex flex-col gap-2 p-3">
+                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
+                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
+                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
+              </div>
+            ) : lanes.length === 0 ? (
+              /* The restful empty board. The section vocabulary survives here — it
                says what the board watches, without a grid of empty boxes. */
-            <div className="flex flex-col items-start gap-3 p-6">
-              <p className="text-[15px] text-fg">
-                {filtering
-                  ? "Nothing matches this filter."
-                  : "Nothing is waiting on you."}
-              </p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
-                {COLUMNS.filter((s) => s !== DONE).map((s) => {
-                  const p = presentationFor(s)
-                  return (
-                    <span key={s} className="flex items-center gap-1.5">
-                      <SectionMark id={s} className="size-3 shrink-0" />
-                      {p.title}
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <>
-              {/*
-               * The rail changes job by width, and above `md` it disappears:
-               * the grid's own sticky column headers ARE the section rail, and
-               * showing both would be the same information twice.
-               *
-               * On narrow it addresses the axis the stack keeps — projects.
-               */}
-              {/* The rail navigates the horizontal axis, which is the one a
-                  narrow screen cannot show all of at once. */}
-              <nav
-                ref={rail}
-                className="no-scrollbar flex gap-1.5 overflow-x-auto overscroll-x-contain border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden"
-              >
-                {COLUMNS.map((id) => {
-                  const p = presentationFor(id)
-                  const now = shownTotals.get(id) ?? 0
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      data-chip={id}
-                      onClick={() => goTo(id)}
-                      aria-label={p.title}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
-                        active === id
-                          ? "border-accent bg-accent-dim text-fg"
-                          : "border-line text-fg-mute"
-                      }`}
-                    >
-                      <SectionMark id={id} className="size-3 shrink-0" />
-                      <span>{p.title}</span>
-                      <span className="font-mono tabular-nums text-fg-quiet">
-                        {now}
+              <div className="flex flex-col items-start gap-3 p-6">
+                <p className="text-[15px] text-fg">
+                  {filtering
+                    ? "Nothing matches this filter."
+                    : "Nothing is waiting on you."}
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
+                  {COLUMNS.filter((s) => s !== DONE).map((s) => {
+                    const p = presentationFor(s)
+                    return (
+                      <span key={s} className="flex items-center gap-1.5">
+                        <SectionMark id={s} className="size-3 shrink-0" />
+                        {p.title}
                       </span>
-                    </button>
-                  )
-                })}
-              </nav>
-
-              <div className="min-h-0 flex-1">
-                <Swimlanes
-                  lanes={lanes}
-                  columns={COLUMNS}
-                  counts={shownTotals}
-                  onChanged={applyLabel}
-                  onOpen={openRow}
-                  register={register}
-                  scroller={scroller}
-                  folded={folded}
-                  onFold={fold}
-                  arrived={arrived}
-                />
+                    )
+                  })}
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                {/*
+                 * The rail changes job by width, and above `md` it disappears:
+                 * the grid's own sticky column headers ARE the section rail, and
+                 * showing both would be the same information twice.
+                 *
+                 * On narrow it addresses the axis the stack keeps — projects.
+                 */}
+                {/* The rail navigates the horizontal axis, which is the one a
+                  narrow screen cannot show all of at once. */}
+                <nav
+                  ref={rail}
+                  className="no-scrollbar flex gap-1.5 overflow-x-auto overscroll-x-contain border-b border-line-soft bg-panel px-2.5 py-1.5 md:hidden"
+                >
+                  {COLUMNS.map((id) => {
+                    const p = presentationFor(id)
+                    const now = shownTotals.get(id) ?? 0
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        data-chip={id}
+                        onClick={() => goTo(id)}
+                        aria-label={p.title}
+                        className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[12.5px] transition-colors ${
+                          active === id
+                            ? "border-accent bg-accent-dim text-fg"
+                            : "border-line text-fg-mute"
+                        }`}
+                      >
+                        <SectionMark id={id} className="size-3 shrink-0" />
+                        <span>{p.title}</span>
+                        <span className="font-mono tabular-nums text-fg-quiet">
+                          {now}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </nav>
 
-        {/*
+                <div className="min-h-0 flex-1">
+                  <Swimlanes
+                    lanes={lanes}
+                    columns={COLUMNS}
+                    counts={shownTotals}
+                    onChanged={applyLabel}
+                    onOpen={openRow}
+                    register={register}
+                    scroller={scroller}
+                    folded={folded}
+                    onFold={fold}
+                    arrived={arrived}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/*
           Desktop only, and that is the right asymmetry rather than an omission:
           on a phone this content lives in the menu, where someone wondering
           where the data comes from actually goes looking. Here there is room
           for it on the page, so it sits on the page.
         */}
-        <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
-          <span>
-            Read live from GitHub, cached for five minutes. Nothing is stored;
-            labels are the only thing written back.
-          </span>
+          <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
+            <span>
+              Read live from GitHub, cached for five minutes. Nothing is stored;
+              labels are the only thing written back.
+            </span>
 
-          {[
-            { label: "Source", href: "https://github.com/kud/your-move" },
-            {
-              label: "Report an issue",
-              href: "https://github.com/kud/your-move/issues/new",
-            },
-            { label: "@kud", href: "https://github.com/kud" },
-          ].map((out) => (
-            <a
-              key={out.label}
-              href={out.href}
-              target="_blank"
-              rel="noreferrer"
-              className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
-            >
-              {out.label}
-            </a>
-          ))}
+            {[
+              { label: "Source", href: "https://github.com/kud/your-move" },
+              {
+                label: "Report an issue",
+                href: "https://github.com/kud/your-move/issues/new",
+              },
+              { label: "@kud", href: "https://github.com/kud" },
+            ].map((out) => (
+              <a
+                key={out.label}
+                href={out.href}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
+              >
+                {out.label}
+              </a>
+            ))}
 
-          {/* No private repo names here: this page is public, and the origin
+            {/* No private repo names here: this page is public, and the origin
               is worth telling without naming what it came out of. */}
-          <span className="ml-auto text-right">
-            Built to answer one question across a lot of repositories — whose
-            move is it — then made general.
-          </span>
-        </footer>
-        {/* Desktop only, by his call rather than by omission: on a phone the
+            <span className="ml-auto text-right">
+              Built to answer one question across a lot of repositories — whose
+              move is it — then made general.
+            </span>
+          </footer>
+          {/* Desktop only, by his call rather than by omission: on a phone the
             card opens the native GitHub app, which does all of this better. */}
-        {openRowData ? (
-          <Detail
-            row={openRowData}
-            onClose={closeRow}
-            onLabelChange={applyLabel}
-            mode={openMode}
-            onMode={chooseOpenMode}
-          />
-        ) : null}
-      </main>
+          {openRowData ? (
+            <Detail
+              row={openRowData}
+              onClose={closeRow}
+              onLabelChange={applyLabel}
+              mode={openMode}
+              onMode={chooseOpenMode}
+            />
+          ) : null}
+        </main>
       </WritableRepos>
     </>
   )

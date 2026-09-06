@@ -61,6 +61,8 @@ export const Menu = ({
   onOpenMode,
   views,
   onViews,
+  order,
+  onOrder,
 }: {
   login?: string
   doneDays: 7 | 30
@@ -74,6 +76,8 @@ export const Menu = ({
   onOpenMode: (mode: "side" | "modal" | "full") => void
   views: View[]
   onViews: (next: View[]) => void
+  order: "urgency" | "name"
+  onOrder: (next: "urgency" | "name") => void
 }) => {
   const picker = useRef<HTMLInputElement>(null)
   const [moved, setMoved] = useState<string>()
@@ -325,6 +329,37 @@ export const Menu = ({
                     aria-pressed={openMode === option}
                     className={`px-2 py-0.5 text-[12px] capitalize ${
                       openMode === option
+                        ? "bg-accent-dim text-accent"
+                        : "text-fg-quiet"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </span>
+            </div>
+
+            {/*
+              Two states, and the default is the app's name rather than a
+              preference: what wants you comes first. `Name` is here for the
+              opposite arrival — looking for one project rather than reading
+              down what is in front of you — and it is the only alternative
+              that stores a RULE rather than a photograph of a set. A
+              hand-ordered list would rot on its own as repos are renamed or
+              created, and a repo missing from it would land at the bottom,
+              which on this board means new work hidden under everything.
+            */}
+            <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
+              Order
+              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+                {(["urgency", "name"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => onOrder(option)}
+                    aria-pressed={order === option}
+                    className={`px-2 py-0.5 text-[12px] capitalize ${
+                      order === option
                         ? "bg-accent-dim text-accent"
                         : "text-fg-quiet"
                     }`}
