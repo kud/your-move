@@ -21,8 +21,16 @@ import type { Inbox } from "@/lib/github"
 
 type Entry = { at: number; inbox: Inbox }
 
-/** Long enough to absorb an open plus its poll; short enough to feel live. */
-const TTL_MS = 60 * 1000
+/*
+ * Half the client's poll interval.
+ *
+ * At sixty seconds this absorbed only the double fetch of a single page open.
+ * At five minutes it also absorbs opening the app twice in a row, a second tab,
+ * and a phone and a desktop looking within a few minutes of each other — all of
+ * which used to be a full 74-point read each. The client shows the answer's age
+ * regardless, so a five-minute-old board is never passed off as current.
+ */
+const TTL_MS = 5 * 60 * 1000
 
 /*
  * How long a stale answer may still be served when GitHub refuses. Generous on

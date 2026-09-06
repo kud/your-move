@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useState } from "react"
+import { Fragment, memo, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { presentationFor } from "@/lib/sections"
@@ -142,7 +142,7 @@ export const About = ({
  * That is the compression a grid buys, and it is why this card is shorter than
  * on either single-axis board that came before.
  */
-export const Card = ({
+const CardBody = ({
   row,
   onChanged,
 }: {
@@ -242,6 +242,14 @@ export type Lane = {
  * lane a strip in a tall empty row. Expanding happens in place, because a third
  * scroll axis inside a grid that already has two is unusable.
  */
+/*
+ * Seventy cards re-rendering because a clock ticked is most of what this page
+ * asks of the main thread. A card depends on its row and one stable callback,
+ * so the default shallow comparison is exactly the right test.
+ */
+export const Card = memo(CardBody)
+Card.displayName = "Card"
+
 const Cell = ({
   rows,
   cap,

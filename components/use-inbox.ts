@@ -155,7 +155,9 @@ export const useInbox = (initial?: Inbox) => {
       if (document.visibilityState !== "visible") return
       void refresh()
     }, POLL_MS)
-    const tick = setInterval(() => setNow(Date.now()), 30 * 1000)
+    /* The only thing this drives is a relative timestamp whose smallest unit
+       is a minute, and it re-renders the tree. Half as often is invisible. */
+    const tick = setInterval(() => setNow(Date.now()), 60 * 1000)
 
     /* Coming back to a backgrounded tab is the moment the answer on screen is
        most likely to be old, and the moment someone is most likely to act on
