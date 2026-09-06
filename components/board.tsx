@@ -22,6 +22,11 @@ import type { Row } from "@/lib/github"
 
 export const TONE: Record<string, string> = {
   accent: "text-accent border-accent bg-accent-dim",
+  /* Two weights of the same hue, and the pair is the point: `alarm` is broken,
+     `brass` is in flight. Same colour, so nothing has to be re-derived for the
+     light theme; different strength, so the step is visible without a fifth
+     hue. */
+  alarm: "text-brass border-brass bg-brass/15",
   brass: "text-brass border-brass/40 bg-brass/10",
   sage: "text-sage border-sage/40 bg-sage/10",
   slate: "text-slate border-line bg-panel-2",
@@ -72,9 +77,20 @@ const SECTION_OF: Record<string, string> = {
 
 export const sectionOf = (row: Row): string => SECTION_OF[row.source] ?? "open"
 
+/*
+ * Four legible steps, and no more: slate says nothing is wrong, brass says it is
+ * in flight, alarm says it is broken, sage says it is settled.
+ *
+ * Deliberately NOT accent. Accent means one thing on this board — "this one is
+ * yours" — and it is already carried by the lane order, the `N you` pills and
+ * the stripe. Spending it on "something noteworthy here" would let a stranger's
+ * broken PR shout louder than the stripe that says the row is yours, and a
+ * conflict on your own PR would say the same rose twice. Iris's call, and it is
+ * the reason the loud tier is brass rather than a stronger red.
+ */
 const REASON_TONE: Record<string, string> = {
-  "CI failing": "accent",
-  Conflict: "accent",
+  "CI failing": "alarm",
+  Conflict: "alarm",
   "Changes requested": "brass",
   "Checks running": "brass",
   Approved: "sage",
@@ -200,13 +216,22 @@ const CardBody = ({
       />
 
       <div className="mt-1.5 flex items-center gap-2">
+        {/*
+          The chip takes its own tone on every card, not only on yours.
+
+          It used to fall through to slate whenever the row was someone else's,
+          which meant a conflict on an incoming PR rendered identically to a
+          plain "Open" — the state was computed, written on the card, and then
+          made unreadable. The glyph on the loud tier is not decoration: it is
+          what keeps the step legible in daylight and to a reader who cannot
+          separate the two brasses by hue.
+        */}
         <span
           className={`shrink-0 rounded border px-1.5 py-px text-[11px] ${
-            yours
-              ? (TONE[REASON_TONE[reason] ?? "slate"] ?? TONE.slate)
-              : TONE.slate
+            TONE[REASON_TONE[reason] ?? "slate"] ?? TONE.slate
           }`}
         >
+          {REASON_TONE[reason] === "alarm" ? <span aria-hidden>! </span> : null}
           {reason}
         </span>
         <span className="ml-auto shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
@@ -365,12 +390,7 @@ const Cell = ({
   return (
     <>
       {shown.map((row) => (
-        <Card
-          key={row.url}
-          row={row}
-          onChanged={onChanged}
-          onOpen={onOpen}
-        />
+        <Card key={row.url} row={row} onChanged={onChanged} onOpen={onOpen} />
       ))}
       {rows.length > cap && !all ? (
         <button
@@ -476,13 +496,13 @@ export const Swimlanes = ({
             {/* Sticky left: without it you lose which lane you are in the
                 moment you scroll right, and the grid becomes unreadable. */}
             {/*
-              * Fold on the cell, reveal on the name.
-              *
-              * The handler sits on the whole label — chevron, counts, empty
-              * space — and the name stops propagation. So the collapse really is
-              * "around the title", and the one thing the title does is say what
-              * it could not fit.
-              */}
+             * Fold on the cell, reveal on the name.
+             *
+             * The handler sits on the whole label — chevron, counts, empty
+             * space — and the name stops propagation. So the collapse really is
+             * "around the title", and the one thing the title does is say what
+             * it could not fit.
+             */}
             <div
               onClick={() => onFold(lane.repo)}
               className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
@@ -532,28 +552,28 @@ export const Swimlanes = ({
               </div>
             ) : (
               columns.map((id) => {
-              const rows = lane.cells.get(id) ?? []
-              /* An empty cell is not a box. No border, no background, no
+                const rows = lane.cells.get(id) ?? []
+                /* An empty cell is not a box. No border, no background, no
                  sentence — blank space between the hairlines already reads as
                  an empty cell, where an empty bordered box reads as a broken
                  component. */
-              return (
-                <div
-                  key={id}
-                  className={`flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
-                    SEAM.has(id) ? "border-l border-l-accent/40" : ""
-                  }`}
-                >
-                  {rows.length ? (
-                    <Cell
-                      rows={rows}
-                      cap={id === DONE ? DONE_PER_CELL : PER_CELL}
-                      onChanged={onChanged}
-                      onOpen={onOpen}
-                    />
-                  ) : null}
-                </div>
-              )
+                return (
+                  <div
+                    key={id}
+                    className={`flex min-h-[44px] flex-col gap-2 border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
+                      SEAM.has(id) ? "border-l border-l-accent/40" : ""
+                    }`}
+                  >
+                    {rows.length ? (
+                      <Cell
+                        rows={rows}
+                        cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                        onChanged={onChanged}
+                        onOpen={onOpen}
+                      />
+                    ) : null}
+                  </div>
+                )
               })
             )}
             {folded.has(lane.repo) ? null : (
