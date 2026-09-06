@@ -74,10 +74,30 @@ body {
   );
 }
 
+/*
+ * Focus is a property of the viewport, not of the content.
+ *
+ * It used to be accent, which on this board means exactly one thing — this row
+ * is yours. Tab onto somebody else's incoming PR and it acquired the colour
+ * meaning the opposite of what it is, and at a glance a focused card was
+ * indistinguishable from one of his. The file's own rule, that colour never
+ * carries a state on its own, was being broken by the one indicator that is
+ * colour alone.
+ *
+ * `--color-fg` reads about 15:1 on dark, 16:1 on light and 17:1 in high
+ * contrast, from one value with no per-theme override. Loud, and correctly so:
+ * a focus ring is the one thing on screen that has to be found instantly, only
+ * a keyboard user ever sees it, and what it must not be is meaningful.
+ *
+ * The `border-radius` that used to be here was a live bug rather than styling:
+ * it set the radius of the FOCUSED ELEMENT, not of the outline, so tabbing to
+ * the round `About` button turned it into a 3px-cornered square for as long as
+ * it held focus. Outlines have followed an element's own radius on their own
+ * for years.
+ */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
-  border-radius: 3px;
+  outline: 2px solid var(--color-fg);
+  outline-offset: 2px;
 }
 
 /* The one sanctioned expressive effect: an opacity breathe so "alive" is
