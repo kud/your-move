@@ -337,7 +337,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   sits ON the title baseline rather than under it, so where it
                   does show it costs no vertical space. */}
               <span className="hidden truncate font-sans text-[13px] font-normal tracking-normal text-fg-quiet md:inline">
-                what moved, and whose move it is
+                GitHub moves. Your turn.
               </span>
             </h1>
             {/* Under the name rather than instead of it: it answers "what's on my

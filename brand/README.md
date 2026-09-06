@@ -1,5 +1,11 @@
 # Your Move — brand
 
+> **GITHUB MOVES. YOUR TURN.**
+
+Four words that say the product better than any sentence written for it. Use it
+wherever the name alone is not enough — the README, the OAuth App page, a store
+listing. Small caps, wide tracking.
+
 Everything here is the source of truth for the mark. Take what you need from
 `svg/` when a vector will do, and from `png/` when it will not.
 
@@ -9,12 +15,12 @@ A thick open ring with a half-disc resting in its mouth — one form that has le
 go, one that is held.
 
 > [!NOTE]
-> **This mark is shared with [`kud/companies`](https://github.com/kud/companies),
-> which still uses it at board.kud.io.** That is a deliberate choice rather than
-> an oversight: it was kept because it was preferred, after two alternatives were
-> designed and rejected. Both products are Erwann's, so nothing is being
-> borrowed — but they do read as one family, and the ring resolves as a "C",
-> which belonged to the other name. Worth knowing before it goes anywhere public.
+> **This mark was inherited from [`kud/companies`](https://github.com/kud/companies)**,
+> where it was drawn as a "co" monogram. That project's deployment has since been
+> retired, so nothing else uses it and nothing is being shared — but the ring
+> still resolves as a "C", which is where it came from rather than what it means.
+> It was kept because it was preferred, after three alternatives were designed
+> and compared side by side at 32px and in monochrome.
 
 ## Which file to use where
 
@@ -55,6 +61,12 @@ against near-black, where it reads about 7:1, and falls under 3:1 on white.
 > about how a hairline should behave.
 
 ## Known limits
+
+- **In one colour the two forms merge.** The ring and the half-disc read as a
+  single letter rather than as one thing held and one let go — verified by
+  rendering `icon-mono.svg` at 32px, not assumed. The mark stays legible; it is
+  the *meaning* that thins. Worth knowing before using the mono variant anywhere
+  the distinction is the point.
 
 - **16px is marginal.** The ring's aperture is generous enough to survive
   better than the alternatives did, but check it where you use it.
