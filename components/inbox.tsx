@@ -76,6 +76,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     repos: [],
     status: [],
     labels: [],
+    move: [],
   })
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
@@ -131,12 +132,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       repos: read("repos"),
       status: read("status"),
       labels: read("labels"),
+      move: read("move"),
     })
   }, [])
 
   useEffect(() => {
     const url = new URL(location.href)
-    for (const key of ["repos", "status", "labels"] as const) {
+    for (const key of ["repos", "status", "labels", "move"] as const) {
       if (picks[key].length) url.searchParams.set(key, picks[key].join(","))
       else url.searchParams.delete(key)
     }
@@ -165,7 +167,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               (!picks.repos.length || picks.repos.includes(r.repo)) &&
               (!picks.status.length || picks.status.includes(reasonFor(r))) &&
               (!picks.labels.length ||
-                (r.labels ?? []).some((l) => picks.labels.includes(l))),
+                (r.labels ?? []).some((l) => picks.labels.includes(l))) &&
+              (!picks.move.length || picks.move.includes(r.move)),
           ),
     [all, picks, filtering],
   )
@@ -399,6 +402,37 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     ? all.find((r) => `${r.repo}#${r.number}` === open)
     : undefined
 
+  /*
+   * A `?row=` link on a phone goes to GitHub, not to the desktop panel.
+   *
+   * The card handler already bails below `md` — a tap there hands over to the
+   * GitHub app, which does all of this better, and the panel says so five times
+   * over. But the panel is ALSO driven from the URL, and nothing guarded that
+   * door: a link shared to yourself, or a `?row=` restored by the browser,
+   * opened a 620px side panel on a 390px screen.
+   *
+   * Sent onward rather than merely refused, because the link means "look at
+   * this ticket" and refusing it would answer a request with a board. If the
+   * row is not on the board at all — filtered away, or closed since — the
+   * parameter is dropped instead, which lands you on the board rather than on
+   * a navigation to nowhere.
+   */
+  const narrow = useRef(false)
+  useEffect(() => {
+    narrow.current = matchMedia("(max-width: 767px)").matches
+  }, [])
+
+  useEffect(() => {
+    if (!open || !narrow.current) return
+    if (openRowData) location.replace(openRowData.url)
+    else if (all.length) {
+      const url = new URL(location.href)
+      url.searchParams.delete("row")
+      history.replaceState(null, "", url)
+      setOpen(undefined)
+    }
+  }, [open, openRowData, all.length])
+
   /* Only what has crossed into your side is worth interrupting anyone for. */
   const attention = useMemo(
     () => shown.filter((r) => r.move === "you"),
@@ -601,6 +635,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             <span className="min-w-0 truncate">
               Filtered to{" "}
               {[
+                ...picks.move.map((m) =>
+                  m === "you" ? "your move" : "their move",
+                ),
                 ...picks.repos.map(shortName),
                 ...picks.status,
                 ...picks.labels,
@@ -609,7 +646,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             </span>
             <button
               type="button"
-              onClick={() => setPicks({ repos: [], status: [], labels: [] })}
+              onClick={() =>
+                setPicks({ repos: [], status: [], labels: [], move: [] })
+              }
               className="ml-auto shrink-0 text-accent hover:underline"
             >
               Clear
@@ -670,7 +709,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             <div className="flex flex-col items-start gap-3 p-6">
               <p className="text-[15px] text-fg">
                 {filtering
-                  ? "Nothing in the repositories you have selected."
+                  ? "Nothing matches this filter."
                   : "Nothing is waiting on you."}
               </p>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
@@ -752,7 +791,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
         */}
         <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
           <span>
-            Read live from GitHub, cached for a minute. Nothing is stored;
+            Read live from GitHub, cached for five minutes. Nothing is stored;
             labels are the only thing written back.
           </span>
 

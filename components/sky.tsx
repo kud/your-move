@@ -52,8 +52,6 @@ export const Sky = () => {
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
-
     const element = canvas.current
     const context = element?.getContext("2d")
     if (!element || !context) return

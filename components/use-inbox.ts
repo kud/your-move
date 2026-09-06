@@ -114,7 +114,20 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 30 = 7) => {
     setLiveness((was) => (was === "expired" ? was : "refreshing"))
 
     try {
+      /*
+       * A deadline, because the failure without one is permanent.
+       *
+       * `inFlight` guards re-entry and clears in `finally` — but a promise that
+       * never settles never reaches `finally`. A mobile radio that neither
+       * errors nor completes (a dead zone, a tab Android froze and resumed, a
+       * socket the OS never tore down) left that ref `true` for the life of the
+       * document, and every later path bounced off it: the poll, the return to
+       * visible, and the `online` listener all call this and return on line one.
+       * The board froze until a reload — including after the network came back,
+       * which is exactly the moment it was most trusted.
+       */
       const response = await fetch(`/api/inbox?done=${doneDaysRef.current}`, {
+        signal: AbortSignal.timeout(15_000),
         cache: "no-store",
       })
 
@@ -218,6 +231,13 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 30 = 7) => {
     age,
     /* Age wins over a nominally "live" state: a successful fetch five minutes
        ago is not live any more, whatever the last request reported. */
-    liveness: liveness === "live" && age > STALE_AFTER_MS ? "stale" : liveness,
+    /* `refreshing` ages too. It used to be terminal-looking in the other
+       direction: a request that never returned kept the ◐ and suppressed every
+       banner, so an indefinitely broken board read as one that was working. */
+    liveness:
+      (liveness === "live" || liveness === "refreshing") &&
+      age > STALE_AFTER_MS
+        ? "stale"
+        : liveness,
   }
 }

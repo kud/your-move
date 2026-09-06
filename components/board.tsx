@@ -169,9 +169,18 @@ export const About = ({
       type="button"
       popoverTarget={id}
       aria-label={`What "${title}" means`}
-      className="grid size-4 shrink-0 place-items-center rounded-full border border-line font-mono text-[11px] leading-none text-fg-quiet transition-colors hover:border-accent hover:text-accent"
+      /* Drawn at 16px, tapped at 24: the padding grows the hit area and the
+         negative margin gives the space back, so nothing around it moves. The
+         fold chevron gets away with 16 because its whole lane cell is tappable;
+         this is the only route to what a column means. */
+      className="group/about -m-1 grid shrink-0 place-items-center p-1"
     >
-      ?
+      <span
+        aria-hidden
+        className="grid size-4 place-items-center rounded-full border border-line font-mono text-[11px] leading-none text-fg-quiet transition-colors group-hover/about:border-accent group-hover/about:text-accent"
+      >
+        ?
+      </span>
     </button>
     <div
       id={id}
@@ -235,6 +244,10 @@ const CardBody = ({
         rel="noreferrer"
         onClick={(e) => {
           if (!matchMedia("(min-width: 768px)").matches) return
+          /* A modified click means "somewhere else, not here" — every other
+             link in the app honours it, and swallowing it here made the card
+             the one thing you could not open in a background tab. */
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
           e.preventDefault()
           onOpen(row)
         }}
@@ -772,9 +785,18 @@ export const Swimlanes = ({
                 </div>
               )
             })}
-            <div
-              className={`border-b border-line-soft ${folded.has(lane.repo) ? "hatch" : ""}`}
-            />
+            {/*
+              The trailing track keeps its width and loses its rule.
+
+              At the 1600px cap it resolves to about 1100px, and it was drawing
+              a bottom hairline the whole way — so flicking fully right gave the
+              `done` column followed by a thousand pixels of ruled nothing, once
+              per lane. Zeroing the track was the other candidate and it is
+              wrong: the width is exactly what lets the last column reach its
+              snap line, which was a complaint in its own right. Empty space is
+              fine; ruled empty space reads as content that failed to render.
+            */}
+            <div className={folded.has(lane.repo) ? "hatch border-b border-line-soft" : ""} />
           </Fragment>
         ))}
       </div>

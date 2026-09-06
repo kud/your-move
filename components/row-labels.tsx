@@ -58,6 +58,12 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
       }
       setAvailable(undefined)
       onChanged(repo, number, label, action)
+    } catch {
+      /* The `!response.ok` branch above was careful and this one did not exist,
+         so a write that failed on the network — the common case on a phone —
+         cleared `busy` and said nothing. A control that ignores you is worse
+         than one that refuses you. */
+      setProblem("Could not reach GitHub. Nothing was changed.")
     } finally {
       setBusy(undefined)
     }
@@ -69,8 +75,9 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
     const response = await fetch(
       `/api/labels?repo=${encodeURIComponent(repo)}`,
       { cache: "no-store" },
-    )
-    if (!response.ok) return setProblem("Could not read this repo's labels.")
+    ).catch(() => undefined)
+    if (!response?.ok)
+      return setProblem("Could not read this repo\u2019s labels.")
 
     const { labels: all } = (await response.json()) as {
       labels: { name: string }[]
