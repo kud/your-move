@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 
 import type { OpenMode } from "@/components/detail"
-import { exportViews, importViews, type View } from "@/lib/views"
+import { encodeShare, exportViews, importViews, type View } from "@/lib/views"
 
 /*
  * Everything that is about you rather than about the board.
@@ -573,6 +573,33 @@ export const Menu = ({
               className={`${link} w-full`}
             >
               Import
+            </button>
+
+            {/*
+              A link, which is the shape the journey actually has: export on the
+              desk, get a FILE to the phone somehow, then find a file picker
+              inside an installed PWA — against one tap.
+
+              The payload rides in the fragment, so it never reaches a server:
+              not the request, not a log, not a referrer. It still carries
+              repository names, some of them private, so the copy says where it
+              is safe to put it rather than leaving that to be discovered.
+            */}
+            <button
+              type="button"
+              disabled={!views.length}
+              onClick={async () => {
+                const url = `${location.origin}/#views=${encodeShare(views)}`
+                try {
+                  await navigator.clipboard.writeText(url)
+                  setMoved("Link copied — it carries your repo names")
+                } catch {
+                  setMoved("Could not reach the clipboard")
+                }
+              }}
+              className={`${link} w-full disabled:opacity-50`}
+            >
+              Copy a share link
             </button>
 
             {/* Merged by name rather than replacing the lot: importing on a

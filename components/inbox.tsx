@@ -31,7 +31,7 @@ import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
 import { presentationFor } from "@/lib/sections"
-import { readViews, writeViews, type View } from "@/lib/views"
+import { decodeShare, readViews, writeViews, type View } from "@/lib/views"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
 /*
@@ -74,7 +74,30 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
         saved === "github"
       )
         setOpenMode(saved)
-      setViews(readViews())
+      const kept = readViews()
+
+      /*
+       * A shared link merges into what is already here rather than replacing
+       * it, by name, exactly as the file import does — arriving on a second
+       * device should add what is missing, not erase what is there.
+       *
+       * The fragment is stripped afterwards so a reload does not re-apply it,
+       * and so the link does not sit in the address bar carrying repository
+       * names for the next person who looks over your shoulder.
+       */
+      const shared = location.hash.startsWith("#views=")
+        ? decodeShare(location.hash.slice("#views=".length))
+        : []
+
+      if (shared.length) {
+        const names = new Set(shared.map((v) => v.name))
+        const merged = [...kept.filter((v) => !names.has(v.name)), ...shared]
+        setViews(merged)
+        writeViews(merged)
+        history.replaceState(null, "", location.pathname + location.search)
+      } else {
+        setViews(kept)
+      }
       const how = localStorage.getItem("ym:order")
       if (how === "name" || how === "urgency") setOrder(how)
     } catch {}
