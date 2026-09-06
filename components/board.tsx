@@ -59,8 +59,21 @@ export const GROUPS: { label: string; ids: string[] }[] = [
 
 export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
 
-/** Where one lifecycle ends and the next begins, drawn rather than implied. */
-const SEAM = new Set([THEIRS[0], CLOSED[0]])
+/*
+ * Where one lifecycle ends and the next begins — and the cell that OWNS the
+ * rule, which is the whole of the fix.
+ *
+ * Every vertical rule on this grid is painted by the cell to its LEFT, and
+ * there are exactly two weights: 1px `line-soft` between columns, 2px `line`
+ * at a structural seam. Before this, a seam was drawn as a left border on the
+ * arriving cell while the departing one still drew its own right border — so a
+ * seam was three pixels in two tones, and only below the group band, which had
+ * no right borders and drew a clean 2px. It stepped horizontally at the seam
+ * and vertically at the band. Closed was the worst of it: 3px on its left and
+ * 1px on its right, an asymmetric bracket that reads as a rule adrift from its
+ * column rather than as a divider.
+ */
+const SEAM_END = new Set([YOURS.at(-1), THEIRS.at(-1)])
 
 export const DONE = "done"
 
@@ -191,7 +204,7 @@ const CardBody = ({
   const yours = row.move === "you"
 
   return (
-    <article className={`group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise ${arrived ? "ym-arrived" : ""}`}>
+    <article className={`group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
       {/* Position and shape, not hue alone: a bar on the leading edge. */}
       {yours ? (
         <span
@@ -224,7 +237,7 @@ const CardBody = ({
           e.preventDefault()
           onOpen(row)
         }}
-        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none focus-visible:underline"
+        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none"
       >
         {row.title}
       </a>
@@ -543,14 +556,14 @@ export const Swimlanes = ({
           Mute clears 8:1 on dark, 8:1 on light and 12:1 in high contrast — one
           value, all three.
         */}
-        <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r border-line bg-panel md:block" />
+        <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
         {GROUPS.map((group, i) => (
           <div
             key={group.label}
-            /* The seam runs unbroken from the very top edge; without it the
-               band floats free of the columns it names. */
+            /* Painted by the group to the left, like every other rule here, so
+               the seam runs unbroken from the top edge at one width. */
             className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
-              i ? "border-l-2 border-l-line" : ""
+              i < GROUPS.length - 1 ? "border-r-2 border-r-line" : ""
             }`}
             style={{ gridColumn: `span ${group.ids.length}` }}
           >
@@ -560,7 +573,7 @@ export const Swimlanes = ({
         <div className="sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
 
         {/* Corner: the one cell belonging to both sticky axes. */}
-        <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r border-line bg-panel md:top-[16px]" />
+        <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
 
         {columns.map((id) => {
           const p = presentationFor(id)
@@ -569,8 +582,10 @@ export const Swimlanes = ({
               key={id}
               ref={(el) => register(id, el)}
               data-column={id}
-              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-r border-line-soft bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${
-                SEAM.has(id) ? "border-l-2 border-l-line" : ""
+              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${
+                SEAM_END.has(id)
+                  ? "border-r-2 border-r-line"
+                  : "border-r border-r-line-soft"
               }`}
             >
               <Slot glyph={p.glyph} tone={p.tone} />
@@ -584,7 +599,7 @@ export const Swimlanes = ({
             </div>
           )
         })}
-        <div className="sticky top-0 z-20 h-[41px] border-b border-line-soft bg-panel md:top-[16px]" />
+        <div className="sticky top-0 z-20 h-[41px] border-b border-b-line bg-panel md:top-[16px]" />
 
         {lanes.map((lane) => (
           <Fragment key={lane.repo}>
@@ -600,8 +615,15 @@ export const Swimlanes = ({
              */}
             <div
               onClick={() => onFold(lane.repo)}
-              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r border-b-line border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
-                lane.yours ? "border-r-accent/60" : ""
+              className={`sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line-soft border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none] ${
+                /* Marked INSIDE the cell, in the card's own idiom, rather than
+                   by recolouring the structural rule. A grid line that changes
+                   colour by row content is what made the lane edge read as
+                   broken into segments — and accent already carries "yours"
+                   three other ways. */
+                lane.yours
+                  ? "before:absolute before:inset-y-1 before:left-0 before:w-[2px] before:rounded-full before:bg-accent"
+                  : ""
               }`}
             >
               <div className="flex items-center gap-1">
@@ -688,9 +710,13 @@ export const Swimlanes = ({
                     is the bounce. The content height is the only thing that
                     should move.
                   */
-                  className={`relative min-h-[40px] border-b border-r border-line-soft p-2 [scroll-snap-align:none_start] ${
+                  className={`relative min-h-[40px] border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
                     shut ? "hatch" : ""
-                  } ${SEAM.has(id) ? "border-l-2 border-l-line" : ""}`}
+                  } ${
+                    SEAM_END.has(id)
+                      ? "border-r-2 border-r-line"
+                      : "border-r border-r-line-soft"
+                  }`}
                 >
                   {/* Out of flow, so it can cross-fade with the cards rather
                       than replace them and make the row jump. */}
