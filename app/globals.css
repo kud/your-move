@@ -220,3 +220,62 @@ body {
     animation: none;
   }
 }
+
+/*
+ * The small things that separate an app from a page on a phone.
+ *
+ * None of these is a preference — each removes a specific browser behaviour
+ * that has no equivalent in a native app, and whose presence is exactly what
+ * makes a web app read as a web page.
+ */
+
+/* The blue-grey flash a mobile browser paints over anything tappable. It exists
+   to say "your tap registered" on sites with no other feedback; every button
+   here already answers with a colour change, so it is pure noise. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Removes the ~300ms wait before a tap becomes a click, which browsers hold in
+ * case a second tap arrives and means "zoom". Nothing here wants double-tap
+ * zoom, and a third of a second of dead air on every press is the most
+ * expensive thing on this list.
+ */
+button,
+a,
+summary,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/*
+ * Chrome — headers, rails, chips, counts — is furniture, and a long press on
+ * furniture selecting its text or raising a callout menu is a page behaviour,
+ * not an app one. Card titles are deliberately excluded: those are content, and
+ * copying an issue title is a reasonable thing to want.
+ */
+button,
+summary,
+nav,
+h1,
+h3,
+h4 {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/*
+ * iOS zooms the whole page when a focused input's text is under 16px, and it
+ * does not zoom back out. A search field in a filter sheet is the last place to
+ * discover that. The visual size is kept with a transform-free trick: 16px is
+ * the floor only where the zoom rule applies.
+ */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

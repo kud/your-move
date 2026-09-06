@@ -21,7 +21,18 @@ const manifest = (): MetadataRoute.Manifest => ({
   description: "What moved on GitHub, and whose move it is.",
   start_url: "/",
   scope: "/",
+  /*
+   * A stable identity, independent of where the app happens to be served from.
+   * Without it the install is keyed on `start_url`, so changing that — or
+   * moving domain — orphans the installed copy and produces a second icon
+   * rather than an update.
+   */
+  id: "/",
   display: "standalone",
+  /* Chrome reads this first and falls back down the list, so a browser that
+     ever drops `standalone` degrades to a chrome-less window rather than a
+     tab. */
+  display_override: ["standalone", "minimal-ui"],
   orientation: "portrait",
   /* Both taken from `globals.css`. `background_color` paints the splash while
      the app boots, so anything but the page's own ground reads as a flash. */
