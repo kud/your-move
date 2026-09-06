@@ -656,17 +656,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             </a>
           ))}
 
+          {/* No private repo names here: this page is public, and the origin
+              is worth telling without naming what it came out of. */}
           <span className="ml-auto text-right">
-            Began as one person's board inside{" "}
-            <a
-              href="https://github.com/kud/companies"
-              target="_blank"
-              rel="noreferrer"
-              className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
-            >
-              kud/companies
-            </a>
-            , then lost the company and kept the board.
+            Built to answer one question across a lot of repositories — whose
+            move is it — then made general.
           </span>
         </footer>
         {/* Desktop only, by his call rather than by omission: on a phone the

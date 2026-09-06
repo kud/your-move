@@ -245,6 +245,27 @@ summary,
 }
 
 /*
+ * A hand on anything that does something.
+ *
+ * Tailwind 4 dropped `cursor: pointer` from its Preflight to match the browser
+ * default, which for a `<button>` is an arrow — correct by the letter of the
+ * spec and wrong by twenty-five years of what a pointer means to anyone using
+ * a mouse. On a board that is mostly chips, glyphs and small controls, an arrow
+ * is the difference between "this is a thing" and "this is a label".
+ *
+ * `:not(:disabled)` rather than a blanket rule: a hand over a control that
+ * refuses the click is a promise the page does not keep.
+ */
+button:not(:disabled),
+summary,
+label[for],
+select:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[popovertarget] {
+  cursor: pointer;
+}
+
+/*
  * A scrollbar on a strip that is meant to be swiped.
  *
  * A native app's horizontal rail has no track under it; a browser's does, and
