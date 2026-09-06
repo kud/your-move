@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react"
 
 import { REASON_TONE } from "@/components/board"
 import type { Row } from "@/lib/github"
+import { isEmptyPicks, samePicks, type View } from "@/lib/views"
 
 /*
  * Narrowing the board to a context you actually work in.
@@ -126,6 +127,8 @@ type Props = {
   labels: Facet[]
   picks: Picks
   onChange: (next: Picks) => void
+  views: View[]
+  onViews: (next: View[]) => void
 }
 
 type Tab = "repos" | "status" | "labels"
@@ -136,9 +139,33 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "labels", label: "Labels" },
 ]
 
-export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
+export const Filters = ({
+  repos,
+  status,
+  labels,
+  picks,
+  onChange,
+  views,
+  onViews,
+}: Props) => {
   const [tab, setTab] = useState<Tab>("repos")
   const [needle, setNeedle] = useState("")
+  const [naming, setNaming] = useState(false)
+  const [name, setName] = useState("")
+
+  const current = views.find((v) => samePicks(v.picks, picks))
+  const savable = !isEmptyPicks(picks) && !current
+
+  const save = () => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    onViews([
+      ...views.filter((v) => v.name !== trimmed),
+      { name: trimmed, picks },
+    ])
+    setName("")
+    setNaming(false)
+  }
 
   const active = countPicks(picks)
 
@@ -290,6 +317,91 @@ export const Filters = ({ repos, status, labels, picks, onChange }: Props) => {
             </button>
           ) : null}
         </div>
+
+        {/*
+          Saved views, first, because switching between two or three shapes is a
+          different act from building one — and it is the act he does daily.
+          "At work" and "at home" are not filters he composes each morning;
+          they are places he is.
+
+          A view is a store, on a board whose whole argument is
+          derive-never-mirror. That rule is about GitHub's facts, which can be
+          wrong while GitHub is right. A view is a copy of nothing, so there is
+          nothing for it to disagree with.
+        */}
+        {views.length || savable ? (
+          <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
+            {views.map((view) => {
+              const on = current?.name === view.name
+              return (
+                <span
+                  key={view.name}
+                  className={`flex items-center rounded-full border text-[12.5px] ${
+                    on
+                      ? "border-accent bg-accent-dim text-accent"
+                      : "border-line text-fg-mute"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onChange(view.picks)}
+                    className="py-1 pl-2.5 pr-1.5"
+                  >
+                    {view.name}
+                  </button>
+                  {/* Only the applied view can be deleted, so a mis-tap costs a
+                      switch rather than a view. */}
+                  {on ? (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${view.name}`}
+                      onClick={() =>
+                        onViews(views.filter((v) => v.name !== view.name))
+                      }
+                      className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </span>
+              )
+            })}
+
+            {savable && !naming ? (
+              <button
+                type="button"
+                onClick={() => setNaming(true)}
+                className="rounded-full border border-dashed border-line px-2.5 py-1 text-[12.5px] text-fg-quiet hover:text-fg"
+              >
+                Save this view
+              </button>
+            ) : null}
+
+            {naming ? (
+              <span className="flex flex-1 items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") save()
+                    if (e.key === "Escape") setNaming(false)
+                  }}
+                  placeholder="At work"
+                  aria-label="Name this view"
+                  className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2 py-1 text-[12.5px] outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  onClick={save}
+                  className="rounded-lg border border-accent bg-accent-dim px-2 py-1 text-[12.5px] text-accent"
+                >
+                  Save
+                </button>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
 
         {/*
           Whose move it is sits ABOVE the tabs, not inside them as a fourth.
