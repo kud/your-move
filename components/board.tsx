@@ -292,8 +292,18 @@ const CardBody = ({
         {row.title}
       </a>
 
-      {/* Above the stretched link, or the labels stop being clickable. */}
-      <div className="relative z-[1]">
+      {/*
+        Above the stretched link, or the labels stop being clickable — but only
+        the CONTROLS are, not the band they sit in.
+
+        `RowLabels` is a full-width block, so lifting the whole thing put a
+        transparent strip across the card that swallowed every click landing
+        beside a chip: on a card with one short label that is most of a line,
+        and the card simply did not open. Letting the container ignore the
+        pointer and handing it back to the buttons keeps the labels working and
+        gives the gaps to the card, which is what they look like they do.
+      */}
+      <div className="relative z-[1] pointer-events-none [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto">
         <RowLabels
           repo={row.repo}
           number={row.number}
