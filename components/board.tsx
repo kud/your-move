@@ -1151,6 +1151,19 @@ export const Swimlanes = ({
                         collapsed to its own text width. One wrapper, two
                         symptoms.
                       */
+                      /*
+                        The column's place in the sweep, and it has to be on
+                        THIS element — `.ym-in-settle` reads `--ym-i`, and a
+                        custom property set on a child is invisible to the
+                        parent that animates. It was set 24 lines below for one
+                        commit, so every column resolved the fallback and ran at
+                        delay 0: the stagger shipped and did nothing.
+
+                        Per COLUMN rather than per cell: a whole column arriving
+                        at once is one gesture travelling across the board, where
+                        per-cell is a board assembling itself piecemeal.
+                      */
+                      style={{ "--ym-i": col } as CSSProperties}
                       className={`ym-in-settle flex min-h-0 flex-col ${
                         shut || moving || colShut || colMoving
                           ? "overflow-hidden"
@@ -1171,11 +1184,6 @@ export const Swimlanes = ({
                           stutter is what turns a slide into a squash.
                         */
                         <div
-                          /* The column's place in the sweep. Per COLUMN rather
-                             than per cell: a whole column arriving at once is a
-                             wipe travelling across the board, where per-cell
-                             would be the board assembling itself piecemeal. */
-                          style={{ "--ym-i": col } as CSSProperties}
                           className={`flex flex-col gap-3 ${
                             colShut || colMoving ? "w-[var(--ym-col)]" : ""
                           }`}
