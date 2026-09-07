@@ -604,15 +604,37 @@ export const Filters = ({
                       : "border-line text-fg-mute"
                   }`}
                 >
+                  {/*
+                    A toggle, not an apply. The chip already wears the grammar
+                    of pressed — accent border, accent-dim fill — and pressing a
+                    lit one did nothing, which is the failure this file's own
+                    contrast note names: a control that reports a state the page
+                    does not honour is worse than a missing one.
+
+                    Off can only mean `emptyPicks()`, because a lit chip means
+                    the picks ARE this view exactly — that is what `current`
+                    tests — so there is nothing else it could be turning off.
+                  */}
                   <button
                     type="button"
-                    onClick={() => onChange(view.picks)}
-                    className="py-1 pl-2.5 pr-1.5"
+                    onClick={() => onChange(on ? emptyPicks() : view.picks)}
+                    aria-pressed={on}
+                    title={on ? `Turn off ${view.name}` : `Apply ${view.name}`}
+                    className="flex items-center gap-1 py-1 pl-2 pr-1.5"
                   >
+                    {/* The same tick a picked row wears, so a lit chip and a
+                        ticked row say "on" with one mark rather than by hue
+                        alone. The width is reserved so a chip does not resize
+                        as it lights — the whole wrapped row would reflow under
+                        the thumb mid-press. */}
+                    <span
+                      aria-hidden
+                      className="w-3 shrink-0 font-mono text-[11px]"
+                    >
+                      {on ? "✓" : ""}
+                    </span>
                     {view.name}
                   </button>
-                  {/* Only the applied view can be deleted, so a mis-tap costs a
-                      switch rather than a view. */}
                   {on ? (
                     <button
                       type="button"
@@ -620,7 +642,13 @@ export const Filters = ({
                       onClick={() =>
                         onViews(views.filter((v) => v.name !== view.name))
                       }
-                      className="pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+                      /* A hairline splits the chip into its two acts. The old
+                         rationale — only the applied view can be deleted, so a
+                         mis-tap costs a switch rather than a view — inverts now
+                         that the body is a toggle: turning a view off and
+                         deleting it are both "make this stop", a pixel apart,
+                         and only one comes back. */
+                      className="ml-0.5 border-l border-accent/30 py-1 pl-1.5 pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
                     >
                       ×
                     </button>

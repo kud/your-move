@@ -539,7 +539,11 @@ export const BoardHead = ({
           {group.label}
         </div>
       ))}
-      <div className="sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
+      {/* Runway, in the header row too. The board ends at the 2px seam on the
+          last column; carrying the band and the header bar past it made the
+          bar look cut rather than finished. It keeps `bg-panel` under the
+          wash because it is sticky and the lane tails scroll beneath it. */}
+      <div className="runway sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
 
       {/* Corner: the one cell belonging to both sticky axes. */}
       <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
@@ -564,7 +568,7 @@ export const BoardHead = ({
           </div>
         )
       })}
-      <div className="sticky top-0 z-20 h-[41px] border-b border-b-line bg-panel md:top-[16px]" />
+      <div className="runway sticky top-0 z-20 h-[41px] bg-panel md:top-[16px]" />
   </>
 )
 
