@@ -23,7 +23,7 @@ import {
   type Lane,
 } from "@/components/board"
 import { Detail, type OpenMode } from "@/components/detail"
-import { Mark } from "@/components/mark"
+import { Mark, MarkMono } from "@/components/mark"
 import { Launcher, LAUNCHER_ID, type Command } from "@/components/launcher"
 import { Menu } from "@/components/menu"
 import {
@@ -949,26 +949,52 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             ) : !inbox ? (
               <BoardSkeleton />
             ) : lanes.length === 0 ? (
-              /* The restful empty board. The section vocabulary survives here — it
-               says what the board watches, without a grid of empty boxes. */
-              <div className="flex flex-col items-start gap-3 p-6">
-                <p className="text-[15px] text-fg">
-                  {filtering
-                    ? "Nothing matches this filter."
-                    : "Nothing is waiting on you."}
-                </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
-                  {COLUMNS.filter((s) => s !== DONE).map((s) => {
-                    const p = presentationFor(s)
-                    return (
-                      <span key={s} className="flex items-center gap-1.5">
-                        <SectionMark id={s} className="size-3 shrink-0" />
-                        {p.title}
-                      </span>
-                    )
-                  })}
+              /*
+               * Two empty boards, and they are not the same news.
+               *
+               * A CLEAR board is the nicest moment the app has, and it gets the
+               * one flourish in here: the mark at rest, the sentence in the
+               * serif the wordmark already uses, and room around both. The
+               * section vocabulary survives beside it — it says what the board
+               * watches, without a grid of empty boxes.
+               *
+               * A FILTERED board that shows nothing is not good news at all. It
+               * is a narrow view you built, and possibly narrowed too far.
+               * Congratulating you for hiding things is the precise failure the
+               * filter banner exists to prevent, so it gets no mark, no serif
+               * and no centring — and no section list either, since those seven
+               * are not "all clear", they are excluded by a filter you set.
+               */
+              filtering ? (
+                <div className="flex flex-col items-start gap-3 p-6">
+                  <p className="text-[15px] text-fg">
+                    Nothing matches this filter.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+                  <MarkMono className="ym-in-fade h-auto w-[52px] text-fg-quiet md:w-[64px]" />
+                  {/* The app's personality is its writing, and this is the one
+                      sentence it most deserves to say properly. Never a loop:
+                      a looping animation on a resting state says something is
+                      happening on the one screen whose whole message is that
+                      nothing is. */}
+                  <p className="ym-in-fade font-serif text-[22px] font-semibold leading-tight tracking-[-0.015em] text-fg md:text-[26px]">
+                    Nothing is waiting on you.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12.5px] text-fg-quiet">
+                    {COLUMNS.filter((s) => s !== DONE).map((s) => {
+                      const p = presentationFor(s)
+                      return (
+                        <span key={s} className="flex items-center gap-1.5">
+                          <SectionMark id={s} className="size-3 shrink-0" />
+                          {p.title}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
             ) : (
               <>
                 {/*
