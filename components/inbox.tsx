@@ -458,14 +458,41 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     else setOpen(undefined)
   }, [])
 
-  const goTo = (id: string) =>
-    anchors.current.get(id)?.scrollIntoView({
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
+  /*
+   * Tapping a chip moves the board — and it did not, because the snap fought it.
+   *
+   * Under `scroll-snap-type: both mandatory` the browser re-snaps DURING a
+   * smooth programmatic scroll, and the nearest snap point mid-animation is the
+   * column you were already on. So a tap on a distant chip animated a little way
+   * and came straight back, which reads as a dead button rather than as a fight.
+   * Exactly the failure the scroll memory hit, in the other direction.
+   *
+   * Snapping comes off for the length of the move and back on when it lands.
+   * `scrollend` is the honest signal for "it landed"; the timeout is for the
+   * browsers that do not send it, and is longer than any scroll this can start.
+   */
+  const goTo = (id: string) => {
+    const anchor = anchors.current.get(id)
+    const strip = scroller.current
+    if (!anchor || !strip) return
+
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches
+    const snap = strip.style.scrollSnapType
+    strip.style.scrollSnapType = "none"
+
+    const restore = () => {
+      strip.style.scrollSnapType = snap
+      strip.removeEventListener("scrollend", restore)
+    }
+    strip.addEventListener("scrollend", restore)
+    setTimeout(restore, 1000)
+
+    anchor.scrollIntoView({
+      behavior: still ? "auto" : "smooth",
       inline: "start",
       block: "nearest",
     })
+  }
 
   const openRowData = open
     ? all.find((r) => `${r.repo}#${r.number}` === open)
