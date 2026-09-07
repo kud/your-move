@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 
 import type { OpenMode } from "@/components/detail"
+import { ThemeSwitch } from "@/components/theme-switch"
 import { useUpdate } from "@/components/use-update"
 import { encodeShare, exportViews, importViews, type View } from "@/lib/views"
 
@@ -21,34 +22,7 @@ const ID = "ym-menu"
    root so the whole token set can answer at once, rather than every component
    learning about a preference. */
 const CONTRAST = "ym:contrast"
-const THEME = "ym:theme"
 const MOTION = "ym:motion"
-
-type Theme = "auto" | "light" | "dark"
-
-/*
- * The status bar has to follow the theme, or the "native" illusion breaks at
- * exactly the seam it was hardest to fix: an OS bar painted near-black above a
- * light page. `theme-color` is a meta rather than a stylesheet value, so it is
- * the one token that has to be set imperatively.
- */
-const GROUND: Record<"light" | "dark", string> = {
-  dark: "#0b0c0e",
-  light: "#f4f2f0",
-}
-
-const paintChrome = (theme: Theme) => {
-  const resolved: "light" | "dark" =
-    theme === "auto"
-      ? matchMedia("(prefers-color-scheme: light)").matches
-        ? "light"
-        : "dark"
-      : theme
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", GROUND[resolved])
-  document.documentElement.style.background = GROUND[resolved]
-}
 
 export const Menu = ({
   login,
@@ -86,7 +60,6 @@ export const Menu = ({
   const [moved, setMoved] = useState<string>()
   const [contrast, setContrast] = useState(false)
   const [still, setStill] = useState(false)
-  const [theme, setTheme] = useState<Theme>("auto")
 
   useEffect(() => {
     try {
@@ -98,33 +71,10 @@ export const Menu = ({
          already resolved before paint. Read the result rather than the
          preference, so the switch shows what is actually in force. */
       setStill(document.documentElement.dataset.motion === "reduce")
-
-      const saved = (localStorage.getItem(THEME) as Theme | null) ?? "auto"
-      setTheme(saved)
-      document.documentElement.dataset.theme = saved
-      paintChrome(saved)
     } catch {
       /* Storage refused. The default look is the correct fallback. */
     }
   }, [])
-
-  /* Following the system means following it as it changes, not only at load. */
-  useEffect(() => {
-    if (theme !== "auto") return
-    const media = matchMedia("(prefers-color-scheme: light)")
-    const follow = () => paintChrome("auto")
-    media.addEventListener("change", follow)
-    return () => media.removeEventListener("change", follow)
-  }, [theme])
-
-  const chooseTheme = (next: Theme) => {
-    setTheme(next)
-    document.documentElement.dataset.theme = next
-    paintChrome(next)
-    try {
-      localStorage.setItem(THEME, next)
-    } catch {}
-  }
 
   const toggleMotion = () => {
     const next = !still
@@ -336,11 +286,11 @@ export const Menu = ({
               choosing "Side" are not two settings that can disagree.
             */}
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:hidden">
-              Open tickets
+              Open in
               <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {(
                   [
-                    { id: "full", label: "In app" },
+                    { id: "full", label: "Here" },
                     { id: "github", label: "GitHub" },
                   ] as const
                 ).map((option) => {
@@ -365,26 +315,41 @@ export const Menu = ({
               </span>
             </div>
 
+            {/* "Open in" rather than "Open tickets": four options plus the
+                longer label came to 293px inside a 260px row, so the group was
+                clipped. Shortening the label is the fix rather than stacking
+                the row — a settings sheet scans as label-then-value, and one
+                row breaking that rhythm reads as a difference in kind that
+                is not there. It also makes the label and the control one
+                phrase: Open in — Side, Modal, Full, GitHub.
+
+                Labels are spelled out rather than run through `capitalize`,
+                which was rendering the proper noun as "Github". */}
             <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
-              Open tickets
+              Open in
               <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
-                {(["side", "modal", "full", "github"] as const).map(
-                  (option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => onOpenMode(option)}
-                      aria-pressed={openMode === option}
-                      className={`px-2 py-0.5 text-[12px] capitalize ${
-                        openMode === option
-                          ? "bg-accent-dim text-accent"
-                          : "text-fg-quiet"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ),
-                )}
+                {(
+                  [
+                    { id: "side", label: "Side" },
+                    { id: "modal", label: "Modal" },
+                    { id: "full", label: "Full" },
+                    { id: "github", label: "GitHub" },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onOpenMode(option.id)}
+                    aria-pressed={openMode === option.id}
+                    className={`px-2 py-0.5 text-[12px] ${
+                      openMode === option.id
+                        ? "bg-accent-dim text-accent"
+                        : "text-fg-quiet"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </span>
             </div>
 
@@ -419,24 +384,14 @@ export const Menu = ({
               </span>
             </div>
 
+            {/* The label stays here rather than inside the control: it needs
+                to be scannable against "Order" one row up, which is a job that
+                only exists in this list. On login the same control carries an
+                `aria-label` instead. */}
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
               Theme
-              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
-                {(["auto", "light", "dark"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => chooseTheme(option)}
-                    aria-pressed={theme === option}
-                    className={`px-2 py-0.5 text-[12px] capitalize ${
-                      theme === option
-                        ? "bg-accent-dim text-accent"
-                        : "text-fg-quiet"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+              <span className="ml-auto flex">
+                <ThemeSwitch />
               </span>
             </div>
 
