@@ -10,6 +10,7 @@ import {
   type CSSProperties,
 } from "react"
 
+import { MarkMono } from "@/components/mark"
 import { RowLabels } from "@/components/row-labels"
 import { SectionMark } from "@/components/section-mark"
 import { presentationFor } from "@/lib/sections"
@@ -959,7 +960,7 @@ export const Swimlanes = ({
           onFoldCol={onFoldCol}
         />
 
-        {lanes.map((lane) => (
+        {lanes.map((lane, laneIndex) => (
           <Fragment key={lane.repo}>
             {/* Sticky left: without it you lose which lane you are in the
                 moment you scroll right, and the grid becomes unreadable. */}
@@ -1221,7 +1222,35 @@ export const Swimlanes = ({
               It used to hatch along with a folded lane, which was the one place
               the fold's texture claimed a region that had never held anything.
             */}
-            <div className="runway" />
+            {/*
+              The runway, past the board's right edge — and on the first lane
+              only, the mark resting in it.
+
+              Anchored rather than centred, which is the whole of why it works:
+              this track's width is `max(0px, calc(...))` — about 700px on a
+              laptop, 1400px on a large display, 0px on a phone, and different
+              again the moment a column folds. Nothing can be COMPOSED against a
+              width like that; a centred object would be adrift on every screen
+              but one. Pinned a fixed distance past the seam, it never has to
+              know how much room it has.
+
+              Quiet enough to be furniture rather than content: it carries no
+              fact, it does not react to state, and it never moves. The moment
+              it reported anything you would start checking it, and a thing you
+              check is a UI element in the one region of the board nobody sees
+              without scrolling.
+
+              `hidden md:block` because on a phone this track is zero wide, and
+              `overflow-hidden` so a narrow runway clips it rather than letting
+              it paint over the board.
+            */}
+            <div className="runway relative overflow-hidden">
+              {laneIndex === 0 ? (
+                <MarkMono
+                  className="pointer-events-none absolute left-10 top-8 hidden h-auto w-[132px] text-fg opacity-[0.05] md:block"
+                />
+              ) : null}
+            </div>
           </Fragment>
         ))}
       </div>
