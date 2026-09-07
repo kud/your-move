@@ -61,6 +61,22 @@ export const GROUPS: { label: string; ids: string[] }[] = [
 export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
 
 /*
+ * The board's natural width: what the matrix wants when nothing is clipped.
+ *
+ * Derived from the schema — the lane plus one column per status — rather than
+ * set to a reading measure. A measure is for prose; a matrix has exactly one
+ * honest width, which is the width it needs. Capping it below that made the app
+ * decline to draw a whole board on a display with the room for one, while still
+ * scrolling sideways inside its own unused margin.
+ *
+ * These two must stay in step with `--ym-lane` and `--ym-col` in the scroller's
+ * class list, which have to stay literal for Tailwind to see them.
+ */
+const LANE_W = 150
+const COL_W = 300
+export const BOARD_W = LANE_W + COLUMNS.length * COL_W
+
+/*
  * Where one lifecycle ends and the next begins — and the cell that OWNS the
  * rule, which is the whole of the fix.
  *
@@ -255,7 +271,7 @@ const CardBody = ({
           e.preventDefault()
           onOpen(row)
         }}
-        className="line-clamp-3 text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none"
+        className="line-clamp-3 break-words text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none"
       >
         {row.title}
       </a>
@@ -340,10 +356,9 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
         aria-label={`About ${repo}`}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
-        className="min-w-0 truncate text-left text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
+        className="line-clamp-2 min-w-0 break-words text-left text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
       >
-        {long ? short.slice(0, FITS) : short}
-        {long ? <span className="text-accent">…</span> : null}
+        {short}
       </button>
 
       <div
@@ -555,7 +570,7 @@ export const Swimlanes = ({
   return (
     <div
       ref={scroller}
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,1600px)-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start"
@@ -637,6 +652,7 @@ export const Swimlanes = ({
              */}
             <div
               onClick={() => onFold(lane.repo)}
+              data-lane=""
               className="sticky left-0 z-10 flex cursor-pointer flex-col justify-start gap-1 border-b border-r-2 border-b-line-soft border-r-line bg-panel p-2 text-left hover:bg-raise [scroll-snap-align:start_none]"
               /*
                * No "yours" marker on this cell, and that is the second half of

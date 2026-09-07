@@ -1,8 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react"
 
 import {
+  BOARD_W,
   COLUMNS,
   DONE,
   Swimlanes,
@@ -547,8 +555,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     : age < 60_000
       ? "just now"
       : age < 3_600_000
-        ? `${Math.round(age / 60_000)}m ago`
-        : `${Math.round(age / 3_600_000)}h ago`
+        ? `${Math.round(age / 60_000)} min ago`
+        : `${Math.round(age / 3_600_000)} hr ago`
   const rateLimited = (inbox?.reasons ?? []).some((r) => /rate limit/i.test(r))
   const allFailed = Boolean(
     inbox && inbox.failed.length > 0 && all.length === 0,
@@ -560,7 +568,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       <Sky />
 
       <WritableRepos repos={repos.map((r) => r.name)}>
-        <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
+        <main
+          style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
+          className="relative z-10 mx-auto flex h-safe max-w-[var(--ym-frame)] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8"
+        >
           <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
             {/*
             The mark sits beside the whole left stack rather than inside the

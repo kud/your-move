@@ -337,7 +337,7 @@ export const Menu = ({
             */}
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:hidden">
               Open tickets
-              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {(
                   [
                     { id: "full", label: "In app" },
@@ -367,7 +367,7 @@ export const Menu = ({
 
             <div className="hidden items-center gap-2 px-2 py-2 text-[14px] text-fg-mute md:flex">
               Open tickets
-              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {(["side", "modal", "full", "github"] as const).map(
                   (option) => (
                     <button
@@ -400,7 +400,7 @@ export const Menu = ({
             */}
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
               Order
-              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {(["urgency", "name"] as const).map((option) => (
                   <button
                     key={option}
@@ -421,7 +421,7 @@ export const Menu = ({
 
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
               Theme
-              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {(["auto", "light", "dark"] as const).map((option) => (
                   <button
                     key={option}
@@ -507,7 +507,7 @@ export const Menu = ({
 
             <div className="flex items-center gap-2 px-2 py-2 text-[14px] text-fg-mute">
               Recently done
-              <span className="ml-auto flex overflow-hidden rounded-lg border border-line">
+              <span className="ml-auto flex shrink-0 overflow-hidden rounded-lg border border-line">
                 {([7, 14, 30] as const).map((days) => (
                   <button
                     key={days}

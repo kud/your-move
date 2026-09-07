@@ -774,3 +774,17 @@ html:has([popover]:popover-open) main {
     animation-name: ym-in-modal;
   }
 }
+
+/*
+ * A lane drops its hover tint while its own panel is open.
+ *
+ * An auto popover's backdrop does not take pointer events, so the cursor is
+ * still sitting on the lane it just opened — `:hover` never leaves. Behind a
+ * blurred backdrop that reads as a selection somebody made, on a board where
+ * nothing else is selectable, and it outlives the pointer: the tint is still
+ * there after the mouse has moved away, because no event ever reached the lane
+ * to clear it.
+ */
+[data-lane]:hover:has([popover]:popover-open) {
+  background: var(--color-panel);
+}
