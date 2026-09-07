@@ -635,21 +635,37 @@ export const BoardHead = ({
                 }}
                 aria-expanded
                 aria-label={`Collapse ${p.title}`}
-                className="hidden size-4 shrink-0 place-items-center rounded text-fg-quiet transition-[transform,color] duration-200 ease-out hover:text-fg md:grid"
+                className="hidden size-4 shrink-0 place-items-center rounded text-fg-quiet transition-colors hover:text-fg md:grid"
               >
-                {/* The same chevron the lane fold uses. One glyph, one meaning,
-                    both axes — it says foldable, not "folds in direction X", so
-                    a second rotation convention would be a second thing to
-                    learn for no gain. */}
-                <svg viewBox="0 0 12 12" aria-hidden className="size-3">
-                  <path
-                    d="M2.75 4.5 L6 7.75 L9.25 4.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                {/*
+                  The mark points along the axis the thing collapses on. That is
+                  the rule, and it is why this is not the lane's chevron: a
+                  chevron is an arrowhead and cannot be asked to read
+                  non-directionally. Pointing down on a column aims along an axis
+                  nothing moves on, and what it borrows there is "disclosure
+                  triangle" — a promise of a dropdown that never comes.
+                
+                  Leftward because that is where the column's right edge actually
+                  travels: the inner box is held at the open width inside
+                  `overflow-hidden`, so the cards stay put and the edge closes in
+                  on them. Doubled to separate it from a single left chevron,
+                  which reads as "back".
+                
+                  No rotation, unlike the lane's. This only ever renders in the
+                  open state, so it has one orientation to be right in.
+                */}
+                <svg
+                  viewBox="0 0 12 12"
+                  aria-hidden
+                  className="size-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5.75 3.5 L3 6 L5.75 8.5" />
+                  <path d="M9.25 3.5 L6.5 6 L9.25 8.5" />
                 </svg>
               </button>
             ) : null}
