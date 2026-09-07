@@ -26,21 +26,6 @@ import { Mark } from "@/components/mark"
  * the grey bar this comment claimed it was not.
  */
 
-/*
- * Four, and deliberately fewer than a real board.
- *
- * The count is unknown, so the only choice available is which direction to be
- * wrong in — and the two are not symmetric. Guessing low means the board GROWS
- * downward at hand-off, extending what you are already reading. Guessing high
- * means it COLLAPSES, yanking content out from under the eye mid-read.
- */
-const LANES = 4
-
-/* Vary what carries no meaning, fix what does. Nobody reads information out of
-   how long a repo name is, so varying these stops the label column being one
-   grey bar. Card COUNTS do not vary: a count is a claim about where your work
-   is, and we do not have one yet. */
-const NAME_W = ["72%", "54%", "86%", "63%"]
 export const Booting = () => (
   <main
     style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
@@ -62,10 +47,68 @@ export const Booting = () => (
           </p>
         </div>
       </div>
+
+      {/*
+        The two controls the board carries, at their real size.
+
+        Neither can say anything yet — the filter count is unknown and the
+        avatar needs a login — so these are the only things in the header that
+        shimmer. Their SIZE is not unknown, and leaving them out entirely was
+        the worse lie: the header would then reflow at hand-off, in the one
+        place this shell exists to keep still.
+      */}
+      <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
+        <div className="shimmer size-8 rounded-full border border-line bg-panel-2" />
+        <div className="shimmer size-8 rounded-full border border-line bg-panel-2" />
+      </div>
     </header>
 
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
       <BoardSkeleton />
     </div>
+
+    {/*
+      Drawn for real, not shimmered — every word of it is static.
+
+      Same rule as the column headers: what is SCHEMA is known before GitHub
+      answers, and greying it would be a lie in the other direction. Nothing in
+      this footer is a fact about the board, which is also why it can carry live
+      links while the board behind it is still empty. Omitting it cost the shell
+      the one thing it is for, since the board would then resize at hand-off.
+
+      Kept in step with the footer in `inbox.tsx` by hand. It is nine lines of
+      static copy; a shared component would put a prop-threaded abstraction
+      between two things that simply say the same sentence.
+    */}
+    <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
+      <span>
+        Read live from GitHub, cached for five minutes. Nothing is stored;
+        labels are the only thing written back.
+      </span>
+
+      {[
+        { label: "Source", href: "https://github.com/kud/your-move" },
+        {
+          label: "Report an issue",
+          href: "https://github.com/kud/your-move/issues/new",
+        },
+        { label: "@kud", href: "https://github.com/kud" },
+      ].map((out) => (
+        <a
+          key={out.label}
+          href={out.href}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
+        >
+          {out.label}
+        </a>
+      ))}
+
+      <span className="ml-auto text-right">
+        Built to answer one question across a lot of repositories — whose move
+        is it — then made general.
+      </span>
+    </footer>
   </main>
 )
