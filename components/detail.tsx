@@ -160,6 +160,17 @@ const SHELL: Record<Exclude<OpenMode, "github">, string> = {
   full: "md:inset-0",
 }
 
+/*
+ * A phone gets a modal, not a full screen.
+ *
+ * Full-bleed was the wrong read of "there is no context to preserve". There is:
+ * a sliver of the blurred board at every edge is what says you are on top of
+ * something and can get back to it. Edge to edge, the panel stops being a panel
+ * and becomes a page, and a page has no obvious way out — which is a worse
+ * answer on the device with no Escape key.
+ */
+const PHONE = "max-md:inset-3 max-md:rounded-2xl max-md:border"
+
 const ENTER: Record<Exclude<OpenMode, "github">, string> = {
   side: "ym-in-side",
   modal: "ym-in-modal",
@@ -231,9 +242,18 @@ export const Detail = ({
     cameFrom.current = document.activeElement as HTMLElement | null
     /* The heading rather than the first control: a screen reader should hear
        what this is before it hears what it can do about it. */
-    requestAnimationFrame(() => panel.current?.focus())
+    requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }))
 
-    return () => cameFrom.current?.focus?.()
+    /*
+     * `preventScroll` on both, and it is not a nicety.
+     *
+     * Focusing an element scrolls it into view by default — so returning focus
+     * to the card you opened moved the board under it, and a mandatory snap
+     * resolved that move to the nearest column start. Opening a ticket appeared
+     * to send you back a column. The focus is the point; the scroll was never
+     * asked for, and the board already remembers where it was.
+     */
+    return () => cameFrom.current?.focus?.({ preventScroll: true })
   }, [])
 
   useEffect(() => {
@@ -296,7 +316,7 @@ export const Detail = ({
         /* Full screen below `md` regardless of the preference, which is a
            desk preference: at 390px a "side panel" at 92vw is a full screen
            wearing a border, and a modal is one with margins. */
-        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] max-md:inset-0 ${ENTER[mode]} ${SHELL[mode]}`}
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${PHONE} ${ENTER[mode]} ${SHELL[mode]}`}
       >
         <header
           className="flex items-start gap-3 border-b border-line-soft p-4"

@@ -761,3 +761,16 @@ html:has([popover]:popover-open) main {
 :root[data-motion="reduce"] .ym-backdrop {
   backdrop-filter: none;
 }
+
+/*
+ * On a phone the row panel is a modal whatever the desk preference says, so it
+ * arrives like one — from slightly behind, not from an edge it does not have.
+ * Overriding the name rather than duplicating the classes keeps one source for
+ * which shape a mode is.
+ */
+@media (max-width: 767px) {
+  .ym-in-side,
+  .ym-in-fade.ym-in-side {
+    animation-name: ym-in-modal;
+  }
+}
