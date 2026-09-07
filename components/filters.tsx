@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
-import { REASON_TONE } from "@/components/board"
+import { REASON_TONE, shortName } from "@/components/board"
 import type { Row } from "@/lib/github"
 import { emptyPicks, isEmptyPicks, samePicks, type View } from "@/lib/views"
 
@@ -252,7 +252,9 @@ export const Filters = ({
       /* Already open on another facet is still a hit: it means "find me a
          repository", so it switches rather than closing. */
       if (!sheet.matches(":popover-open")) sheet.showPopover()
-      setTab("repos")
+      /* No longer forces the Repos tab: the query spans all three facets, so
+         landing on one of them would only decide which list is behind the
+         results. Whatever was last browsed is as good an answer. */
       setNeedle("")
       requestAnimationFrame(() => search.current?.select())
     }
@@ -312,6 +314,35 @@ export const Filters = ({
     const q = needle.trim().toLowerCase()
     return q ? list.filter((e) => e.name.toLowerCase().includes(q)) : list
   }, [list, needle])
+
+  /*
+   * A query searches every facet, not just the one whose tab happens to be up.
+   *
+   * The tabs are how you BROWSE — three lists you page between. Searching is a
+   * different act: you already know the name, you just want it. Scoping the
+   * search to the active tab meant knowing which of the three a thing was
+   * before you could look for it, which is the one thing a search is supposed
+   * to save you. Wanting a label cost ⌘K, a click on Labels, then typing.
+   *
+   * Only while there is a query. With the box empty this is `null` and the
+   * sheet is exactly the browsing surface it has always been — the search adds
+   * a mode, never a permanent second layout.
+   */
+  const found = useMemo(() => {
+    const q = needle.trim().toLowerCase()
+    if (!q) return null
+    const hit = (entries: Facet[]) =>
+      entries.filter((e) => e.name.toLowerCase().includes(q))
+    return (
+      [
+        { tab: "repos" as Tab, label: "Repos", entries: hit(repos) },
+        { tab: "status" as Tab, label: "Status", entries: hit(status) },
+        { tab: "labels" as Tab, label: "Labels", entries: hit(labels) },
+      ] as const
+    ).filter((group) => group.entries.length)
+  }, [needle, repos, status, labels])
+
+  const nothingFound = Boolean(found && !found.length)
 
   /* Repos group by owner, which gives the personal-versus-work split — the
      granularity that actually matters — without inventing a second concept.
@@ -438,18 +469,26 @@ export const Filters = ({
     )
   }
 
-  const Row_ = ({ name, count, label }: Facet & { label?: string }) => {
-    const picked = picks[tab].includes(name)
+  /* `facet` defaults to the tab being browsed; the cross-facet results pass it
+     explicitly, because there a row's facet is a property of the row rather
+     than of whatever list happens to be behind the search. */
+  const Row_ = ({
+    name,
+    count,
+    label,
+    facet = tab,
+  }: Facet & { label?: string; facet?: Tab }) => {
+    const picked = picks[facet].includes(name)
     /* Covered, not picked: this repo's OWNER is picked, so it is in — and so is
        the one created tomorrow. A tick here would credit the wrong fact, and an
        empty column would read as excluded, which is the one thing an owner pick
        does not offer. */
     const covered =
-      tab === "repos" && picks.owners.includes(name.split("/")[0] ?? "")
+      facet === "repos" && picks.owners.includes(name.split("/")[0] ?? "")
     return (
       <button
         type="button"
-        onClick={() => toggle(tab, name)}
+        onClick={() => toggle(facet, name)}
         aria-pressed={picked}
         title={covered ? `Filter to ${label ?? name} alone` : undefined}
         className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13.5px] transition-colors ${
@@ -469,12 +508,12 @@ export const Filters = ({
         {/* Each facet's rows wear the mark of what they are, so the three
             lists read as one family rather than as three lists. */}
         <span aria-hidden className="shrink-0 text-fg-quiet">
-          {tab === "status" ? (
+          {facet === "status" ? (
             <span
               className={`block size-1.5 rounded-full ${DOT[REASON_TONE[name] ?? "slate"] ?? DOT.slate}`}
             />
           ) : (
-            <Glyph tab={tab} />
+            <Glyph tab={facet} />
           )}
         </span>
         <span className="min-w-0 flex-1 truncate">{label ?? name}</span>
@@ -771,7 +810,33 @@ export const Filters = ({
           from everything above it.
         */}
         <div className="fade-b -mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-5">
-          {byOwner
+          {/*
+            Results first when there is a query, grouped by which facet they
+            came from — the group heading is the only thing saying whether
+            `abacus` matched a repository or a label, and without it the three
+            lists become one undifferentiated column.
+          */}
+          {found
+            ? found.map((group) => (
+                <div key={group.tab} className="pb-2">
+                  <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
+                    {group.label}
+                  </p>
+                  {group.entries.map((entry) => (
+                    <Row_
+                      key={`${group.tab}-${entry.name}`}
+                      {...entry}
+                      facet={group.tab}
+                      label={
+                        group.tab === "repos"
+                          ? shortName(entry.name)
+                          : entry.name
+                      }
+                    />
+                  ))}
+                </div>
+              ))
+            : byOwner
             ? byOwner.map(([owner, entries]) => (
                 <div key={owner} className="pb-2">
                   {/*
@@ -800,7 +865,7 @@ export const Filters = ({
               ))
             : shown.map((entry) => <Row_ key={entry.name} {...entry} />)}
 
-          {shown.length === 0 ? (
+          {(found ? nothingFound : shown.length === 0) ? (
             <p className="px-2 py-3 text-[13px] text-fg-quiet">
               Nothing matches that.
             </p>
