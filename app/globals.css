@@ -124,10 +124,10 @@ body {
 @keyframes shimmer {
   0%,
   100% {
-    opacity: 0.5;
+    opacity: 0.7;
   }
   50% {
-    opacity: 0.85;
+    opacity: 0.95;
   }
 }
 
@@ -136,8 +136,15 @@ body {
      motion reduced the animation is zeroed, so without this the element falls
      back to its computed `opacity: 1` — brighter than the animation ever
      reaches, which rendered placeholder cards more solidly for a reader with
-     motion off than for anyone else. */
-  opacity: 0.65;
+     motion off than for anyone else.
+
+     The range is narrow on purpose. The hand-off to the real board has no gap
+     in it — React unmounts the shell and mounts the board in one commit, so the
+     cells are never absent — which means the only roughness available is the
+     BRIGHTNESS STEP at the moment they swap. A 0.5–0.85 breath made that step a
+     different size on every load, and an inconsistent jump reads as jank in a
+     way a consistent one never does. */
+  opacity: 0.7;
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
@@ -911,4 +918,19 @@ html:has([popover]:popover-open) main {
 :root[data-contrast="high"] .ym-card:hover {
   border-color: var(--color-fg);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-fg) 55%, transparent);
+}
+
+/*
+ * Reduced motion, for a mechanism nothing here uses yet.
+ *
+ * The global kill above is `:root[data-motion="reduce"] *, *::before, *::after,
+ * *::backdrop` — and `::view-transition-*` sits outside the reach of every one
+ * of those, because it matches no `*`. So the first view transition anyone adds
+ * would be the single animation this mode does not switch off, for the people
+ * who asked hardest for it to be. Guarded in advance rather than discovered.
+ */
+:root[data-motion="reduce"]::view-transition-group(*),
+:root[data-motion="reduce"]::view-transition-old(*),
+:root[data-motion="reduce"]::view-transition-new(*) {
+  animation: none !important;
 }
