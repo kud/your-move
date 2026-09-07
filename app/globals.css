@@ -862,3 +862,53 @@ html:has([popover]:popover-open) main {
     grid-template-columns: 150px repeat(7, 300px) 0px;
   }
 }
+
+/*
+ * The card under the pointer — the one thing on a card that means nothing.
+ *
+ * Every fact a card holds already has a carrier: the stripe says the move is
+ * yours, the chip carries its reason's tone, and an accent BORDER is spoken for
+ * by `ym-arrived`, which pulses exactly that property when a row changes
+ * column. So a hover cannot be accent, or rose comes to mean both "this needs
+ * you" and "your mouse is here" — and the second reading wins, because it fires
+ * a hundred times an hour where the first fires twice a day.
+ *
+ * Drawn from `--color-fg` instead, which re-derives the effect rather than
+ * recolouring it: near-white on dark throws a lit halo, near-black on light
+ * gives a soft drop. Same swap the panels already make between the themes, so
+ * light needs no separate rule and no second token. The sky's washes die on a
+ * light ground because they are atmospheric glow over a surface; this is a
+ * local edge treatment, and an edge survives any ground.
+ *
+ * No lift. Vertical movement on a card belongs to `ym-arrived` alone — that is
+ * a fact about the ROW, where hover is a fact about the POINTER, and the two
+ * rhyming is most of why an arrival never quite read as an event.
+ */
+.ym-card {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+/* `(hover: hover)` is load-bearing rather than tidiness: on a touch screen
+   `:hover` sticks after a tap, so a tapped card would stay lit until something
+   else was tapped. */
+@media (hover: hover) {
+  .ym-card:hover {
+    border-color: var(--color-fg-quiet);
+    /* Two layers, and that is what reads as neon rather than as a blurred
+       shadow: a tight ring for the tube, a wide bloom for the light it throws. */
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-fg) 8%, transparent),
+      0 0 18px -4px color-mix(in srgb, var(--color-fg) 22%, transparent);
+  }
+}
+
+/* Daylight wants an edge, not a bloom — the outer halo is the first thing to go
+   soft in a bright room, and a firm ring is what the rest of this mode is made
+   of. */
+:root[data-contrast="high"] .ym-card:hover {
+  border-color: var(--color-fg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-fg) 55%, transparent);
+}

@@ -238,7 +238,7 @@ const CardBody = ({
   const yours = row.move === "you"
 
   return (
-    <article className={`group relative rounded-[9px] border border-line bg-panel-2 p-2.5 transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[#333941] hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
+    <article className={`ym-card group relative rounded-[9px] border border-line bg-panel-2 p-2.5 hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
       {/* Position and shape, not hue alone: a bar on the leading edge. */}
       {yours ? (
         <span
