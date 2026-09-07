@@ -120,52 +120,59 @@ body {
 }
 
 /*
- * A sweep, not a pulse.
+ * A sweep, not a pulse — and moved by `transform`, which is the whole of the
+ * performance story.
  *
- * A placeholder that breathes by opacity blinks in place, and a whole board of
- * blocks blinking together reads as a fault — something flashing at you rather
- * than something being fetched. A highlight travelling left to right reads as
- * work moving through the thing, which is what is actually happening.
+ * A placeholder that breathes by opacity blinks in place, and a board of blocks
+ * blinking in unison reads as a fault rather than as something being fetched. A
+ * highlight travelling left to right reads as work moving through the thing.
  *
- * The travel is `background-position` over a gradient twice the box's width,
- * which is compositor-cheap and needs no extra element. It layers over each
- * block's own `bg-panel-2`, so the colour underneath is unchanged and only the
- * highlight moves.
+ * The first version animated `background-position`, which is NOT
+ * compositor-accelerated: it repaints the element every frame, and with two
+ * dozen blocks plus the sky canvas that is two dozen repaints per frame on the
+ * one screen that has no content to justify them. Here the gradient sits on a
+ * pseudo-element that never changes, and only its `transform` moves — which the
+ * compositor handles without touching paint at all.
+ *
+ * No `will-change`. It would promote every block to its own layer, and two dozen
+ * layers costs more than the hint saves; a transform-only animation is already
+ * composited.
  */
 @keyframes shimmer {
-  from {
-    background-position: 150% 0;
-  }
   to {
-    background-position: -50% 0;
+    transform: translateX(100%);
   }
 }
 
 .shimmer {
-  /* The resting dimness, declared OUTSIDE the keyframes so that killing the
-     animation leaves a placeholder rather than a full-strength block — with
-     motion reduced the element would otherwise fall back to `opacity: 1` and
-     render more solidly for the reader who asked for less. It is static now
-     rather than animated: the sweep carries the motion, and a block that both
-     travelled and breathed would be two rhythms on one object. */
+  /* The resting dimness, declared OUTSIDE any animation so killing the motion
+     leaves a placeholder rather than a full-strength block — otherwise the
+     element falls back to `opacity: 1` and renders more solidly for the reader
+     who asked for less motion. */
   opacity: 0.7;
-  background-image: linear-gradient(
-    90deg,
-    transparent 30%,
-    color-mix(in srgb, var(--color-fg) 7%, transparent) 50%,
-    transparent 70%
-  );
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
-  animation: shimmer 1.6s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
 }
 
-/* The sweep is the animation, so with motion reduced there is nothing to
-   freeze — a stopped gradient would sit as an arbitrary bright band across the
-   block, which reads as a rendering fault rather than as a placeholder. The
-   flat dimmed block is the honest still frame. */
-:root[data-motion="reduce"] .shimmer {
-  background-image: none;
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-fg) 8%, transparent) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.25s ease-in-out infinite;
+}
+
+/* Nothing to freeze: a stopped sweep sits as an arbitrary bright band across the
+   block, which reads as a rendering fault rather than as a placeholder. The flat
+   dimmed block is the honest still frame. */
+:root[data-motion="reduce"] .shimmer::after {
+  display: none;
 }
 
 @keyframes fade-in {
