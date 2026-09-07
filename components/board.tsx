@@ -755,7 +755,18 @@ export const Swimlanes = ({
                     is the bounce. The content height is the only thing that
                     should move.
                   */
-                  className={`relative min-h-[40px] border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
+                  /*
+                    `min-w-0` is load-bearing, not tidiness. A grid item's
+                    automatic minimum size is its MIN-CONTENT width, and the
+                    track here is a fixed 300px — so a card holding an
+                    unbreakable token (`QA_CUCUMBER_CYPRESS_TESTS_SERVICE`) blew
+                    the cell past its own column and painted over the next one.
+                    `break-words` on the title is not enough on its own:
+                    `overflow-wrap: break-word` breaks the line, it does not
+                    reduce the box's min-content width, so the cell has to be
+                    told it may shrink before the title is ever asked to wrap.
+                  */
+                  className={`relative min-h-[40px] min-w-0 border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
                     shut ? "hatch" : ""
                   } ${
                     SEAM_END.has(id)
