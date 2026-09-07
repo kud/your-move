@@ -159,7 +159,10 @@ const PER_CELL = 4
 const DONE_PER_CELL = 2
 
 /** The fold transition, shared by the CSS below and the unmount that follows. */
-const FOLD_MS = 200
+/* Long enough for the eye to follow the row down rather than notice it gone.
+   Kept in step with the CSS below by hand — the timer only exists to unmount
+   the cards afterwards, so finishing early is the one failure that shows. */
+const FOLD_MS = 280
 
 export const Slot = ({ id, tone }: { id: string; tone: string }) => (
   <span
@@ -884,8 +887,8 @@ export const Swimlanes = ({
                       than replace them and make the row jump. */}
                   {rows.length ? (
                     <span
-                      className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-150 ${
-                        shut ? "opacity-100 delay-75" : "opacity-0"
+                      className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-200 ${
+                        shut ? "opacity-100 delay-100" : "opacity-0"
                       }`}
                     >
                       {rows.length}
@@ -899,7 +902,14 @@ export const Swimlanes = ({
                     reach zero — a grid item's default minimum is its content.
                   */}
                   <div
-                    className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                    /*
+                      `ease-out` is front-loaded: almost all the distance is
+                      covered in the first third, so the row appeared to snap
+                      and then crawl — which reads as linear-but-abrupt rather
+                      than as smooth. This curve leaves quickly and settles
+                      slowly, with no overshoot, so nothing bounces at the end.
+                    */
+                    className={`grid transition-[grid-template-rows] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
                       shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
                     }`}
                   >
