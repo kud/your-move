@@ -90,7 +90,11 @@ export const BOARD_W = LANE_W + COLUMNS.length * COL_W
  * 1px on its right, an asymmetric bracket that reads as a rule adrift from its
  * column rather than as a divider.
  */
-const SEAM_END = new Set([YOURS.at(-1), THEIRS.at(-1)])
+/* `CLOSED.at(-1)` too: the board's own right edge is a boundary like any other
+   and the most final one on the grid — past it there is no next lifecycle, only
+   the runway the last column needs to reach its snap line. Drawn at the soft
+   weight it made the board appear to trail off rather than to end. */
+const SEAM_END = new Set([YOURS.at(-1), THEIRS.at(-1), CLOSED.at(-1)])
 
 export const DONE = "done"
 
@@ -633,7 +637,7 @@ export const BoardSkeleton = () => (
             </div>
           ))}
 
-          <div />
+          <div className="runway" />
         </Fragment>
       ))}
     </div>
@@ -925,17 +929,24 @@ export const Swimlanes = ({
               )
             })}
             {/*
-              The trailing track keeps its width and loses its rule.
+              The runway, past the board's right edge.
 
-              At the 1600px cap it resolves to about 1100px, and it was drawing
-              a bottom hairline the whole way — so flicking fully right gave the
-              `done` column followed by a thousand pixels of ruled nothing, once
-              per lane. Zeroing the track was the other candidate and it is
-              wrong: the width is exactly what lets the last column reach its
-              snap line, which was a complaint in its own right. Empty space is
-              fine; ruled empty space reads as content that failed to render.
+              It keeps its width — that is exactly what lets the last column
+              reach its snap line — and it carries no rule, no hatch and no
+              content. Zeroing the track was the other candidate and it is
+              wrong for the same reason.
+
+              What it does carry is a wash one step behind the panel, because
+              the trouble was never that it is empty. It is scroll runway, no
+              more content than the margin beside a paragraph — but it was
+              dressed as board, sitting on the panel's ground inside the panel's
+              border, so a thousand pixels of it read as a board that had failed
+              to fill. The fix is to stop the board claiming it.
+
+              It used to hatch along with a folded lane, which was the one place
+              the fold's texture claimed a region that had never held anything.
             */}
-            <div className={folded.has(lane.repo) ? "hatch border-b border-line-soft" : ""} />
+            <div className="runway" />
           </Fragment>
         ))}
       </div>

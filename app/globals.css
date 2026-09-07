@@ -802,3 +802,28 @@ html:has([popover]:popover-open) main {
 [data-lane]:hover:has([data-lane-name]:hover) {
   background: var(--color-panel);
 }
+
+/*
+ * The runway past the board's right edge — not board, and not content.
+ *
+ * This track exists so `Recently done` can reach the left snap line. It holds
+ * nothing and never will. On the panel's own ground, inside the panel's own
+ * border, it read as board that had failed to fill — which is why a thousand
+ * pixels of it felt like a fault rather than an edge. A flat wash drawn from
+ * the grid's own hairline value puts it a step BEHIND the surface that holds
+ * cards, so it reads as the inside of the frame rather than as an empty region
+ * of the board.
+ *
+ * Flat, deliberately. Hatching is spoken for: there it means "content, folded
+ * away", and the runway is the opposite fact — nothing is in it, nothing was,
+ * and nothing can be. That would not be a second meaning for one texture, it
+ * would be the reverse of the one it has.
+ *
+ * Derived from `--color-line` rather than given its own token, so it follows
+ * both themes and high contrast with no second value to keep in step. Where
+ * `color-mix` is unavailable the declaration drops and the runway is exactly
+ * what it is today, which is a safe place to land.
+ */
+.runway {
+  background-color: color-mix(in srgb, var(--color-line) 22%, transparent);
+}
