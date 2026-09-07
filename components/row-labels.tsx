@@ -1,5 +1,6 @@
 "use client"
 
+import { tip } from "@/components/tooltip"
 import { useState } from "react"
 
 import { useWritable } from "@/components/use-writable"
@@ -95,7 +96,11 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
               type="button"
               onClick={() => void change(label, "remove")}
               disabled={busy === label}
-              title={`Remove ${label}`}
+              /* The chip's own text is the label, so without this the button's
+                 accessible name is just the label — indistinguishable from the
+                 read-only span beside it, and silent about what pressing does. */
+              aria-label={`Remove ${label}`}
+              {...tip(`Remove ${label}`)}
               className={`rounded-full border border-line px-2 py-px text-[10px] text-fg-quiet disabled:opacity-50 md:text-[11px] ${i > 1 ? "hidden md:inline-block" : ""}`}
             >
               {label}
@@ -137,7 +142,9 @@ export const RowLabels = ({ repo, number, labels, onChanged }: Props) => {
             type="button"
             onClick={() => void openPicker()}
             aria-expanded={Boolean(available)}
-            title="Add a label"
+            /* Its only text is a `+`. */
+            aria-label="Add a label"
+            {...tip("Add a label")}
             className="hidden rounded-full border border-line px-2 py-px text-[11px] text-fg-quiet opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100 md:inline-block"
           >
             +

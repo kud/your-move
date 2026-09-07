@@ -1,5 +1,6 @@
 "use client"
 
+import { tip } from "@/components/tooltip"
 import {
   Fragment,
   memo,
@@ -378,7 +379,9 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
       */}
       <button
         type="button"
-        title={repo}
+        /* No tooltip. The tap opens a panel whose first line is the full
+           `owner/name`, so a hover copy would be a redundant fallback for a
+           mechanism that is already there and better. */
         aria-label={`About ${repo}`}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
@@ -603,7 +606,7 @@ export const BoardHead = ({
               ref={(el) => register?.(id, el)}
               data-column={id}
               onClick={() => foldable() && onFoldCol?.(id)}
-              title={`Expand ${p.title}`}
+              {...tip(`Expand ${p.title}`)}
               aria-label={`Expand ${p.title} — ${count} rows`}
               className={`sticky top-0 z-20 flex h-[41px] cursor-pointer items-center justify-center gap-1 border-b border-b-line bg-panel px-1 transition-colors hover:bg-raise [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
             >

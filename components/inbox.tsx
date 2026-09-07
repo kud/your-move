@@ -1,5 +1,6 @@
 "use client"
 
+import { tip } from "@/components/tooltip"
 import {
   Fragment,
   useCallback,
@@ -642,7 +643,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   type="button"
                   onClick={() => void refresh()}
                   aria-label="Refresh"
-                  title="Refresh"
+                  {...tip("Refresh")}
                   /*
                     This has always been the refresh — the glyph in front of it
                     is already its state — but nothing said so: no cursor, no
@@ -797,7 +798,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   <button
                     type="button"
                     popoverTarget={FILTERS_ID}
-                    title={part.full || undefined}
+                    {...tip(part.full || undefined)}
                     className="flex shrink-0 items-center gap-1.5 rounded text-fg hover:underline"
                   >
                     {part.kind ? (

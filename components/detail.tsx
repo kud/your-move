@@ -341,8 +341,7 @@ export const Detail = ({
                 type="button"
                 onClick={() => onMode(option)}
                 aria-pressed={mode === option}
-                title={`Open as ${MODE_LABEL[option].toLowerCase()}`}
-                className={`px-2 py-1 text-[11.5px] ${
+                  className={`px-2 py-1 text-[11.5px] ${
                   mode === option
                     ? "bg-accent-dim text-accent"
                     : "text-fg-quiet hover:text-fg"
