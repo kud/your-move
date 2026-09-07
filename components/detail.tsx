@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import type { OnLabelChange } from "@/components/board"
+import { GitHubMark } from "@/components/github-mark"
 import { Markdown } from "@/lib/markdown"
 import type { Row } from "@/lib/github"
 
@@ -559,8 +560,17 @@ export const Detail = ({
             href={row.url}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-accent bg-accent-dim px-3 py-2.5 text-center text-[15px] font-semibold text-accent md:py-1.5 md:text-[13.5px] md:font-normal"
+            className="flex items-center justify-center gap-2 rounded-lg border border-accent bg-accent-dim px-3 py-2.5 text-center text-[15px] font-semibold text-accent md:py-1.5 md:text-[13.5px] md:font-normal"
           >
+            {/*
+              `currentColor`, so the mark is the same rose as the label rather
+              than a second colour decision. The rule that a mark is never the
+              accent is about not SPENDING the accent — here the button is
+              already entirely accent, so the mark adds no rose that was not
+              already on screen, and matching the label is what keeps it from
+              reading as a separate object sitting inside a button.
+            */}
+            <GitHubMark className="size-4 shrink-0" />
             Open on GitHub ↗
           </a>
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet md:ml-auto md:inline">
