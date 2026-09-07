@@ -4,6 +4,46 @@ All notable changes to this project are documented here.
 
 ---
 
+## 1.2.0 — 2026-09-07
+
+### Highlights
+
+- **Filter by the whole organisation, not a snapshot of its repos.** A new `owners` facet ORs with the existing repo picker, so ticking "theorchard" covers whatever it holds today and whatever it gains tomorrow — no more re-picking after a repo gets added. Saved views made before this aren't migrated, so re-save any that should use it. ([0421a58](https://github.com/kud/your-move/commit/0421a582c9c78a876aae1429c416b4c7f1c687c0))
+- **Columns collapse to a rail.** Click a column header to fold it down to a 52px strip showing its mark and count; the fold state persists per device (`ym:cols`), so a folded column stays folded next time. ([d828245](https://github.com/kud/your-move/commit/d828245e1fc0faa1f882d4251e00b9fb95dce26b), timing tuned in [5204f94](https://github.com/kud/your-move/commit/5204f949d4a50798e4b3d96b683ce6c77b9519d4))
+- **The board can finally use a wide screen.** Its width cap now comes from the schema itself — lane plus one column per status, 2250px — instead of a flat 1600px, so a big display shows the whole board rather than scrolling inside its own dead margin. ([3fcc7ef](https://github.com/kud/your-move/commit/3fcc7efc386ecfd06fbb27c6ebed452b689581e6))
+- **A theme switch on the login page**, top right, auto/light/dark with hand-drawn glyphs — the logic now lives in one place (`lib/theme.ts`), shared with the menu. ([495be97](https://github.com/kud/your-move/commit/495be97f4939054ca5a38e4b8fe9daaaec2e691c), [6ca07d1](https://github.com/kud/your-move/commit/6ca07d10528b1e089ac027dfef20b11161019152))
+- **The loading shell now looks like the board it's about to become** — group band, seven column headers, seams and footer drawn up front, with only the cells left to shimmer, instead of one grey rectangle. ([a922e5f](https://github.com/kud/your-move/commit/a922e5f678e6323bde11f9ddc00efb4af8ec0e1c), density tuned in [36ea106](https://github.com/kud/your-move/commit/36ea10651ee9832ccf4a8751f688968cd709dbbd))
+- **A GitHub mark** on the sign-in button and on the detail panel's "Open on GitHub" button. ([e7ffbdc](https://github.com/kud/your-move/commit/e7ffbdcf7fb2b428521ba21703f4d26f521ba167), [6ca07d1](https://github.com/kud/your-move/commit/6ca07d10528b1e089ac027dfef20b11161019152))
+- **The app now tells you when it's stale.** An installed PWA can sit on an old build for days without ever refetching its document; a build stamp baked in at compile time is compared against what's actually deployed, and a persistent "update available" control shows up the moment they disagree — pressed, it clears every cache and reloads clean. ([5fa57c7](https://github.com/kud/your-move/commit/5fa57c778d39e23152fb71afc05f3cbc87e88074))
+- **⌘K jumps to the repository search** inside the filter sheet — not a command palette, just the shortest route to a control that already existed. ([3bd4a76](https://github.com/kud/your-move/commit/3bd4a76379f6f25e637d93fa65155970813f42d5))
+
+### Fixes
+
+- The menu and filter popovers carried a Tailwind `flex` utility that outranked the browser's own rule for hiding a closed popover, so a closed menu stayed laid out and invisible — swallowing clicks meant for whatever sat underneath, including the Clear button, and sometimes firing a GitHub navigation instead. ([391933a](https://github.com/kud/your-move/commit/391933a060ef76a56ba29fee7e436a200428298c))
+- Cards with a long unbreakable token (a service name, say) overflowed their column and painted over the one next to it — wrapping alone wasn't enough, the cell also needed permission to shrink below its content's natural width. ([90bd4d6](https://github.com/kud/your-move/commit/90bd4d6c454759508dbb18ac8488b3921b7d9628), [06cac6c](https://github.com/kud/your-move/commit/06cac6cd19222b5741b9d5d434ee9c922d2cb7a2))
+- The filter banner used to list every picked repository by name; it now summarises per dimension ("15 repos", "all of theorchard"), leading with the hidden count rather than burying it in a wall of names. ([0421a58](https://github.com/kud/your-move/commit/0421a582c9c78a876aae1429c416b4c7f1c687c0))
+- Failed data sources were reported by their internal query id (`myPRs`, `reviewRequests`) instead of the names shown on the board. ([21ee7d5](https://github.com/kud/your-move/commit/21ee7d56265840afeedf4f7635ccce2649b7152f))
+- Relative ages read as `2M AGO` under the header's uppercase styling — indistinguishable from months when it meant minutes. Now spelled `min`/`hr` so the unit survives the transform. ([3fcc7ef](https://github.com/kud/your-move/commit/3fcc7efc386ecfd06fbb27c6ebed452b689581e6))
+- The board's right edge, and the empty scroll runway past it, now read as a deliberate ending rather than an unfilled board. ([46bb24c](https://github.com/kud/your-move/commit/46bb24ce29909981754e3152396635d27a0b5d16))
+- A lane kept its hover tint while its own detail panel was open, and while the pointer sat over the repo name — which opens something else entirely. ([c32cd75](https://github.com/kud/your-move/commit/c32cd751ad6d8e3c64f30df8f66c0d2c94ca7ad8), [3fcc7ef](https://github.com/kud/your-move/commit/3fcc7efc386ecfd06fbb27c6ebed452b689581e6))
+- Placeholder cards rendered more solidly for anyone with reduced motion turned on, because `.shimmer` only set its opacity inside the keyframes that reduced motion skips. ([a9d6b9a](https://github.com/kud/your-move/commit/a9d6b9ac0c964e3a3888376577007ccc6170633f), [8e7bb53](https://github.com/kud/your-move/commit/8e7bb53aef8b032238948bee603c28312c6a7a96))
+- Card titles and the "+N more" button lost their layout once wrapped inside the new column-fold container. ([81d04a3](https://github.com/kud/your-move/commit/81d04a3162476ecf11ec9ea1468fa7aab14e3eec), [77c72ef](https://github.com/kud/your-move/commit/77c72ef5cadda33353fb76cab3a14039b29ae514))
+- The labels row on a card sat over the clickable card area, blocking taps in the gaps beside the chips. ([1c04771](https://github.com/kud/your-move/commit/1c047719ec7d93b93a9d3d23121c2b4e05c22ea6))
+- Comments in the detail panel now render as markdown, and stray HTML comment markers are stripped rather than shown. ([c39e4ca](https://github.com/kud/your-move/commit/c39e4ca66f9d4236b4e886af4b6bc25847ae8856))
+- Opening a row on a phone now arrives as a modal, not a full screen — it keeps a sliver of the blurred board visible at every edge, so there's an obvious way back. A related bug sent the board sliding sideways whenever a closed panel returned focus to its card. ([d085407](https://github.com/kud/your-move/commit/d085407c4c256e3aea34893f0fced76791014727))
+- Tapping a filter chip on the phone's status rail could animate partway and snap straight back — the browser re-snaps mid-scroll, and the nearest snap point is the column you started on, so it read as a dead button. Snapping now stands aside for the length of the move. ([306e782](https://github.com/kud/your-move/commit/306e782cad5712d8df44228f58ec2e964cc71492))
+- The detail panel is now a real keyboard dialog, not just one labelled as one: focus moves into it on open, Tab is contained inside it, and closing it returns focus to the card that opened it — instead of leaving a keyboard or screen-reader user tabbing through the board underneath. ([bedb313](https://github.com/kud/your-move/commit/bedb31348f9def12a904e701eba599d2ed7c1b9c))
+- Card hover styles no longer stick after a tap on a touch device. ([1874ba1](https://github.com/kud/your-move/commit/1874ba1a3f2c2bf3a6d6ce99bf91904d47106807))
+
+<details>
+<summary>Internal (6 commits)</summary>
+
+- Extracted the loading skeleton grid to CSS with a regression test pinning the board to seven columns, simplified the column-fold button's transition, added a hover affordance to the inbox refresh button, made filter chips toggle to deselect, and added (then tuned) a per-cell fade-in animation for when the board first settles.
+
+</details>
+
+---
+
 ## 1.1.0 — 2026-09-07
 
 ### Highlights
