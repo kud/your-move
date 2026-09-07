@@ -31,3 +31,40 @@ export const Mark = ({ className }: { className?: string }) => (
     </g>
   </svg>
 )
+
+/*
+ * The mark at rest, in one colour.
+ *
+ * Monochrome for the reason the coloured one carries in its own comment above:
+ * rose means "this needs you" on this board, and the empty board is the single
+ * screen where nothing does. A rose object there would spend the signal on the
+ * one moment that has nothing to signal.
+ *
+ * `currentColor` also makes it ONE drawing rather than two. The light theme had
+ * to re-derive the accent rather than invert it — that is what a second
+ * illustration would have cost — and the thing needing re-derivation was the
+ * rose. Take it out and the shape works on any ground, including
+ * `data-contrast="high"`, where it gets firmer rather than needing a special
+ * case.
+ */
+export const MarkMono = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 400 352" aria-hidden className={className}>
+    <g transform="translate(37 38)" fill="currentColor">
+      <path d="M 0 37 C 0 8 28 -9 53 6 L 221 104 C 230 109 234 116 234 125 L 234 190 C 234 199 226 204 218 199 L 99 129 C 88 122 77 129 77 141 L 77 263 C 77 273 70 279 61 274 L 15 247 C 5 241 0 231 0 220 Z" />
+      {/*
+        The knockout is the one thing that needed eyes rather than arithmetic.
+        The two arms overlap around x 180–234, where the second path used to
+        paint ivory over rose; in one colour that boundary disappears and the
+        strokes merge into a mass. A hairline in the panel's own ground gives
+        the seam back. Safe only because this variant is used on `bg-panel` and
+        nowhere else.
+      */}
+      <path
+        stroke="var(--color-panel)"
+        strokeWidth="4"
+        d="M 180 61 L 272 7 C 296 -7 326 9 326 35 L 326 220 C 326 232 321 242 311 248 L 264 274 C 256 279 247 274 247 263 L 247 122 C 247 109 242 101 231 94 L 180 65 Q 177 63 180 61 Z M 90 151 Q 90 142 97 147 L 166 187 Q 175 192 166 198 L 97 241 Q 90 245 90 237 Z"
+      />
+    </g>
+  </svg>
+)
+
