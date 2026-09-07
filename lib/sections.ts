@@ -1,3 +1,5 @@
+import type { InboxSource } from "@kud/gh"
+
 /*
  * Presentation only.
  *
@@ -104,3 +106,33 @@ export const presentationFor = (key: string): Presentation =>
  * for it to happen.
  */
 export const PRESENTED_SECTIONS = Object.keys(PRESENTATION)
+
+/*
+ * What a failed SOURCE is called, which is a different vocabulary from a
+ * section and has to be translated rather than printed.
+ *
+ * `inbox.failed` carries `@kud/gh`'s own query ids — `myPRs`, `reviewRequests`
+ * — and the failure notice was rendering them raw, so the one message whose job
+ * is to tell you which part of the board you cannot trust was naming it in a
+ * vocabulary that exists nowhere on the board. Several sources also feed one
+ * column, so this is a real mapping rather than a case conversion.
+ *
+ * `Record<InboxSource, string>` on purpose, and NOT a lookup with a fallback:
+ * the union is exported by the library, so a source added there fails the
+ * typecheck here instead of quietly printing its id. That is the lesson from
+ * the header of this file — a fallback is indistinguishable from a design
+ * decision, and the silence is what costs the days.
+ */
+export const SOURCE_TITLES: Record<InboxSource, string> = {
+  myPRs: "Your pull requests",
+  reviewRequests: "Review requested",
+  reviewed: "Reviewed",
+  assigned: "Assigned to you",
+  repoIssues: "Open issues",
+  authoredIssues: "Issues you opened",
+  repoPRs: "Incoming",
+  recentlyDone: "Recently done",
+}
+
+export const sourceTitle = (source: string) =>
+  SOURCE_TITLES[source as InboxSource] ?? source

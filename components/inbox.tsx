@@ -42,7 +42,7 @@ import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
-import { presentationFor } from "@/lib/sections"
+import { presentationFor, sourceTitle } from "@/lib/sections"
 import {
   decodeShare,
   emptyPicks,
@@ -720,7 +720,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 <summary className="cursor-pointer text-fg-quiet">
                   {inbox.failed.length} sections affected
                 </summary>
-                <p className="mt-1 text-fg-quiet">{inbox.failed.join(", ")}</p>
+                <p className="mt-1 text-fg-quiet">
+                  {inbox.failed.map(sourceTitle).join(", ")}
+                </p>
                 {inbox.reasons?.length ? (
                   <p className="mt-1 font-mono text-fg-quiet">
                     {inbox.reasons.join(" · ")}
