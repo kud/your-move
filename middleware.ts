@@ -66,9 +66,15 @@ export const config = {
      *
      * `api/auth` is a prefix, so it covers login, callback and logout alike.
      *
+     * `api/version` returns one build identifier and nothing else — it holds no
+     * fact about the board, which is the test above. It is outside the gate
+     * because a stale client whose session has expired is exactly the one that
+     * most needs to be told to reload, and gating it would make the app silent
+     * in the case it exists for.
+     *
      * Kept in step with `pwa.test.ts`, which asserts this list exactly, so a
      * quiet widening fails a test rather than a review.
      */
-    "/((?!login|api/auth|_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|sw.js|offline).*)",
+    "/((?!login|api/auth|api/version|_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|sw.js|offline).*)",
   ],
 }

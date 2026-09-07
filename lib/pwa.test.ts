@@ -79,6 +79,7 @@ describe("middleware matcher", () => {
       new Set([
         "login",
         "api/auth",
+        "api/version",
         "_next/static",
         "_next/image",
         "favicon.ico",

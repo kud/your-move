@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 
 import type { OpenMode } from "@/components/detail"
+import { useUpdate } from "@/components/use-update"
 import { encodeShare, exportViews, importViews, type View } from "@/lib/views"
 
 /*
@@ -81,6 +82,7 @@ export const Menu = ({
   onOrder: (next: "urgency" | "name") => void
 }) => {
   const picker = useRef<HTMLInputElement>(null)
+  const update = useUpdate()
   const [moved, setMoved] = useState<string>()
   const [contrast, setContrast] = useState(false)
   const [still, setStill] = useState(false)
@@ -706,6 +708,40 @@ export const Menu = ({
             earns its place. Chasing a bug that turned out to be an old bundle
             cost twenty minutes once; it would have cost a glance.
           */}
+          {/*
+            The other half of the version line: not only WHICH build you are on
+            but whether it is the current one.
+
+            Always present rather than appearing only when there is news — a
+            control that exists solely in the failing case cannot be found when
+            you are wondering, which is precisely when you look. Up to date, it
+            is a quiet line that says so and offers the hammer anyway.
+          */}
+          <button
+            type="button"
+            onClick={() => void update.upgrade()}
+            className={`${link} w-full`}
+          >
+            <span className="text-left">
+              {update.stale ? "Update available" : "Reload the app"}
+              <span className="block text-[11.5px] text-fg-quiet">
+                {update.stale
+                  ? "A newer build is deployed"
+                  : update.checking
+                    ? "Checking…"
+                    : "Clears the cache and fetches again"}
+              </span>
+            </span>
+            {update.stale ? (
+              <span
+                aria-hidden
+                className="ml-auto shrink-0 rounded-full border border-accent bg-accent-dim px-2 py-px text-[11px] text-accent"
+              >
+                New
+              </span>
+            ) : null}
+          </button>
+
           <a
             href="https://github.com/kud/your-move/releases"
             target="_blank"
