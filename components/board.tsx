@@ -1,6 +1,13 @@
 "use client"
 
-import { Fragment, memo, useEffect, useRef, useState } from "react"
+import {
+  Fragment,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { SectionMark } from "@/components/section-mark"
@@ -196,6 +203,8 @@ export const About = ({
          negative margin gives the space back, so nothing around it moves. The
          fold chevron gets away with 16 because its whole lane cell is tappable;
          this is the only route to what a column means. */
+      data-about=""
+      onClick={(e) => e.stopPropagation()}
       className="group/about -m-1 grid shrink-0 place-items-center p-1"
     >
       <span
@@ -523,9 +532,13 @@ const Cell = ({
 export const BoardHead = ({
   counts,
   register,
+  cols,
+  onFoldCol,
 }: {
   counts?: Map<string, number>
   register?: (id: string, el: HTMLElement | null) => void
+  cols?: Set<string>
+  onFoldCol?: (id: string) => void
 }) => (
   <>
       <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
@@ -553,19 +566,95 @@ export const BoardHead = ({
 
       {COLUMNS.map((id) => {
         const p = presentationFor(id)
+        const shut = Boolean(cols?.has(id))
+        const count = counts ? (counts.get(id) ?? 0) : "–"
+
+        /*
+         * Folded: the mark and the count, nothing else.
+         *
+         * `Slot` is already the column's identity — square, tuned per section,
+         * and the one element a 52px rail leaves unchanged. The title comes
+         * back the instant you unfold, and so does the `?`.
+         *
+         * The count is not a nicety here, it is what makes `ym:cols` safe to
+         * persist: a column folded on Monday and met again on Friday would
+         * otherwise read as "nothing in review", and a rail showing `12`
+         * cannot be. If the count ever leaves the rail, the persistence should
+         * leave with it.
+         */
+        if (shut)
+          return (
+            <div
+              key={id}
+              ref={(el) => register?.(id, el)}
+              data-column={id}
+              onClick={() => foldable() && onFoldCol?.(id)}
+              title={`Expand ${p.title}`}
+              aria-label={`Expand ${p.title} — ${count} rows`}
+              className={`sticky top-0 z-20 flex h-[41px] cursor-pointer items-center justify-center gap-1 border-b border-b-line bg-panel px-1 transition-colors hover:bg-raise [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
+            >
+              <Slot id={id} tone={p.tone} />
+              <span className="font-mono text-[12px] tabular-nums text-fg-quiet">
+                {count}
+              </span>
+            </div>
+          )
+
         return (
+          /*
+           * A `div` with a handler, never a `button` — this contains `About`'s
+           * button, and a button inside a button is invalid, which is the trap
+           * `LaneName` already hit once.
+           *
+           * The tint says "clicking here folds", so it is cancelled over the
+           * `?`, which does something else. `stopPropagation` handles the click
+           * but not the hover, so the cancel has to be CSS: `:has()` at 0,3,0
+           * beats `hover:bg-raise` at 0,2,0 with no `!important`.
+           */
           <div
             key={id}
             ref={(el) => register?.(id, el)}
             data-column={id}
-            className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
+            onClick={() => foldable() && onFoldCol?.(id)}
+            className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 transition-colors [scroll-snap-align:none_start] md:top-[16px] ${
+              onFoldCol
+                ? "md:cursor-pointer md:hover:bg-raise md:has-[[data-about]:hover]:bg-panel"
+                : ""
+            } ${cellRule(id)}`}
           >
+            {onFoldCol ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (foldable()) onFoldCol(id)
+                }}
+                aria-expanded
+                aria-label={`Collapse ${p.title}`}
+                className="hidden size-4 shrink-0 place-items-center rounded text-fg-quiet transition-[transform,color] duration-200 ease-out hover:text-fg md:grid"
+              >
+                {/* The same chevron the lane fold uses. One glyph, one meaning,
+                    both axes — it says foldable, not "folds in direction X", so
+                    a second rotation convention would be a second thing to
+                    learn for no gain. */}
+                <svg viewBox="0 0 12 12" aria-hidden className="size-3">
+                  <path
+                    d="M2.75 4.5 L6 7.75 L9.25 4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            ) : null}
             <Slot id={id} tone={p.tone} />
             <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
               {p.title}
             </h3>
             <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
-              {counts ? (counts.get(id) ?? 0) : "–"}
+              {count}
             </span>
             <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
           </div>
@@ -574,6 +663,21 @@ export const BoardHead = ({
       <div className="runway sticky top-0 z-20 h-[41px] bg-panel md:top-[16px]" />
   </>
 )
+
+/*
+ * Desk only.
+ *
+ * The narrow board snaps `mandatory`, which must always come to rest on a
+ * point — so 52px rails among 64vw columns would make it fight the thumb near
+ * every rail. That is the mechanical heart of what killed the reverted
+ * auto-narrowing, and it lives entirely at this breakpoint; the desk snaps
+ * `proximity`, which simply does not snap when you are not near a point.
+ *
+ * Nothing that works on a phone stops working — the section rail already
+ * navigates there. Checked at click time rather than at render, so there is no
+ * hydration mismatch to pay for it.
+ */
+const foldable = () => matchMedia("(min-width: 768px)").matches
 
 /* One place that knows a seam's weight, so the shell's cells and the board's
    cannot disagree about where a lifecycle ends. */
@@ -659,6 +763,8 @@ export const Swimlanes = ({
   scroller,
   folded,
   onFold,
+  cols,
+  onFoldCol,
   arrived,
   inApp,
 }: {
@@ -671,6 +777,8 @@ export const Swimlanes = ({
   scroller: React.Ref<HTMLDivElement>
   folded: Set<string>
   onFold: (repo: string) => void
+  cols: Set<string>
+  onFoldCol: (id: string) => void
   /* Row urls that changed column since the previous read. */
   arrived: Set<string>
   /* Whether a card opens the panel or simply follows its link. */
@@ -686,8 +794,31 @@ export const Swimlanes = ({
    * it — the snap positions become irregular, so the gesture lands somewhere
    * different depending on which columns happen to be empty today. A grid whose
    * geometry changes with its contents is not furniture.
+   *
+   * That still stands, and the column fold is not a hole in it. Read the
+   * sentence again with the weight on one word: geometry that changed with its
+   * CONTENTS moved without anyone asking, for a reason the reader did not cause
+   * and could not predict, and differently each session — which is what made
+   * the gesture unlearnable. A fold moves at the user's own hand and stays
+   * where they put it, so the board is only ever this shape because they made
+   * it this shape. Furniture you can move is still furniture; furniture that
+   * rearranges itself overnight is not.
+   *
+   * The narrowing that was reverted is still forbidden. Nothing here licenses a
+   * column that shrinks because it happens to be empty today.
    */
-  const track = `var(--ym-lane) repeat(${columns.length}, var(--ym-col)) var(--ym-tail)`
+  /*
+   * Expanded rather than `repeat()`, and that is what makes the fold animate:
+   * `grid-template-columns` interpolates between two explicit track lists of
+   * equal length, so seven named tracks can slide where `repeat(7, …)` cannot.
+   */
+  const track = [
+    "var(--ym-lane)",
+    ...columns.map((id) =>
+      cols.has(id) ? "var(--ym-rail)" : "var(--ym-col)",
+    ),
+    "var(--ym-tail)",
+  ].join(" ")
 
   /*
    * Which lanes are mid-fold, so a collapse can be animated without giving up
@@ -705,6 +836,10 @@ export const Swimlanes = ({
    */
   const [settling, setSettling] = useState<Set<string>>(new Set())
   const before = useRef(folded)
+  /* The same trick on the horizontal axis: a column's cards stay mounted for
+     exactly the length of the transition, then go. */
+  const [settlingCols, setSettlingCols] = useState<Set<string>>(new Set())
+  const beforeCols = useRef(cols)
 
   useEffect(() => {
     const changed = [
@@ -719,13 +854,37 @@ export const Swimlanes = ({
     return () => clearTimeout(done)
   }, [folded])
 
+  useEffect(() => {
+    const changed = [
+      ...[...cols].filter((id) => !beforeCols.current.has(id)),
+      ...[...beforeCols.current].filter((id) => !cols.has(id)),
+    ]
+    beforeCols.current = cols
+    if (!changed.length) return
+
+    setSettlingCols(new Set(changed))
+    const done = setTimeout(() => setSettlingCols(new Set()), FOLD_MS + 40)
+    return () => clearTimeout(done)
+  }, [cols])
+
   return (
     <div
       ref={scroller}
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-col)))] md:[scroll-snap-type:both_proximity]"
+      /*
+       * `--ym-last` is an indirection the tail needs and nothing else uses: the
+       * runway is sized so the LAST column can reach its snap line, so folding
+       * that one column — and only that one — leaves it short by the difference
+       * between a column and a rail. A middle column folding does not touch it.
+       */
+      style={
+        cols.has(COLUMNS[COLUMNS.length - 1] ?? "")
+          ? ({ "--ym-last": "var(--ym-rail)" } as CSSProperties)
+          : undefined
+      }
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-last)))] md:[scroll-snap-type:both_proximity]"
     >
       <div
-        className="grid min-w-max content-start"
+        className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
         style={{ gridTemplateColumns: track }}
       >
         {/*
@@ -745,7 +904,12 @@ export const Swimlanes = ({
           Mute clears 8:1 on dark, 8:1 on light and 12:1 in high contrast — one
           value, all three.
         */}
-        <BoardHead counts={counts} register={register} />
+        <BoardHead
+          counts={counts}
+          register={register}
+          cols={cols}
+          onFoldCol={onFoldCol}
+        />
 
         {lanes.map((lane) => (
           <Fragment key={lane.repo}>
@@ -850,9 +1014,17 @@ export const Swimlanes = ({
               /* An empty cell is not a box. No border, no background, no
                  sentence — blank space between the hairlines already reads as
                  an empty cell, where an empty bordered box reads as a broken
-                 component. Folded, the same rule holds: only a cell with
-                 something in it is hatched. */
+                 component.
+
+                 Folded is the opposite rule, and this comment used to claim
+                 otherwise while the code did the right thing: EVERY cell in a
+                 folded region is hatched, empty ones included, because the unit
+                 that is folded is the lane or the column rather than the cell.
+                 One patch mid-row reads as an anomaly; a hatched row or column
+                 reads as a state. */
               const moving = settling.has(lane.repo)
+              const colShut = cols.has(id)
+              const colMoving = settlingCols.has(id)
               return (
                 <div
                   key={id}
@@ -876,7 +1048,7 @@ export const Swimlanes = ({
                     told it may shrink before the title is ever asked to wrap.
                   */
                   className={`relative min-h-[40px] min-w-0 border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
-                    shut ? "hatch" : ""
+                    shut || colShut ? "hatch" : ""
                   } ${
                     SEAM_END.has(id)
                       ? "border-r-2 border-r-line"
@@ -921,18 +1093,34 @@ export const Swimlanes = ({
                     */}
                     <div
                       className={`flex min-h-0 flex-col gap-2 ${
-                        shut || moving ? "overflow-hidden" : ""
+                        shut || moving || colShut || colMoving
+                          ? "overflow-hidden"
+                          : ""
                       }`}
                     >
-                      {rows.length && (!shut || moving) ? (
-                        <Cell
-                          rows={rows}
-                          cap={id === DONE ? DONE_PER_CELL : PER_CELL}
-                          onChanged={onChanged}
-                          onOpen={onOpen}
-                          arrived={arrived}
-                          inApp={inApp}
-                        />
+                      {rows.length &&
+                      (!shut || moving) &&
+                      (!colShut || colMoving) ? (
+                        /*
+                          Held at the OPEN width while the track narrows, so the
+                          cards clip rather than reflow.
+                          
+                          A row fold collapses an inner box and the cards keep
+                          their width throughout; a column fold narrows the cell
+                          itself, so without this the cards crush from 300px to
+                          52px and re-wrap their titles the whole way down. That
+                          stutter is what turns a slide into a squash.
+                        */
+                        <div className={colShut || colMoving ? "w-[var(--ym-col)]" : ""}>
+                          <Cell
+                            rows={rows}
+                            cap={id === DONE ? DONE_PER_CELL : PER_CELL}
+                            onChanged={onChanged}
+                            onOpen={onOpen}
+                            arrived={arrived}
+                            inApp={inApp}
+                          />
+                        </div>
                       ) : null}
                     </div>
                   </div>

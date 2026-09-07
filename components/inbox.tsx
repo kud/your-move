@@ -128,6 +128,9 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const [picks, setPicks] = useState<Picks>(emptyPicks)
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
+  /* Folded COLUMNS, the horizontal twin of `folded`. Same per-device rationale
+     as the comment below, same shape, its own key. */
+  const [cols, setCols] = useState<Set<string>>(new Set())
 
   const scroller = useRef<HTMLDivElement>(null)
   const rail = useRef<HTMLElement>(null)
@@ -144,6 +147,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     try {
       const saved = localStorage.getItem("ym:folded")
       if (saved) setFolded(new Set(JSON.parse(saved) as string[]))
+      const savedCols = localStorage.getItem("ym:cols")
+      if (savedCols) setCols(new Set(JSON.parse(savedCols) as string[]))
     } catch {
       /* A private window, cleared site data, or storage refused outright — an
          unfolded board is the correct fallback and needs no explanation. */
@@ -178,6 +183,25 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       else next.add(repo)
       try {
         localStorage.setItem("ym:folded", JSON.stringify([...next]))
+      } catch {}
+      return next
+    })
+  }, [])
+
+  /*
+   * Folding changes no count anywhere — not `hidden`, not the lane totals, not
+   * the header counts. Filtering REMOVES rows; folding compresses a region that
+   * is still fully on the board. The moment a fold touched a count the board
+   * would start lying in exactly the way the filter banner exists to prevent,
+   * which is also why this needs no banner and no badge on the filter button.
+   */
+  const foldCol = useCallback((id: string) => {
+    setCols((was) => {
+      const next = new Set(was)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      try {
+        localStorage.setItem("ym:cols", JSON.stringify([...next]))
       } catch {}
       return next
     })
@@ -912,6 +936,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                     scroller={scroller}
                     folded={folded}
                     onFold={fold}
+                    cols={cols}
+                    onFoldCol={foldCol}
                     arrived={arrived}
                     inApp={openMode !== "github"}
                   />
