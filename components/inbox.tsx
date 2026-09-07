@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -23,11 +24,14 @@ import { Detail, type OpenMode } from "@/components/detail"
 import { Mark } from "@/components/mark"
 import { Menu } from "@/components/menu"
 import {
+  FILTERS_ID,
   Filters,
+  Glyph,
   countPicks,
   labelCounts,
   repoCounts,
   statusCounts,
+  summarise,
   type Picks,
 } from "@/components/filters"
 import { SectionMark } from "@/components/section-mark"
@@ -39,7 +43,13 @@ import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
 import { presentationFor } from "@/lib/sections"
-import { decodeShare, readViews, writeViews, type View } from "@/lib/views"
+import {
+  decodeShare,
+  emptyPicks,
+  readViews,
+  writeViews,
+  type View,
+} from "@/lib/views"
 import type { Inbox as InboxData, Row } from "@/lib/github"
 
 /*
@@ -114,12 +124,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     initial,
     doneDays,
   )
-  const [picks, setPicks] = useState<Picks>({
-    repos: [],
-    status: [],
-    labels: [],
-    move: [],
-  })
+  const [picks, setPicks] = useState<Picks>(emptyPicks)
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
 
@@ -186,6 +191,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
       (query.get(key) ?? "").split(",").filter(Boolean)
     setPicks({
       repos: read("repos"),
+      owners: read("owners"),
       status: read("status"),
       labels: read("labels"),
       move: read("move"),
@@ -194,7 +200,13 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
 
   useEffect(() => {
     const url = new URL(location.href)
-    for (const key of ["repos", "status", "labels", "move"] as const) {
+    for (const key of [
+      "repos",
+      "owners",
+      "status",
+      "labels",
+      "move",
+    ] as const) {
       if (picks[key].length) url.searchParams.set(key, picks[key].join(","))
       else url.searchParams.delete(key)
     }
@@ -220,7 +232,12 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
         ? all
         : all.filter(
             (r) =>
-              (!picks.repos.length || picks.repos.includes(r.repo)) &&
+              /* Owners and repos are ONE dimension, so they OR. Owner `kud`
+                 AND repo `theorchard/x` yielding nothing is never what anyone
+                 means by ticking both. */
+              ((!picks.repos.length && !picks.owners.length) ||
+                picks.repos.includes(r.repo) ||
+                picks.owners.includes(r.repo.split("/")[0] ?? "")) &&
               (!picks.status.length || picks.status.includes(reasonFor(r))) &&
               (!picks.labels.length ||
                 (r.labels ?? []).some((l) => picks.labels.includes(l))) &&
@@ -717,23 +734,54 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             /* Takes layout rather than being a toast: the board must visibly be a
              smaller thing than the app, or a filtered board lies exactly the way
              a broken one does. */
-            <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px]">
-              <span className="min-w-0 truncate">
-                Filtered to{" "}
-                {[
-                  ...picks.move.map((m) =>
-                    m === "you" ? "your move" : "their move",
-                  ),
-                  ...picks.repos.map(shortName),
-                  ...picks.status,
-                  ...picks.labels,
-                ].join(", ")}
-                {hidden > 0 ? ` · ${hidden} hidden` : ""}
-              </span>
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px] text-fg-mute">
+              <span className="shrink-0">Filtered to</span>
+
+              {summarise(picks, shortName).map((part, i) => (
+                <Fragment key={part.key}>
+                  {i > 0 ? (
+                    <span aria-hidden className="shrink-0 text-fg-quiet">
+                      ·
+                    </span>
+                  ) : null}
+                  {/* Each segment opens the sheet rather than expanding here: a
+                      disclosure would be a second place showing the same set,
+                      and a banner you can expand into fifteen names is a banner
+                      that can become the thing it was shrunk to avoid. The
+                      sheet is where you would go to CHANGE it anyway. */}
+                  <button
+                    type="button"
+                    popoverTarget={FILTERS_ID}
+                    title={part.full || undefined}
+                    className="flex shrink-0 items-center gap-1.5 rounded text-fg hover:underline"
+                  >
+                    {part.kind ? (
+                      <span aria-hidden className="text-fg-quiet">
+                        <Glyph tab={part.kind} />
+                      </span>
+                    ) : null}
+                    {part.text}
+                  </button>
+                </Fragment>
+              ))}
+
+              {hidden > 0 ? (
+                <>
+                  <span aria-hidden className="shrink-0 text-fg-quiet">
+                    ·
+                  </span>
+                  {/* The one number the banner exists to report, so it is the
+                      one thing here that is not quiet. Weight and monospace,
+                      never hue — accent means one thing on this board. */}
+                  <span className="shrink-0 font-mono tabular-nums text-fg">
+                    {hidden} hidden
+                  </span>
+                </>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>
-                  setPicks({ repos: [], status: [], labels: [], move: [] })
+                  setPicks(emptyPicks())
                 }
                 className="ml-auto shrink-0 text-accent hover:underline"
               >

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
 import { REASON_TONE } from "@/components/board"
 import type { Row } from "@/lib/github"
-import { isEmptyPicks, samePicks, type View } from "@/lib/views"
+import { emptyPicks, isEmptyPicks, samePicks, type View } from "@/lib/views"
 
 /*
  * Narrowing the board to a context you actually work in.
@@ -25,7 +25,8 @@ import { isEmptyPicks, samePicks, type View } from "@/lib/views"
  * axes and a tethered dropdown would be clipped by the column overflow.
  */
 
-const ID = "board-filters"
+export const FILTERS_ID = "board-filters"
+const ID = FILTERS_ID
 
 /*
  * Drawn, in the same language as the section marks: 12 viewBox, ink inside a
@@ -52,7 +53,7 @@ const GLYPH: Record<Tab, ReactNode> = {
   ),
 }
 
-const Glyph = ({ tab }: { tab: Tab }) => (
+export const Glyph = ({ tab }: { tab: Tab }) => (
   <svg
     viewBox="0 0 12 12"
     aria-hidden
@@ -108,6 +109,11 @@ export const statusCounts = (rows: Row[], reasonFor: (row: Row) => string) =>
 
 export type Picks = {
   repos: string[]
+  /* Not a fifth facet — a second way of writing the repos one. An owner pick
+     is a standing predicate ("everything theorchard has, including what it has
+     next week") where a repo list is a snapshot, so the two OR together within
+     one dimension and the header's "AND across facets" rule holds unchanged. */
+  owners: string[]
   status: string[]
   labels: string[]
   /* "you" and "them" — the board's own question, so it is a facet like any
@@ -115,8 +121,78 @@ export type Picks = {
   move: string[]
 }
 
+/*
+ * What the banner says, and the rule is: name up to two, count past that.
+ *
+ * Two is where a list stops being a thing you are in and becomes a set you
+ * assembled. At three the eye starts counting rather than reading, and once you
+ * are counting, the number is the better representation — shorter, exact, and
+ * stable while the set changes. Fifteen repository names tell you strictly less
+ * than "15 repos" does, and they cost three lines of banner to say it.
+ */
+const NAME_UP_TO = 2
+
+const some = (values: string[], plural: string) =>
+  values.length <= NAME_UP_TO
+    ? values.join(", ")
+    : `${values.length} ${plural}`
+
+export type Part = { key: string; kind?: Tab; text: string; full: string }
+
+export const summarise = (picks: Picks, short: (repo: string) => string) => {
+  const parts: Part[] = []
+
+  if (picks.move.length)
+    parts.push({
+      key: "move",
+      text: picks.move
+        .map((m) => (m === "you" ? "your move" : "their move"))
+        .join(" or "),
+      full: "",
+    })
+
+  /* Owners and repos are one dimension, so they are one segment. "All of"
+     carries the durable half: an owner pick covers what that owner has NEXT
+     WEEK, and a banner reading the same for fifteen ticked repositories would
+     hide the only difference that matters. */
+  if (picks.owners.length || picks.repos.length)
+    parts.push({
+      key: "where",
+      kind: "repos",
+      text: [
+        picks.owners.length ? `all of ${some(picks.owners, "owners")}` : "",
+        picks.repos.length ? some(picks.repos.map(short), "repos") : "",
+      ]
+        .filter(Boolean)
+        .join(" + "),
+      full: [
+        ...picks.owners.map((o) => `all of ${o}`),
+        ...picks.repos,
+      ].join(", "),
+    })
+
+  if (picks.status.length)
+    parts.push({
+      key: "status",
+      kind: "status",
+      text: some(picks.status, "statuses"),
+      full: picks.status.join(", "),
+    })
+
+  if (picks.labels.length)
+    parts.push({
+      key: "labels",
+      kind: "labels",
+      text: some(picks.labels, "labels"),
+      full: picks.labels.join(", "),
+    })
+
+  return parts
+}
+
 export const countPicks = (picks: Picks) =>
   picks.repos.length +
+  picks.owners.length +
   picks.status.length +
   picks.labels.length +
   picks.move.length
@@ -201,13 +277,33 @@ export const Filters = ({
 
   const active = countPicks(picks)
 
-  const toggle = (facet: Tab, value: string) =>
+  const toggle = (facet: Tab, value: string) => {
+    /*
+     * Pressing a repository row means "filter to this repository" everywhere
+     * else in this sheet, and it must not acquire a subtractive second meaning
+     * inside a covered group. So a press on a row covered by its owner drops
+     * the owner pick and takes that one repo — the header goes from All to
+     * 1/15, the siblings lose their dot, and the banner follows. One press, one
+     * meaning, everything moving together.
+     *
+     * The alternative — expanding the owner into the fourteen others — is the
+     * snapshot this whole change exists to stop, materialised silently.
+     */
+    const owner = facet === "repos" ? (value.split("/")[0] ?? "") : ""
+    if (owner && picks.owners.includes(owner))
+      return onChange({
+        ...picks,
+        owners: picks.owners.filter((o) => o !== owner),
+        repos: [...picks.repos, value],
+      })
+
     onChange({
       ...picks,
       [facet]: picks[facet].includes(value)
         ? picks[facet].filter((v) => v !== value)
         : [...picks[facet], value],
     })
+  }
 
   const list: Facet[] =
     tab === "repos" ? repos : tab === "status" ? status : labels
@@ -225,38 +321,150 @@ export const Filters = ({
     const owners = new Map<string, RepoCount[]>()
     for (const entry of shown as RepoCount[])
       owners.set(entry.owner, [...(owners.get(entry.owner) ?? []), entry])
+    /* A picked owner keeps its header even with nothing left to show, or the
+       filter becomes one you can switch on and then cannot switch off: the
+       banner says it is live and no control anywhere can reach it. */
+    for (const owner of picks.owners)
+      if (!owners.has(owner)) owners.set(owner, [])
     return [...owners].sort(
       (a, b) =>
         b[1].reduce((n, r) => n + r.count, 0) -
         a[1].reduce((n, r) => n + r.count, 0),
     )
-  }, [tab, shown])
+  }, [tab, shown, picks.owners])
 
-  const toggleOwner = (owner: string, all: RepoCount[]) => {
-    const names = all.map((r) => r.name)
-    const every = names.every((n) => picks.repos.includes(n))
+  /*
+   * The owner itself, never an expansion of its children.
+   *
+   * Ticking fifteen repositories would make the state indistinguishable from an
+   * enumeration one press after the user asked for the opposite — and a repo
+   * created tomorrow would then arrive UNTICKED beside fifteen ticked siblings,
+   * which reads as deliberately excluded. They tick it, and now they really do
+   * hold a snapshot. The interface would have talked them out of the feature.
+   */
+  const toggleOwner = (owner: string) => {
+    const held = picks.owners.includes(owner)
     onChange({
       ...picks,
-      repos: every
-        ? picks.repos.filter((r) => !names.includes(r))
-        : [...new Set([...picks.repos, ...names])],
+      owners: held
+        ? picks.owners.filter((o) => o !== owner)
+        : [...picks.owners, owner],
+      /* Picking the owner supersedes any of its repos already ticked: they are
+         covered by it, and leaving them would be two facts saying one thing,
+         one of which goes stale the moment a repository is added. */
+      repos: held
+        ? picks.repos
+        : picks.repos.filter((r) => !r.startsWith(`${owner}/`)),
     })
+  }
+
+  /*
+   * The header's own state is BINARY — this owner, or not — and the tick column
+   * says only that. The fraction beside it reports on the rows below; it is
+   * never a third state of the header. A half-tick here would mean "some of
+   * these are off", which promises exclusion, and exclusion is precisely what
+   * an owner pick does not offer.
+   *
+   * "All" is a promise about the future; a fraction is a report on the present.
+   * The two must never read as the same claim.
+   */
+  const OwnerHead = ({
+    owner,
+    entries,
+  }: {
+    owner: string
+    entries: RepoCount[]
+  }) => {
+    const whole = picks.owners.includes(owner)
+    const ticked = entries.filter((e) => picks.repos.includes(e.name)).length
+
+    return (
+      <button
+        type="button"
+        onClick={() => toggleOwner(owner)}
+        aria-pressed={whole}
+        title={
+          whole
+            ? `Everything in ${owner}, including repositories added later`
+            : `Filter to everything in ${owner}`
+        }
+        aria-label={
+          whole
+            ? `${owner} — all repositories, including new ones`
+            : ticked
+              ? `${owner} — ${ticked} of ${entries.length} repositories picked`
+              : `${owner} — ${entries.length} repositories`
+        }
+        className={`mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
+          whole
+            ? "bg-accent-dim text-fg"
+            : ticked
+              ? "text-fg-mute hover:bg-raise"
+              : "text-fg-quiet hover:bg-raise"
+        }`}
+      >
+        <span
+          aria-hidden
+          className="w-3 text-[12px] normal-case tracking-normal"
+        >
+          {whole ? "✓" : ""}
+        </span>
+        {/*
+          The avatar goes here rather than on each row because the list is
+          already grouped by owner: repeated per row it would be the same
+          picture eight times, which is decoration. On the header it does work —
+          two owners are told apart by recognition rather than by reading, which
+          is exactly the personal-versus-work split these filters exist for.
+
+          A stable URL off a name we already have, so nothing is fetched to
+          learn who someone is, and `size=64` into a 20px box because a phone at
+          3x would otherwise show it soft.
+        */}
+        <img
+          src={`https://github.com/${owner}.png?size=64`}
+          alt=""
+          width={20}
+          height={20}
+          loading="lazy"
+          className={`size-5 shrink-0 rounded-full border ${
+            whole ? "border-accent" : "border-line"
+          }`}
+        />
+        <span className="min-w-0 flex-1 truncate">{owner}</span>
+        <span className="text-[10.5px] normal-case tracking-normal text-fg-quiet">
+          {whole ? "All" : ticked ? `${ticked}/${entries.length}` : entries.length}
+        </span>
+      </button>
+    )
   }
 
   const Row_ = ({ name, count, label }: Facet & { label?: string }) => {
     const picked = picks[tab].includes(name)
+    /* Covered, not picked: this repo's OWNER is picked, so it is in — and so is
+       the one created tomorrow. A tick here would credit the wrong fact, and an
+       empty column would read as excluded, which is the one thing an owner pick
+       does not offer. */
+    const covered =
+      tab === "repos" && picks.owners.includes(name.split("/")[0] ?? "")
     return (
       <button
         type="button"
         onClick={() => toggle(tab, name)}
         aria-pressed={picked}
+        title={covered ? `Filter to ${label ?? name} alone` : undefined}
         className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13.5px] transition-colors ${
-          picked ? "bg-accent-dim text-fg" : "text-fg-mute hover:bg-raise"
+          picked
+            ? "bg-accent-dim text-fg"
+            : covered
+              ? "text-fg hover:bg-raise"
+              : "text-fg-mute hover:bg-raise"
         }`}
       >
-        {/* Shape as well as colour: a tick, not a tint alone. */}
+        {/* Shape as well as colour: three states, three marks. No tint on a
+            covered row — the header carries the group's highlight, and
+            repeating it down fifteen rows is ornament. */}
         <span aria-hidden className="w-3 font-mono text-[12px]">
-          {picked ? "✓" : ""}
+          {picked ? "✓" : covered ? "·" : ""}
         </span>
         {/* Each facet's rows wear the mark of what they are, so the three
             lists read as one family rather than as three lists. */}
@@ -342,7 +550,7 @@ export const Filters = ({
             <button
               type="button"
               onClick={() =>
-                onChange({ repos: [], status: [], labels: [], move: [] })
+                onChange(emptyPicks())
               }
               className="ml-auto text-[12px] text-accent hover:underline"
             >
@@ -534,21 +742,7 @@ export const Filters = ({
                     fetched to learn who someone is, and `size=64` into a 20px
                     box because a phone at 3x would otherwise show it soft.
                   */}
-                  <button
-                    type="button"
-                    onClick={() => toggleOwner(owner, entries)}
-                    className="flex w-full items-center gap-1.5 pb-1 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet hover:text-fg-mute"
-                  >
-                    <img
-                      src={`https://github.com/${owner}.png?size=64`}
-                      alt=""
-                      width={20}
-                      height={20}
-                      loading="lazy"
-                      className="size-5 shrink-0 rounded-full border border-line"
-                    />
-                    {owner}
-                  </button>
+                  <OwnerHead owner={owner} entries={entries} />
                   {entries.map((entry) => (
                     <Row_
                       key={entry.name}
