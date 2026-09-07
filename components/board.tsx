@@ -1133,7 +1133,13 @@ export const Swimlanes = ({
                       card. An open, settled cell has nothing to clip.
                     */}
                     <div
-                      className={`ym-in-settle flex min-h-0 flex-col gap-2 ${
+                      /* `gap-3`, not `gap-2`. At 8px the space BETWEEN two
+                         cards was tighter than the 10px of padding inside one,
+                         so a stack read as a single ridged block rather than as
+                         separate objects — the gap has to beat the padding or
+                         the eye groups them. 12px is the first step that does,
+                         and it costs 4px per card in a column that has room. */
+                      className={`ym-in-settle flex min-h-0 flex-col gap-3 ${
                         shut || moving || colShut || colMoving
                           ? "overflow-hidden"
                           : ""
