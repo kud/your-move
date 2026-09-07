@@ -970,7 +970,7 @@ html:has([popover]:popover-open) main {
  * It began at 0.85 on the reasoning that a fade from zero manufactures the very
  * empty frame the hand-off does not otherwise have. True, and too subtle to
  * read as anything at all — which left the swap looking like a cut. Erwann
- * wants to see the cards arrive, so they arrive: 260ms is long enough to be a
+ * wants to see the cards arrive, so they arrive: 220ms is long enough to be a
  * fade rather than a flicker, and the "empty" frame it passes through is one
  * the shimmer block occupied a moment earlier, so nothing is lost from view.
  *
