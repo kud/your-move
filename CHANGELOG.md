@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 
 ---
 
+## 1.1.0 — 2026-09-07
+
+### Highlights
+
+- **Rows open in the app on the phone too** — a reversal of the earlier "hand it to the GitHub app" call. The panel still does none of the work — no diff, no thread, no comment box — but it does show the verdict, which GitHub states nowhere, and a verdict is worth most on a phone, in a queue. Triaging four rows now costs zero app switches instead of four: full screen, the board blurred out behind it, "Open on GitHub" full width and thumb height. ([34a80bb](https://github.com/kud/your-move/commit/34a80bb7f681caa8c2e16f57c7d193d0b733cea6))
+- **A setting for where a row opens** — side panel, modal, full screen, or straight to GitHub, all as one choice with two faces: two options on a phone, four on a desk, because the panel shapes are indistinguishable at 390px anyway. ([369549a](https://github.com/kud/your-move/commit/369549a8eb759f67d79055a2b84556da82e88642))
+- **Lanes can be sorted by name as well as by urgency** — urgency stays the default, since surfacing what wants you is the app's whole premise; name is for arriving in search of one project rather than reading down what's in front of you. ([22c5150](https://github.com/kud/your-move/commit/22c51503e498974405d861215ccdae6ede38fdb0))
+- **Saved views can be shared as a link, not just a file** — the payload rides in the URL fragment, which never reaches a server, since these carry repository names and some are private. Merges by name on arrival, then strips itself out of the address bar. ([78f369e](https://github.com/kud/your-move/commit/78f369eede2eed5e054387bdfae76f253ad4579f))
+- **A fortnight window for recently done work**, sitting between the existing week and month. ([bd4a077](https://github.com/kud/your-move/commit/bd4a0772bca0daf21b699c0e104fc55fa2fa9e0a))
+- **The board's position survives a restart**, not just a trip out to GitHub. Columns restore always, since they're fixed furniture; the lane scroll offset only within the hour, since lanes reorder as work moves and a stale offset would point at a row that's no longer there. ([806c91a](https://github.com/kud/your-move/commit/806c91adfaf8887a562c98c99f0622658793c1a7))
+- **Owner avatars in the repository filter and on group headers** — and every facet's rows now carry the mark of what they are, so a repo's book, a label's tag, and a status's tone dot read as one family. ([c84102e](https://github.com/kud/your-move/commit/c84102eaf7f4d55fb91d4876cdb97290047a646c))
+
+### Fixes
+
+- The row panel wasn't actually full screen on a phone — its shape classes weren't width-prefixed, so a "side panel" kept its 92vw and the board showed down the right edge. Also fixed in the same pass: the settings label read "Open rows" and now reads "Open tickets" — `Row` is what the code calls them because they're issues and pull requests both, and that piece of plumbing had leaked into the interface. ([6436d13](https://github.com/kud/your-move/commit/6436d13bbe07740dbf4fd3d44d48e11ddcfd3b1b))
+- That fix then broke the desktop modal and full-screen views — two Tailwind utilities of equal specificity resolve by their order in the generated stylesheet, not by their order in the class string, so a base reset silently beat both and the modal collapsed. ([225b408](https://github.com/kud/your-move/commit/225b408a496b3302eea575d52c2fc0627068c8f6))
+
+---
+
 ## 1.0.0 — 2026-09-06
 
 First release of **your-move**: a single-user GitHub board PWA that answers one question — whose move is it. It reads GitHub live over GraphQL, with no database, no mirror and no webhooks, and lays every tracked repository out as a matrix: one row per repo, one column per status, so a project's whole situation is a line you read across. It's free to run and a full board read costs about 74 of GitHub's 5,000 hourly GraphQL points. ([939fb84](https://github.com/kud/your-move/commit/939fb84166330dfa2397200677d7c618aaed5380))
