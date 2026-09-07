@@ -769,7 +769,17 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             /* Takes layout rather than being a toast: the board must visibly be a
              smaller thing than the app, or a filtered board lies exactly the way
              a broken one does. */
-            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px] text-fg-mute">
+            /*
+              Sized to its content, not to the frame.
+            
+              It still TAKES LAYOUT — it is in flow and pushes the board down,
+              which is the part that matters: the board must visibly be a
+              smaller thing than the app, or a filtered board lies the way a
+              broken one does. Full-bleed was never what bought that. Once the
+              frame went from 1600 to 2250 it became a mostly-empty band with
+              `Clear` stranded a screen away from the sentence it acts on.
+            */
+            <div className="mb-2 flex w-fit max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px] text-fg-mute">
               <span className="shrink-0">Filtered to</span>
 
               {summarise(picks, shortName).map((part, i) => (
@@ -818,7 +828,10 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 onClick={() =>
                   setPicks(emptyPicks())
                 }
-                className="ml-auto shrink-0 text-accent hover:underline"
+                /* A rule rather than `ml-auto`: with the banner at content
+                   width there is no free space to push into, and the divider
+                   is what keeps an ACTION from reading as one more segment. */
+                className="ml-1 shrink-0 border-l border-accent/30 pl-2.5 text-accent hover:underline"
               >
                 Clear
               </button>
