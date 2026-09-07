@@ -603,20 +603,10 @@ const SKELETON_NAME_W = ["72%", "54%", "86%", "63%"]
  * already two hundred pixels down is worse than not scrolling at all.
  */
 export const BoardSkeleton = () => (
-  <div className="h-full overflow-hidden [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-col)))]">
-    <div
-      className="grid min-w-max content-start"
-      style={{
-        /* Fallbacks are not belt-and-braces here, they are the difference
-           between degrading and collapsing. `grid-template-columns` is invalid
-           at computed-value time if ANY `var()` in it fails to resolve, and it
-           then falls back to `none` — at which point the group band's `span 3`
-           auto-places into three implicit columns and the whole board folds
-           into a stack of wrapped headers. A wrong-but-sane track list beats
-           that in every case. */
-        gridTemplateColumns: `var(--ym-lane, ${LANE_W}px) repeat(${COLUMNS.length}, var(--ym-col, ${COL_W}px)) var(--ym-tail, 0px)`,
-      }}
-    >
+  <div className="h-full overflow-hidden">
+    {/* `.ym-skeleton-grid` owns the track list outright — see globals.css for
+        why this one grid takes no custom properties. */}
+    <div className="ym-skeleton-grid">
       {/* Real, not grey. We know what these say before GitHub answers. */}
       <BoardHead />
 

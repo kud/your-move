@@ -61,3 +61,17 @@ describe("the section contract with @kud/gh", () => {
       expect(reached, `nothing can ever appear in ${column}`).toContain(column)
   })
 })
+
+/*
+ * The boot skeleton draws the same grid as the board, but `.ym-skeleton-grid`
+ * in `globals.css` spells its track count out as a literal — deliberately, so
+ * that one grid depends on no custom property that could fail to resolve. CSS
+ * cannot read `COLUMNS`, so this is the thing standing between a new column and
+ * a shell that quietly hands over to a board of a different shape.
+ */
+describe("the skeleton's hardcoded track count", () => {
+  it("still matches the board's column count", () => {
+    expect(COLUMNS).toHaveLength(7)
+  })
+})
+
