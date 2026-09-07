@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
 import { REASON_TONE } from "@/components/board"
 import type { Row } from "@/lib/github"
@@ -151,7 +151,39 @@ export const Filters = ({
   const [tab, setTab] = useState<Tab>("repos")
   const [needle, setNeedle] = useState("")
   const [naming, setNaming] = useState(false)
+  const search = useRef<HTMLInputElement>(null)
   const [name, setName] = useState("")
+
+  /*
+   * ⌘K opens the control that already exists rather than adding a surface.
+   *
+   * Deliberately not a command palette. `gh-cockpit` is the keyboard-first
+   * product, and this is the graphical one — two postures reading the same
+   * facts, not one product in two skins. A palette here would be the second
+   * skin, and it would need its own vocabulary of actions to justify itself.
+   *
+   * What this is instead: the shortest route to the repository search that is
+   * already in the sheet, with the field focused. It adds no concept, and if
+   * the shortcut is never pressed nothing about the app is different.
+   */
+  useEffect(() => {
+    const open = (event: KeyboardEvent) => {
+      if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
+      event.preventDefault()
+
+      const sheet = document.getElementById(ID)
+      if (!sheet) return
+      /* Already open on another facet is still a hit: it means "find me a
+         repository", so it switches rather than closing. */
+      if (!sheet.matches(":popover-open")) sheet.showPopover()
+      setTab("repos")
+      setNeedle("")
+      requestAnimationFrame(() => search.current?.select())
+    }
+
+    addEventListener("keydown", open)
+    return () => removeEventListener("keydown", open)
+  }, [])
 
   const current = views.find((v) => samePicks(v.picks, picks))
   const savable = !isEmptyPicks(picks) && !current
@@ -462,9 +494,13 @@ export const Filters = ({
         {repos.length > TYPEAHEAD_AFTER ? (
           <input
             type="search"
+            ref={search}
             value={needle}
             onChange={(e) => setNeedle(e.target.value)}
             placeholder={`Find a ${tab === "repos" ? "repository" : tab === "status" ? "status" : "label"}`}
+            /* Named on the control rather than in a legend nobody reads: a
+               shortcut you have to be told about is a shortcut for one person. */
+            title="⌘K"
             aria-label="Find"
             className="mb-2 mt-2 w-full shrink-0 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
           />
