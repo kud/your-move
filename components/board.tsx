@@ -717,14 +717,25 @@ export const cellRule = (id: string) =>
     : "border-r border-r-line-soft"
 
 /*
- * Four lanes, and deliberately fewer than a real board.
+ * Two lanes, and deliberately fewer than a real board.
  *
  * The count is unknown, so the only choice available is which direction to be
  * wrong in — and the two are not symmetric. Guessing low means the board GROWS
  * downward at hand-off, extending what you are already reading. Guessing high
  * means it COLLAPSES, yanking content out from under the eye mid-read.
+ *
+ * It was four, which made the placeholder DENSER than the thing it stands in
+ * for: four lanes across seven columns is 28 blocks, where a real first-paint
+ * board fills eight to twelve of its cells and leaves the rest genuinely empty.
+ * So it read as busy, and the hand-off felt like the board emptying out —
+ * because it was. Two lanes is about fourteen, which is roughly what actually
+ * arrives.
+ *
+ * The density is a desk problem only: a phone shows one column, so this is the
+ * difference between four blocks and two there, against 28 and 14 on the desk.
+ * One number fixes the surface that has the problem.
  */
-const SKELETON_LANES = 4
+const SKELETON_LANES = 2
 
 /* Vary what carries no meaning, fix what does. Nobody reads information out of
    how long a repo name is, so varying these stops the label column reading as
