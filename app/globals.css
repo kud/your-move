@@ -938,16 +938,20 @@ html:has([popover]:popover-open) main {
 /*
  * The cells settling in as the board replaces the shell.
  *
- * Starts at 0.85, never at 0. There is no gap in the hand-off — React unmounts
- * the shell and mounts the board in a single commit, so a cell is never absent
- * for a frame — which means the only way to produce an empty flash here is to
- * animate from zero and watch your own first frame.
+ * From zero, and on the CARDS rather than on the cell.
  *
- * Per-cell rather than on the grid, and that is structural: the header cells
- * and the lane cells are siblings in ONE grid, so there is no element wrapping
- * only the lanes. Fading the container would dip `BoardHead`, which is
- * byte-identical across the swap and is the whole reason the hand-off does not
- * reflow — a flicker in the one place stillness was guaranteed.
+ * It began at 0.85 on the reasoning that a fade from zero manufactures the very
+ * empty frame the hand-off does not otherwise have. True, and too subtle to
+ * read as anything at all — which left the swap looking like a cut. Erwann
+ * wants to see the cards arrive, so they arrive: 260ms is long enough to be a
+ * fade rather than a flicker, and the "empty" frame it passes through is one
+ * the shimmer block occupied a moment earlier, so nothing is lost from view.
+ *
+ * The target is the box holding the cards, never the cell and never the grid.
+ * The furniture — headers, seams, hairlines, the lane labels — is byte-identical
+ * across the swap and is the whole reason the hand-off does not reflow; fading
+ * it would put a flicker in the one place stillness was guaranteed. Only the
+ * part that actually changed moves.
  *
  * NO STAGGER. Every cell starts in the same frame; staggering is what turns a
  * 180ms settle into a board that visibly takes half a second to assemble, which
@@ -958,10 +962,10 @@ html:has([popover]:popover-open) main {
  */
 @keyframes ym-in-settle {
   from {
-    opacity: 0.85;
+    opacity: 0;
   }
 }
 
 .ym-in-settle {
-  animation: ym-in-settle 180ms ease-out both;
+  animation: ym-in-settle 260ms ease-out both;
 }
