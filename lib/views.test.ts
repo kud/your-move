@@ -20,6 +20,7 @@ import {
 
 const picks = (over = {}) => ({
   repos: [],
+  owners: [],
   status: [],
   labels: [],
   move: [],
@@ -96,4 +97,35 @@ describe("encodeShare / decodeShare", () => {
     it(`returns nothing for ${JSON.stringify(broken)} rather than throwing`, () => {
       expect(decodeShare(broken)).toEqual([])
     })
+})
+
+/*
+ * An owner pick is the one facet that is a predicate rather than a snapshot, so
+ * the contract worth pinning is that an old file keeps its enumeration and
+ * gains nothing — it is NOT collapsed into the owner it happens to cover. Twenty
+ * of twenty ticked is ambiguous between "the org" and "these twenty", and
+ * guessing would silently widen a view where a repository was excluded on
+ * purpose.
+ */
+describe("owners", () => {
+  it("fills owners for a file written before the facet existed", () => {
+    const back = importViews(
+      JSON.stringify({
+        views: [{ name: "At work", picks: { repos: ["acme/a", "acme/b"] } }],
+      }),
+    )
+    expect(back[0].picks.owners).toEqual([])
+    expect(back[0].picks.repos).toEqual(["acme/a", "acme/b"])
+  })
+
+  it("round-trips an owner pick", () => {
+    const views = [{ name: "At work", picks: picks({ owners: ["acme"] }) }]
+    expect(importViews(exportViews(views))).toEqual(views)
+  })
+
+  it("tells an owner pick apart from its repos being ticked", () => {
+    expect(
+      samePicks(picks({ owners: ["acme"] }), picks({ repos: ["acme/a"] })),
+    ).toBe(false)
+  })
 })
