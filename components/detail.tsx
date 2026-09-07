@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import type { OnLabelChange } from "@/components/board"
@@ -210,10 +210,54 @@ export const Detail = ({
     }
   }, [row.repo, row.number])
 
-  /* Escape closes, and the browser's own back gesture does too — the parent
-     owns that, because it owns the URL. */
+  /*
+   * Escape closes, and the browser's own back gesture does too — the parent
+   * owns that, because it owns the URL.
+   *
+   * Tab stays inside. Without this the panel was a dialog by role only: focus
+   * never entered it, so a keyboard reader who opened a row was still tabbing
+   * through the board behind — reading one thing and steering another. And on
+   * close, focus went to the top of the document rather than back to the card,
+   * so every row read cost you your place in the grid.
+   *
+   * Hand-rolled rather than `<dialog>` because this is not always modal: as a
+   * side panel the board behind stays deliberately readable and reachable, and
+   * `showModal()` would make it inert. The trap is the price of that choice.
+   */
+  const panel = useRef<HTMLElement>(null)
+  const cameFrom = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    cameFrom.current = document.activeElement as HTMLElement | null
+    /* The heading rather than the first control: a screen reader should hear
+       what this is before it hears what it can do about it. */
+    requestAnimationFrame(() => panel.current?.focus())
+
+    return () => cameFrom.current?.focus?.()
+  }, [])
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onClose()
+      if (e.key !== "Tab" || !panel.current) return
+
+      const stops = panel.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
+      )
+      const first = stops[0]
+      const last = stops[stops.length - 1]
+      if (!first || !last) return
+
+      /* Only the two edges are handled; everything between them is the
+         browser's own order, which is the one a reader expects. */
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
     document.addEventListener("keydown", key)
     return () => document.removeEventListener("keydown", key)
   }, [onClose])
@@ -244,7 +288,10 @@ export const Detail = ({
       />
 
       <aside
+        ref={panel}
         role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         aria-label={`${row.repo}#${row.number}`}
         /* Full screen below `md` regardless of the preference, which is a
            desk preference: at 390px a "side panel" at 92vw is a full screen
