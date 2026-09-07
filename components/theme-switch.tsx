@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import { applyTheme, paintChrome, readTheme, type Theme } from "@/lib/theme"
 
@@ -17,6 +17,51 @@ import { applyTheme, paintChrome, readTheme, type Theme } from "@/lib/theme"
  * names itself — so the group carries `aria-label` instead, or a screen reader
  * gets three buttons called auto/light/dark with nothing saying what they set.
  */
+
+/*
+ * Drawn, not typed — the same rule `section-mark.tsx` records: a text glyph's
+ * size and vertical placement are whatever the installed font decides, and on
+ * Android three of those marks were being drawn by a fallback face. Same 12
+ * viewBox and 1.25 stroke as the filter and section marks, so these read as
+ * more of one icon set rather than as a second.
+ *
+ * A prefix, never a replacement. Icon-only is the version that cannot be
+ * honest here: `auto` has no icon of its own, and drawing it as a moon because
+ * it happens to be night states the resolved value as if it were the setting.
+ * The word stays; the glyph is there to be found at a glance.
+ */
+const MARK: Record<Theme, ReactNode> = {
+  /* Half-filled: following something rather than being something. */
+  auto: (
+    <>
+      <circle cx="6" cy="6" r="4.2" />
+      <path d="M6 1.8a4.2 4.2 0 0 0 0 8.4z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  light: (
+    <>
+      <circle cx="6" cy="6" r="2.4" />
+      <path d="M6 1v1.1M6 9.9V11M11 6H9.9M2.1 6H1M9.54 2.46l-.78.78M3.24 8.76l-.78.78M9.54 9.54l-.78-.78M3.24 3.24l-.78-.78" />
+    </>
+  ),
+  dark: <path d="M9.6 7.2A4.2 4.2 0 0 1 4.8 2.4a4.2 4.2 0 1 0 4.8 4.8z" />,
+}
+
+const Mark = ({ theme }: { theme: Theme }) => (
+  <svg
+    viewBox="0 0 12 12"
+    aria-hidden
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-3 shrink-0"
+  >
+    {MARK[theme]}
+  </svg>
+)
+
 export const ThemeSwitch = ({ quiet = false }: { quiet?: boolean }) => {
   const [theme, setTheme] = useState<Theme>("auto")
 
@@ -60,7 +105,7 @@ export const ThemeSwitch = ({ quiet = false }: { quiet?: boolean }) => {
           type="button"
           onClick={() => choose(option)}
           aria-pressed={theme === option}
-          className={`capitalize ${quiet ? "px-3 py-2 text-[12px]" : "px-2 py-0.5 text-[12px]"} ${
+          className={`flex items-center gap-1.5 capitalize ${quiet ? "px-3 py-2 text-[12px]" : "px-2 py-0.5 text-[12px]"} ${
             theme === option
               ? /*
                  * Rose means "this needs you" on this board, and the login card
@@ -75,6 +120,7 @@ export const ThemeSwitch = ({ quiet = false }: { quiet?: boolean }) => {
               : "text-fg-quiet"
           }`}
         >
+          <Mark theme={option} />
           {option}
         </button>
       ))}
