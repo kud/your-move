@@ -34,7 +34,24 @@ const Login = async ({ searchParams }: Props) => {
     : "/api/auth/login"
 
   return (
-    <main className="grid min-h-safe place-items-center p-6">
+    <main className="relative grid min-h-safe place-items-center p-6">
+      {/*
+        Top right, and pinned to the viewport rather than to the card.
+
+        Iris argued for it under the card — on a page holding one centred object
+        a corner control reads as an orphan, with nothing beside it to give it
+        scale. Erwann asked for the corner, saw both, and kept the corner: it is
+        where a theme control lives on every other site, so it is where a hand
+        goes looking without being told. His call.
+
+        The safe-area insets are the cost of the corner and are not optional —
+        this installs as a PWA, so on a notched phone a bare `top-4` would sit
+        under the status bar.
+      */}
+      <div className="absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))]">
+        <ThemeSwitch quiet />
+      </div>
+
       <div>
         <div className="w-full max-w-[320px] rounded-xl border border-line bg-panel p-5">
           <h1 className="text-[17px] font-semibold">Your Move</h1>
@@ -61,20 +78,6 @@ const Login = async ({ searchParams }: Props) => {
           </a>
         </div>
 
-        {/*
-          Below the card, not in it, and not in the viewport's corner.
-
-          The card should end on its action: a preference row after the sign-in
-          button makes the last thing you read a setting, which dilutes the one
-          tap this page exists for. And a control pinned to the corner of an
-          otherwise empty page reads as an orphan rather than as furniture —
-          nothing beside it to give it scale, and a safe-area inset to fight for
-          nothing. Here it inherits the card's centre axis and reads as a
-          footnote to it, which is what it is.
-        */}
-        <div className="mt-3 flex justify-center">
-          <ThemeSwitch quiet />
-        </div>
       </div>
     </main>
   )
