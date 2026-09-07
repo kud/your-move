@@ -827,3 +827,38 @@ html:has([popover]:popover-open) main {
 .runway {
   background-color: color-mix(in srgb, var(--color-line) 22%, transparent);
 }
+
+/*
+ * The boot skeleton's grid, expressed without a single custom property.
+ *
+ * The board's own scroller builds its track list out of `--ym-lane`,
+ * `--ym-col` and `--ym-tail`, which is right there: those values are shared
+ * with the scroll padding and the snap geometry, so they have to be variables.
+ * The skeleton needs none of that — it does not scroll, it does not snap, and
+ * it lives for under a second.
+ *
+ * What it did inherit was the failure mode. `grid-template-columns` is invalid
+ * at computed-value time if ANY `var()` in it fails to resolve, and it then
+ * falls back to `none` — at which point the group band's `span 3` auto-places
+ * into three implicit columns and the whole board folds into a stack of wrapped
+ * headers. That is precisely what it was doing, on a declaration whose every
+ * variable had a literal fallback, which should have made it impossible. The
+ * cause was never found; this removes the class of failure rather than the
+ * instance, which is the honest trade for a placeholder.
+ *
+ * The `7` is `COLUMNS.length`, and `lib/sections.test.ts` asserts it so a
+ * column added to the board fails a test here rather than silently mis-drawing
+ * the shell it hands over to.
+ */
+.ym-skeleton-grid {
+  display: grid;
+  align-content: start;
+  min-width: max-content;
+  grid-template-columns: 104px repeat(7, 64vw) 0px;
+}
+
+@media (min-width: 768px) {
+  .ym-skeleton-grid {
+    grid-template-columns: 150px repeat(7, 300px) 0px;
+  }
+}
