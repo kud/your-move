@@ -548,7 +548,11 @@ export const BoardHead = ({
           /* Painted by the group to the left, like every other rule here, so
              the seam runs unbroken from the top edge at one width. */
           className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
-            i < GROUPS.length - 1 ? "border-r-2 border-r-line" : ""
+            /* The last group draws its seam too, now that the board's own
+               right edge is a seam rather than a hairline. Without it the
+               vertical rule had a 16px notch at the very top, where the band
+               sits — the one row that was still saying the board carried on. */
+            "border-r-2 border-r-line"
           }`}
           style={{ gridColumn: `span ${group.ids.length}` }}
         >

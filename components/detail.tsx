@@ -507,9 +507,25 @@ export const Detail = ({
                       className="border-t border-line-soft py-2 first:border-t-0"
                     >
                       <p className="text-[12px] text-fg-quiet">@{c.login}</p>
-                      <p className="mt-0.5 line-clamp-4 whitespace-pre-wrap text-[13.5px] leading-[1.5] text-fg-mute">
-                        {c.body}
-                      </p>
+                      {/*
+                        Rendered, for the same reason the body is.
+
+                        A bot comment is the worst case and the common one: they
+                        arrive as `#### PR Summary`, backticked identifiers and
+                        an `<!-- ai-pr-review-tool -->` marker, so unrendered
+                        they were paying the full cost of markdown's syntax to
+                        show none of its meaning. `lib/markdown.tsx` already
+                        drops HTML comments — issue templates ship with them —
+                        so the marker goes for free.
+
+                        `line-clamp` cannot survive the switch: it needs a
+                        `-webkit-box` of text, and this is now a block of
+                        elements. A height cap with the list fade does the same
+                        job and cuts between lines rather than through one.
+                      */}
+                      <div className="fade-b mt-0.5 max-h-[7.5rem] overflow-hidden text-[13.5px] leading-[1.5] text-fg-mute">
+                        <Markdown source={c.body} />
+                      </div>
                     </div>
                   ))}
                   <p className="pt-1 text-[12px] text-fg-quiet">
