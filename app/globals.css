@@ -132,6 +132,12 @@ body {
 }
 
 .shimmer {
+  /* The resting value, and it has to be declared OUTSIDE the keyframes. With
+     motion reduced the animation is zeroed, so without this the element falls
+     back to its computed `opacity: 1` — brighter than the animation ever
+     reaches, which rendered placeholder cards more solidly for a reader with
+     motion off than for anyone else. */
+  opacity: 0.65;
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
