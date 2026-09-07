@@ -25,6 +25,8 @@ Very little belongs here. `@kud/gh` builds the GraphQL and derives health; `@kud
 
 `@kud/gh-cockpit` is the sibling terminal surface. Two postures, one library — not one product with two skins, and neither should grow a dependency on the other.
 
+That rule is about **code and dependencies**, and it was once read as forbidding shared idioms too: ⌘K opened the filter search here specifically so this surface would not acquire cockpit's palette. That reading is retired. ⌘K on github.com is itself a command palette, so a GitHub inbox matching it is being consistent with the host it reads from rather than importing the TUI's posture. ⌘K opens the launcher; `/` opens the filter search, exactly as GitHub divides them. The line that keeps them distinct is not which shortcut exists but what each one does: **the launcher never filters** — it searches row titles and arrives at one thing, where the sheet searches facet names and narrows the set.
+
 ## Interface
 
 One responsive view, not two products.

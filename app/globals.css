@@ -1009,3 +1009,44 @@ html:has([popover]:popover-open) main {
   transform: none;
   transition: opacity 120ms ease;
 }
+
+/*
+ * The launcher arrives quickly, and from above.
+ *
+ * The global popover transition is 320ms of travel and scale — right for a
+ * sheet you open occasionally, wrong for something summoned dozens of times a
+ * session, where you feel a third of a second on every single press of a
+ * control whose entire value is immediacy. Same reasoning that got the tooltip
+ * its opt-out.
+ *
+ * From above rather than below: it lives at the top, so travelling up to its
+ * resting place is the shorter, quieter move, and downward travel here would be
+ * the filter sheet's gesture in the wrong place. The backdrop keeps the global
+ * timing — the ground can take its time, the control cannot.
+ *
+ * `md:left-1/2` needs its own centring transform, and the global
+ * `[popover]:popover-open { transform: none }` would wipe it, so both states
+ * are restated here.
+ */
+.ym-cmd {
+  transform: translateY(-6px);
+  transition:
+    opacity 120ms ease,
+    transform 140ms cubic-bezier(0.16, 1.02, 0.3, 1),
+    overlay 140ms allow-discrete,
+    display 140ms allow-discrete;
+}
+
+.ym-cmd:popover-open {
+  transform: none;
+}
+
+@media (min-width: 768px) {
+  .ym-cmd {
+    transform: translateX(-50%) translateY(-6px);
+  }
+
+  .ym-cmd:popover-open {
+    transform: translateX(-50%);
+  }
+}
