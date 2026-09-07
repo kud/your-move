@@ -934,3 +934,34 @@ html:has([popover]:popover-open) main {
 :root[data-motion="reduce"]::view-transition-new(*) {
   animation: none !important;
 }
+
+/*
+ * The cells settling in as the board replaces the shell.
+ *
+ * Starts at 0.85, never at 0. There is no gap in the hand-off — React unmounts
+ * the shell and mounts the board in a single commit, so a cell is never absent
+ * for a frame — which means the only way to produce an empty flash here is to
+ * animate from zero and watch your own first frame.
+ *
+ * Per-cell rather than on the grid, and that is structural: the header cells
+ * and the lane cells are siblings in ONE grid, so there is no element wrapping
+ * only the lanes. Fading the container would dip `BoardHead`, which is
+ * byte-identical across the swap and is the whole reason the hand-off does not
+ * reflow — a flicker in the one place stillness was guaranteed.
+ *
+ * NO STAGGER. Every cell starts in the same frame; staggering is what turns a
+ * 180ms settle into a board that visibly takes half a second to assemble, which
+ * is the opposite of the thing being asked for.
+ *
+ * Reduced motion needs no special case: the global guard zeroes the duration,
+ * and the honest fallback here is the hard cut it was before.
+ */
+@keyframes ym-in-settle {
+  from {
+    opacity: 0.85;
+  }
+}
+
+.ym-in-settle {
+  animation: ym-in-settle 180ms ease-out both;
+}
