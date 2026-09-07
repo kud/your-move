@@ -980,9 +980,17 @@ html:has([popover]:popover-open) main {
  * it would put a flicker in the one place stillness was guaranteed. Only the
  * part that actually changed moves.
  *
- * NO STAGGER. Every cell starts in the same frame; staggering is what turns a
- * 180ms settle into a board that visibly takes half a second to assemble, which
- * is the opposite of the thing being asked for.
+ * Staggered by COLUMN, left to right, so the board is wiped in rather than
+ * switched on. It began with no stagger at all — on the reasoning that one turns
+ * a short settle into a board visibly assembling itself — and that reasoning
+ * still holds for a PER-CELL stagger, which is why this is not one. A column at
+ * a time is a single gesture travelling across the board; twenty-one cells each
+ * on their own clock is a board struggling to arrive.
+ *
+ * The budget is deliberately tight: seven columns at 35ms is 210ms of travel,
+ * so the last column starts before the first has finished and the whole thing
+ * is over inside half a second. `both` holds each column invisible through its
+ * own delay rather than flashing it first.
  *
  * Reduced motion needs no special case: the global guard zeroes the duration,
  * and the honest fallback here is the hard cut it was before.
@@ -994,7 +1002,8 @@ html:has([popover]:popover-open) main {
 }
 
 .ym-in-settle {
-  animation: ym-in-settle 260ms ease-out both;
+  animation: ym-in-settle 220ms ease-out both;
+  animation-delay: calc(var(--ym-i, 0) * 35ms);
 }
 
 /*

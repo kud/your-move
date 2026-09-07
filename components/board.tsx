@@ -1056,7 +1056,7 @@ export const Swimlanes = ({
               land under the same sticky headers as everything else, so folding
               costs detail rather than position.
             */}
-            {columns.map((id) => {
+            {columns.map((id, col) => {
               const rows = lane.cells.get(id) ?? []
               const shut = folded.has(lane.repo)
               /* An empty cell is not a box. No border, no background, no
@@ -1171,6 +1171,11 @@ export const Swimlanes = ({
                           stutter is what turns a slide into a squash.
                         */
                         <div
+                          /* The column's place in the sweep. Per COLUMN rather
+                             than per cell: a whole column arriving at once is a
+                             wipe travelling across the board, where per-cell
+                             would be the board assembling itself piecemeal. */
+                          style={{ "--ym-i": col } as CSSProperties}
                           className={`flex flex-col gap-3 ${
                             colShut || colMoving ? "w-[var(--ym-col)]" : ""
                           }`}
