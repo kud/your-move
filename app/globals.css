@@ -782,7 +782,14 @@ html:has([popover]:popover-open) main {
 }
 
 /*
- * A lane drops its hover tint while its own panel is open.
+ * A lane drops its hover tint whenever the pointer is not on the part that
+ * collapses.
+ *
+ * The tint is the cell's affordance and it means one thing: click here and this
+ * lane folds. The name inside it opens the lane's panel instead, so lighting
+ * the whole cell while the pointer is on the name advertises the wrong action —
+ * the name carries its own underline for that. Same reasoning for the panel
+ * being open: nothing is about to collapse.
  *
  * An auto popover's backdrop does not take pointer events, so the cursor is
  * still sitting on the lane it just opened — `:hover` never leaves. Behind a
@@ -791,6 +798,7 @@ html:has([popover]:popover-open) main {
  * there after the mouse has moved away, because no event ever reached the lane
  * to clear it.
  */
-[data-lane]:hover:has([popover]:popover-open) {
+[data-lane]:hover:has([popover]:popover-open),
+[data-lane]:hover:has([data-lane-name]:hover) {
   background: var(--color-panel);
 }

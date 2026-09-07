@@ -12,12 +12,13 @@ import {
 
 import {
   BOARD_W,
+  BoardSkeleton,
   COLUMNS,
   DONE,
-  Swimlanes,
   reasonFor,
   sectionOf,
   shortName,
+  Swimlanes,
   type Lane,
 } from "@/components/board"
 import { Detail, type OpenMode } from "@/components/detail"
@@ -837,11 +838,7 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                 </button>
               </div>
             ) : !inbox ? (
-              <div className="flex flex-col gap-2 p-3">
-                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-                <div className="shimmer h-[76px] rounded-[9px] bg-panel-2" />
-              </div>
+              <BoardSkeleton />
             ) : lanes.length === 0 ? (
               /* The restful empty board. The section vocabulary survives here — it
                says what the board watches, without a grid of empty boxes. */

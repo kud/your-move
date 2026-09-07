@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 
-import { BOARD_W } from "@/components/board"
+import { BOARD_W, BoardSkeleton } from "@/components/board"
 import { Mark } from "@/components/mark"
 
 /*
@@ -13,12 +13,34 @@ import { Mark } from "@/components/mark"
  * cold open sat on Chrome's screen for the whole read, and the one thing we
  * could not restyle was the thing we were showing the longest.
  *
- * Deliberately not a spinner. It is the app's own furniture at its real
- * measurements, so the hand-off is a board filling in rather than one screen
- * replacing another — and the header is genuinely finished, not a grey bar
- * pretending to be one. Nothing here moves except the shimmer, which is the
- * same rhythm the detail panel already uses for the same claim.
+ * Deliberately not a spinner, and deliberately not a grey rectangle either.
+ *
+ * The board's FURNITURE is schema — the two lifecycles, the seven columns,
+ * their marks and their names all exist before GitHub answers — so it is drawn
+ * for real and only the cells shimmer. That is what makes the hand-off a board
+ * filling in rather than one screen replacing another: nothing reflows, because
+ * the grid, the seams and the sticky offsets were already right. The one thing
+ * a header cannot honestly say yet is a count, so it says `–` rather than `0`.
+ *
+ * It used to be one shimmering rectangle where the board goes, which is exactly
+ * the grey bar this comment claimed it was not.
  */
+
+/*
+ * Four, and deliberately fewer than a real board.
+ *
+ * The count is unknown, so the only choice available is which direction to be
+ * wrong in — and the two are not symmetric. Guessing low means the board GROWS
+ * downward at hand-off, extending what you are already reading. Guessing high
+ * means it COLLAPSES, yanking content out from under the eye mid-read.
+ */
+const LANES = 4
+
+/* Vary what carries no meaning, fix what does. Nobody reads information out of
+   how long a repo name is, so varying these stops the label column being one
+   grey bar. Card COUNTS do not vary: a count is a claim about where your work
+   is, and we do not have one yet. */
+const NAME_W = ["72%", "54%", "86%", "63%"]
 export const Booting = () => (
   <main
     style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
@@ -42,6 +64,8 @@ export const Booting = () => (
       </div>
     </header>
 
-    <div className="shimmer min-h-0 flex-1 rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
+      <BoardSkeleton />
+    </div>
   </main>
 )

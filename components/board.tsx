@@ -356,7 +356,8 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
         aria-label={`About ${repo}`}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
-        className="line-clamp-2 min-w-0 break-words text-left text-[14px] font-semibold leading-tight text-fg md:text-[15.5px]"
+        data-lane-name=""
+        className="line-clamp-2 min-w-0 break-words text-left text-[14px] font-semibold leading-tight text-fg hover:underline md:text-[15.5px]"
       >
         {short}
       </button>
@@ -496,6 +497,149 @@ const Cell = ({
   )
 }
 
+/*
+ * The board's furniture, drawn for real before any data arrives.
+ *
+ * Everything here is SCHEMA — the two lifecycles, the seven columns, their
+ * marks, names and seam weights — so it is correct before GitHub answers, and
+ * rendering it grey would be a lie in the other direction: pretending not to
+ * know something we do know. `Booting` mounts the same component, which is what
+ * makes the hand-off a board filling in rather than one screen replacing
+ * another. Nothing reflows, because the grid was already right.
+ *
+ * Shared rather than re-typed: widening the frame once already cost an edit in
+ * two files, and a second copy of these sticky offsets is a copy that drifts.
+ *
+ * The one thing a header cannot honestly say yet is a count, so with no
+ * `counts` it says `–` rather than `0`. `0` is an answer.
+ */
+export const BoardHead = ({
+  counts,
+  register,
+}: {
+  counts?: Map<string, number>
+  register?: (id: string, el: HTMLElement | null) => void
+}) => (
+  <>
+      <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
+      {GROUPS.map((group, i) => (
+        <div
+          key={group.label}
+          /* Painted by the group to the left, like every other rule here, so
+             the seam runs unbroken from the top edge at one width. */
+          className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
+            i < GROUPS.length - 1 ? "border-r-2 border-r-line" : ""
+          }`}
+          style={{ gridColumn: `span ${group.ids.length}` }}
+        >
+          {group.label}
+        </div>
+      ))}
+      <div className="sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
+
+      {/* Corner: the one cell belonging to both sticky axes. */}
+      <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
+
+      {COLUMNS.map((id) => {
+        const p = presentationFor(id)
+        return (
+          <div
+            key={id}
+            ref={(el) => register?.(id, el)}
+            data-column={id}
+            className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
+          >
+            <Slot id={id} tone={p.tone} />
+            <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
+              {p.title}
+            </h3>
+            <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
+              {counts ? (counts.get(id) ?? 0) : "–"}
+            </span>
+            <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
+          </div>
+        )
+      })}
+      <div className="sticky top-0 z-20 h-[41px] border-b border-b-line bg-panel md:top-[16px]" />
+  </>
+)
+
+/* One place that knows a seam's weight, so the shell's cells and the board's
+   cannot disagree about where a lifecycle ends. */
+export const cellRule = (id: string) =>
+  SEAM_END.has(id)
+    ? "border-r-2 border-r-line"
+    : "border-r border-r-line-soft"
+
+/*
+ * Four lanes, and deliberately fewer than a real board.
+ *
+ * The count is unknown, so the only choice available is which direction to be
+ * wrong in — and the two are not symmetric. Guessing low means the board GROWS
+ * downward at hand-off, extending what you are already reading. Guessing high
+ * means it COLLAPSES, yanking content out from under the eye mid-read.
+ */
+const SKELETON_LANES = 4
+
+/* Vary what carries no meaning, fix what does. Nobody reads information out of
+   how long a repo name is, so varying these stops the label column reading as
+   one grey bar. Card COUNTS do not vary: a count is a claim about where your
+   work is, and we do not have one yet. */
+const SKELETON_NAME_W = ["72%", "54%", "86%", "63%"]
+
+/*
+ * The board before it has any rows — used by the boot shell and by the panel's
+ * own pending state, which drew three bare blocks and no structure at all. Two
+ * placeholder vocabularies, and which one you got depended on how you arrived.
+ *
+ * The variable block is the scroller's own, so the shell and the board are one
+ * geometry by construction rather than by two people remembering to keep them
+ * in step. `overflow-hidden` rather than `auto`: a placeholder you can scroll is
+ * one you can be scrolled away from at hand-off, and arriving at a board
+ * already two hundred pixels down is worse than not scrolling at all.
+ */
+export const BoardSkeleton = () => (
+  <div className="h-full overflow-hidden [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-col)))] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-col)))]">
+    <div
+      className="grid min-w-max content-start"
+      style={{
+        gridTemplateColumns: `var(--ym-lane) repeat(${COLUMNS.length}, var(--ym-col)) var(--ym-tail)`,
+      }}
+    >
+      {/* Real, not grey. We know what these say before GitHub answers. */}
+      <BoardHead />
+
+      {Array.from({ length: SKELETON_LANES }, (_, i) => (
+        <Fragment key={i}>
+          <div className="border-b border-r-2 border-b-line-soft border-r-line bg-panel p-2">
+            <div
+              className="shimmer h-[15px] rounded bg-panel-2"
+              style={{ width: SKELETON_NAME_W[i % SKELETON_NAME_W.length] }}
+            />
+            <div className="shimmer mt-2 h-[13px] w-10 rounded bg-panel-2" />
+          </div>
+
+          {COLUMNS.map((id) => (
+            <div
+              key={id}
+              className={`min-w-0 border-b border-b-line-soft p-2 ${cellRule(id)}`}
+            >
+              {/* One block per cell, in every column, uniform. A varied pattern
+                  would claim to know where the work is, and three blocks
+                  resolving to zero is a small lie. Uniformity is also the tell:
+                  no real board is a perfect checkerboard, so this cannot be
+                  mistaken for data. */}
+              <div className="shimmer h-[76px] rounded-[9px] border border-line bg-panel-2" />
+            </div>
+          ))}
+
+          <div />
+        </Fragment>
+      ))}
+    </div>
+  </div>
+)
+
 /** Wide: the grid. */
 export const Swimlanes = ({
   lanes,
@@ -593,50 +737,7 @@ export const Swimlanes = ({
           Mute clears 8:1 on dark, 8:1 on light and 12:1 in high contrast — one
           value, all three.
         */}
-        <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
-        {GROUPS.map((group, i) => (
-          <div
-            key={group.label}
-            /* Painted by the group to the left, like every other rule here, so
-               the seam runs unbroken from the top edge at one width. */
-            className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
-              i < GROUPS.length - 1 ? "border-r-2 border-r-line" : ""
-            }`}
-            style={{ gridColumn: `span ${group.ids.length}` }}
-          >
-            {group.label}
-          </div>
-        ))}
-        <div className="sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
-
-        {/* Corner: the one cell belonging to both sticky axes. */}
-        <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
-
-        {columns.map((id) => {
-          const p = presentationFor(id)
-          return (
-            <div
-              key={id}
-              ref={(el) => register(id, el)}
-              data-column={id}
-              className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 [scroll-snap-align:none_start] md:top-[16px] ${
-                SEAM_END.has(id)
-                  ? "border-r-2 border-r-line"
-                  : "border-r border-r-line-soft"
-              }`}
-            >
-              <Slot id={id} tone={p.tone} />
-              <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
-                {p.title}
-              </h3>
-              <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
-                {counts.get(id) ?? 0}
-              </span>
-              <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
-            </div>
-          )
-        })}
-        <div className="sticky top-0 z-20 h-[41px] border-b border-b-line bg-panel md:top-[16px]" />
+        <BoardHead counts={counts} register={register} />
 
         {lanes.map((lane) => (
           <Fragment key={lane.repo}>
