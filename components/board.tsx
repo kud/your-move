@@ -1133,13 +1133,18 @@ export const Swimlanes = ({
                       card. An open, settled cell has nothing to clip.
                     */}
                     <div
-                      /* `gap-3`, not `gap-2`. At 8px the space BETWEEN two
-                         cards was tighter than the 10px of padding inside one,
-                         so a stack read as a single ridged block rather than as
-                         separate objects — the gap has to beat the padding or
-                         the eye groups them. 12px is the first step that does,
-                         and it costs 4px per card in a column that has room. */
-                      className={`ym-in-settle flex min-h-0 flex-col gap-3 ${
+                      /*
+                        The gap lives on the inner wrapper, not here.
+                        
+                        The column fold needs a box held at the open width so
+                        cards clip rather than reflow, and introducing it made
+                        this container's only child that box — so `gap` had
+                        nothing to space and the cards went back to touching,
+                        while the "+N more" button lost its stretch and
+                        collapsed to its own text width. One wrapper, two
+                        symptoms.
+                      */
+                      className={`ym-in-settle flex min-h-0 flex-col ${
                         shut || moving || colShut || colMoving
                           ? "overflow-hidden"
                           : ""
@@ -1158,7 +1163,11 @@ export const Swimlanes = ({
                           52px and re-wrap their titles the whole way down. That
                           stutter is what turns a slide into a squash.
                         */
-                        <div className={colShut || colMoving ? "w-[var(--ym-col)]" : ""}>
+                        <div
+                          className={`flex flex-col gap-3 ${
+                            colShut || colMoving ? "w-[var(--ym-col)]" : ""
+                          }`}
+                        >
                           <Cell
                             rows={rows}
                             cap={id === DONE ? DONE_PER_CELL : PER_CELL}
