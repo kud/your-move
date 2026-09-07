@@ -275,7 +275,7 @@ const CardBody = ({
           e.preventDefault()
           onOpen(row)
         }}
-        className="line-clamp-3 break-words text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none"
+        className="line-clamp-3 [overflow-wrap:anywhere] text-pretty text-[14.5px] font-semibold leading-[1.4] text-fg after:absolute after:inset-0 focus:outline-none"
       >
         {row.title}
       </a>
@@ -607,7 +607,14 @@ export const BoardSkeleton = () => (
     <div
       className="grid min-w-max content-start"
       style={{
-        gridTemplateColumns: `var(--ym-lane) repeat(${COLUMNS.length}, var(--ym-col)) var(--ym-tail)`,
+        /* Fallbacks are not belt-and-braces here, they are the difference
+           between degrading and collapsing. `grid-template-columns` is invalid
+           at computed-value time if ANY `var()` in it fails to resolve, and it
+           then falls back to `none` — at which point the group band's `span 3`
+           auto-places into three implicit columns and the whole board folds
+           into a stack of wrapped headers. A wrong-but-sane track list beats
+           that in every case. */
+        gridTemplateColumns: `var(--ym-lane, ${LANE_W}px) repeat(${COLUMNS.length}, var(--ym-col, ${COL_W}px)) var(--ym-tail, 0px)`,
       }}
     >
       {/* Real, not grey. We know what these say before GitHub answers. */}
