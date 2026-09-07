@@ -1,3 +1,6 @@
+import type { CSSProperties } from "react"
+
+import { BOARD_W } from "@/components/board"
 import { Mark } from "@/components/mark"
 
 /*
@@ -17,7 +20,10 @@ import { Mark } from "@/components/mark"
  * same rhythm the detail panel already uses for the same claim.
  */
 export const Booting = () => (
-  <main className="relative z-10 mx-auto flex h-safe max-w-[1600px] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8">
+  <main
+    style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
+    className="relative z-10 mx-auto flex h-safe max-w-[var(--ym-frame)] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8"
+  >
     <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
         <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
