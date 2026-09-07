@@ -642,7 +642,15 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
                   type="button"
                   onClick={() => void refresh()}
                   aria-label="Refresh"
-                  className="flex max-w-full mt-1 items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+                  title="Refresh"
+                  /*
+                    This has always been the refresh — the glyph in front of it
+                    is already its state — but nothing said so: no cursor, no
+                    hover, no tooltip, so it read as a caption. A second refresh
+                    control would have been the wrong fix for that; the line
+                    just had to admit what it is.
+                  */
+                  className="mt-1 flex max-w-full cursor-pointer items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet transition-colors hover:text-fg-mute md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
                 >
                   <span aria-hidden>
                     {liveness === "live"
