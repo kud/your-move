@@ -720,15 +720,16 @@ export const cellRule = (id: string) =>
     : "border-r border-r-line-soft"
 
 /*
- * Four lanes, and deliberately fewer than a real board.
+ * Three lanes, and deliberately fewer than a real board.
  *
  * The count is unknown, so the only choice available is which direction to be
  * wrong in — and the two are not symmetric. Guessing low means the board GROWS
  * downward at hand-off, extending what you are already reading. Guessing high
- * means it COLLAPSES, yanking content out from under the eye mid-read. Four is
+ * means it COLLAPSES, yanking content out from under the eye mid-read. Three is
  * under every board actually opened, so it always grows.
  *
- * It went four → two → four, and the round trip is worth recording because the
+ * It went four → two → four → three, and the round trip is worth recording
+ * because the
  * middle step was right about the wrong thing. Two came from a real
  * observation: four lanes across seven columns is 28 blocks where a real
  * first-paint board fills eight to twelve cells, so the placeholder was denser
@@ -741,7 +742,7 @@ export const cellRule = (id: string) =>
  * Erwann's call, having seen both. Density is still the thing to watch if this
  * ever climbs past five.
  */
-const SKELETON_LANES = 4
+const SKELETON_LANES = 3
 
 /* Vary what carries no meaning, fix what does. Nobody reads information out of
    how long a repo name is, so varying these stops the label column reading as

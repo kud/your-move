@@ -119,33 +119,53 @@ body {
   animation: breathe 2.2s ease-in-out infinite;
 }
 
-/* Skeletons breathe on a slower, shallower rhythm than a live session dot, so a
-   placeholder never reads as something actually happening. */
+/*
+ * A sweep, not a pulse.
+ *
+ * A placeholder that breathes by opacity blinks in place, and a whole board of
+ * blocks blinking together reads as a fault — something flashing at you rather
+ * than something being fetched. A highlight travelling left to right reads as
+ * work moving through the thing, which is what is actually happening.
+ *
+ * The travel is `background-position` over a gradient twice the box's width,
+ * which is compositor-cheap and needs no extra element. It layers over each
+ * block's own `bg-panel-2`, so the colour underneath is unchanged and only the
+ * highlight moves.
+ */
 @keyframes shimmer {
-  0%,
-  100% {
-    opacity: 0.7;
+  from {
+    background-position: 150% 0;
   }
-  50% {
-    opacity: 0.95;
+  to {
+    background-position: -50% 0;
   }
 }
 
 .shimmer {
-  /* The resting value, and it has to be declared OUTSIDE the keyframes. With
-     motion reduced the animation is zeroed, so without this the element falls
-     back to its computed `opacity: 1` — brighter than the animation ever
-     reaches, which rendered placeholder cards more solidly for a reader with
-     motion off than for anyone else.
-
-     The range is narrow on purpose. The hand-off to the real board has no gap
-     in it — React unmounts the shell and mounts the board in one commit, so the
-     cells are never absent — which means the only roughness available is the
-     BRIGHTNESS STEP at the moment they swap. A 0.5–0.85 breath made that step a
-     different size on every load, and an inconsistent jump reads as jank in a
-     way a consistent one never does. */
+  /* The resting dimness, declared OUTSIDE the keyframes so that killing the
+     animation leaves a placeholder rather than a full-strength block — with
+     motion reduced the element would otherwise fall back to `opacity: 1` and
+     render more solidly for the reader who asked for less. It is static now
+     rather than animated: the sweep carries the motion, and a block that both
+     travelled and breathed would be two rhythms on one object. */
   opacity: 0.7;
+  background-image: linear-gradient(
+    90deg,
+    transparent 30%,
+    color-mix(in srgb, var(--color-fg) 7%, transparent) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
   animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* The sweep is the animation, so with motion reduced there is nothing to
+   freeze — a stopped gradient would sit as an arbitrary bright band across the
+   block, which reads as a rendering fault rather than as a placeholder. The
+   flat dimmed block is the honest still frame. */
+:root[data-motion="reduce"] .shimmer {
+  background-image: none;
 }
 
 @keyframes fade-in {
