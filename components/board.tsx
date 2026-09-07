@@ -1088,7 +1088,7 @@ export const Swimlanes = ({
                     reduce the box's min-content width, so the cell has to be
                     told it may shrink before the title is ever asked to wrap.
                   */
-                  className={`relative min-h-[40px] min-w-0 border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
+                  className={`ym-in-settle relative min-h-[40px] min-w-0 border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
                     shut || colShut ? "hatch" : ""
                   } ${
                     SEAM_END.has(id)
