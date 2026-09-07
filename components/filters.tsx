@@ -736,18 +736,28 @@ export const Filters = ({
         </div>
 
         {repos.length > TYPEAHEAD_AFTER ? (
-          <input
-            type="search"
-            ref={search}
-            value={needle}
-            onChange={(e) => setNeedle(e.target.value)}
-            placeholder={`Find a ${tab === "repos" ? "repository" : tab === "status" ? "status" : "label"}`}
-            /* Named on the control rather than in a legend nobody reads: a
-               shortcut you have to be told about is a shortcut for one person. */
-            title="⌘K"
-            aria-label="Find"
-            className="mb-2 mt-2 w-full shrink-0 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
-          />
+          /*
+            The shortcut, printed rather than hidden behind a hover.
+
+            Its old comment had the right instinct — "named on the control
+            rather than in a legend nobody reads" — and then put it in a `title`,
+            which is a legend nobody reads that also does not exist on a phone.
+            On the control means ON the control.
+          */
+          <div className="relative mb-2 mt-2 shrink-0">
+            <input
+              type="search"
+              ref={search}
+              value={needle}
+              onChange={(e) => setNeedle(e.target.value)}
+              placeholder={`Find a ${tab === "repos" ? "repository" : tab === "status" ? "status" : "label"}`}
+              aria-label="Find"
+              className="w-full rounded-lg border border-line bg-panel-2 py-1.5 pl-2.5 pr-11 text-[13px] outline-none focus:border-accent"
+            />
+            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line px-1 py-px font-mono text-[10px] text-fg-quiet">
+              ⌘K
+            </kbd>
+          </div>
         ) : (
           <div className="h-2" />
         )}

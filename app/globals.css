@@ -969,3 +969,16 @@ html:has([popover]:popover-open) main {
 .ym-in-settle {
   animation: ym-in-settle 260ms ease-out both;
 }
+
+/*
+ * The tooltip opts out of the popover arrival above.
+ *
+ * That transition is 320ms of travel and scale, tuned for a sheet you asked
+ * for. A tooltip is 400ms behind the pointer already, so inheriting it means
+ * arriving after the pointer has left — the animation outlives its own reason.
+ * It fades, and only that.
+ */
+.ym-tip {
+  transform: none;
+  transition: opacity 120ms ease;
+}
