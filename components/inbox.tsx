@@ -24,6 +24,7 @@ import {
 } from "@/components/board"
 import { Detail, type OpenMode } from "@/components/detail"
 import { Mark } from "@/components/mark"
+import { Launcher, LAUNCHER_ID, type Command } from "@/components/launcher"
 import { Menu } from "@/components/menu"
 import {
   FILTERS_ID,
@@ -49,6 +50,7 @@ import {
   decodeShare,
   emptyPicks,
   readViews,
+  samePicks,
   writeViews,
   type View,
 } from "@/lib/views"
@@ -244,6 +246,50 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
   const status = useMemo(() => statusCounts(all, reasonFor), [all])
   const labels = useMemo(() => labelCounts(all), [all])
   const filtering = countPicks(picks) > 0
+
+  /*
+   * Four commands, every one conditional — which is the answer to "a palette
+   * over this app would be present and mostly empty". With no saved views and
+   * no filter on, the Actions group does not exist and the launcher is purely a
+   * jump-to. It grows with the state it acts on.
+   *
+   * The view copy is lifted verbatim from the filter sheet's own titles: the
+   * app should not hold two phrasings for one act.
+   */
+  const commands = useMemo((): Command[] => {
+    const list: Command[] = []
+    for (const view of views) {
+      const on = samePicks(view.picks, picks)
+      list.push({
+        id: `view:${view.name}`,
+        label: on ? `Turn off "${view.name}"` : `Apply "${view.name}"`,
+        run: () => setPicks(on ? emptyPicks() : view.picks),
+      })
+    }
+    if (filtering)
+      list.push({
+        id: "clear",
+        label: "Clear all filters",
+        run: () => setPicks(emptyPicks()),
+      })
+    list.push({
+      id: "refresh",
+      label: "Refresh the board",
+      run: () => void refresh(),
+    })
+    if (cols.size)
+      list.push({
+        id: "unfold",
+        label: "Unfold every column",
+        run: () => {
+          setCols(new Set())
+          try {
+            localStorage.setItem("ym:cols", "[]")
+          } catch {}
+        },
+      })
+    return list
+  }, [views, picks, filtering, refresh, cols])
 
   /*
    * AND across facets, OR within one — the reading nobody has to be told.
@@ -701,6 +747,21 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
+              {/* A shortcut with no visible control is invisible to anyone who
+                  did not read a changelog — and ⌘K does not exist on a phone at
+                  all, which is the surface this board is mostly read on. */}
+              <button
+                type="button"
+                popoverTarget={LAUNCHER_ID}
+                aria-label="Find anything on the board"
+                {...tip("Find anything  ⌘K")}
+                className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-fg-mute transition-colors hover:border-accent hover:text-fg"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                  <circle cx="7" cy="7" r="4.25" />
+                  <path d="M10.2 10.2 L13.5 13.5" />
+                </svg>
+              </button>
               <Filters
                 repos={repos}
                 status={status}
@@ -731,6 +792,8 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
               />
             </div>
           </header>
+
+          <Launcher rows={all} commands={commands} onOpen={openRow} />
 
           {liveness === "expired" ? (
             <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">

@@ -70,7 +70,7 @@ export const Glyph = ({ tab }: { tab: Tab }) => (
 
 /* The dot a status row wears is the colour its chip wears on the card, so the
    list and the board agree without anyone having to learn a second scheme. */
-const DOT: Record<string, string> = {
+export const DOT: Record<string, string> = {
   alarm: "bg-brass",
   brass: "bg-brass/60",
   sage: "bg-sage",
@@ -231,20 +231,28 @@ export const Filters = ({
   const [name, setName] = useState("")
 
   /*
-   * ⌘K opens the control that already exists rather than adding a surface.
+   * `/` opens the search that is already in this sheet, with the field focused.
    *
-   * Deliberately not a command palette. `gh-cockpit` is the keyboard-first
-   * product, and this is the graphical one — two postures reading the same
-   * facts, not one product in two skins. A palette here would be the second
-   * skin, and it would need its own vocabulary of actions to justify itself.
+   * It used to be ⌘K, under a rule that a palette here would be "the second
+   * skin" of the keyboard-first TUI. That was overturned — see
+   * `components/launcher.tsx` for the argument — and ⌘K now opens the launcher.
+   * The two shortcuts divide the way GitHub itself divides them: ⌘K is GO
+   * ANYWHERE, `/` is SEARCH WHAT IS HERE. The sheet narrows a set; the launcher
+   * arrives at one thing.
    *
-   * What this is instead: the shortest route to the repository search that is
-   * already in the sheet, with the field focused. It adds no concept, and if
-   * the shortcut is never pressed nothing about the app is different.
+   * The guard is not optional. Without it, `/` is unusable — it would fire
+   * inside every text field in the app, this sheet's own search included.
    */
   useEffect(() => {
     const open = (event: KeyboardEvent) => {
-      if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
+        return
+      const at = event.target as HTMLElement | null
+      if (
+        at?.closest("input, textarea, [contenteditable]") ||
+        at?.isContentEditable
+      )
+        return
       event.preventDefault()
 
       const sheet = document.getElementById(ID)
@@ -794,7 +802,7 @@ export const Filters = ({
               className="w-full rounded-lg border border-line bg-panel-2 py-1.5 pl-2.5 pr-11 text-[13px] outline-none focus:border-accent"
             />
             <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line px-1 py-px font-mono text-[10px] text-fg-quiet">
-              ⌘K
+              /
             </kbd>
           </div>
         ) : (
