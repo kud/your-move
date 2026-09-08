@@ -16,6 +16,7 @@ import {
   BoardSkeleton,
   COLUMNS,
   DONE,
+  FRAME,
   reasonFor,
   sectionOf,
   shortName,
@@ -666,7 +667,7 @@ export const Inbox = ({
       <WritableRepos repos={repos.map((r) => r.name)}>
         <main
           style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
-          className="relative z-10 mx-auto flex h-safe max-w-[calc(var(--ym-frame)_+_1.5rem)] flex-col px-3 pb-3 pt-4 md:max-w-[calc(var(--ym-frame)_+_3rem)] md:px-6 md:pb-6 md:pt-8"
+          className={FRAME}
         >
           <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
             {/*
