@@ -442,10 +442,39 @@ export const Detail = ({
           </button>
         </header>
 
-        {/* `measure` owns the inline padding — it is the 1rem that was here,
-            widened into a centred margin once the panel is wider than a line
-            wants to be. See `app/globals.css`. */}
-        <div className="measure flex-1 overflow-y-auto py-4">
+        {/*
+          FULL WIDTH IN EVERY MODE, and the long line is accepted knowingly.
+
+          A reading measure was capped here at 590px and reverted the same day.
+          The typography was never the thing that was wrong: `Modal` really does
+          run to about 107–120 characters against a textbook 45–75, that was
+          measured rather than guessed, and it is still true now.
+
+          What the measurement missed is that this panel is a FIXED-WIDTH
+          BORDERED BOX, not a page. On a page, the margin either side of a
+          capped column is the page breathing, and the eye reads it as intent.
+          Inside a frame the reader can see on both sides, the same margin reads
+          as a column that failed to fill its container — a long line merely
+          reads as long, which is the cheaper of the two faults.
+
+          It was made worse by where the cap was applied. The header, the
+          verdict band and the section labels are full-width siblings of the
+          prose, so capping the scroll body alone gave the panel two different
+          left edges with nothing to explain the step.
+
+          The arithmetic decides the other two modes rather than taste. `Side`
+          is 587px of content against a 590px cap, so `max()` never bound there
+          and it was always a no-op. `Full` is ~1408px on a desk, where the cap
+          bit hardest and opened the largest void — so capping `Full` alone
+          would move the panel's left edge when you press a mode button, which
+          is worse than either consistent answer. The cap goes everywhere.
+
+          Tightening the measure is available to whoever wants to argue it, but
+          it needs a different instrument than inline padding on this div —
+          something that does not leave the chrome and the prose disagreeing
+          about where the panel starts.
+        */}
+        <div className="flex-1 overflow-y-auto p-4">
           {/* Band one, and the most prominent thing on the panel. */}
           <p
             className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[14px] ${verdict.tone}`}
