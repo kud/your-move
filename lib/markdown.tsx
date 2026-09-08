@@ -374,3 +374,34 @@ export const Markdown = ({ source }: { source: string }) => {
     </div>
   )
 }
+
+/*
+ * How much of a comment is worth showing on a surface that exists to let you
+ * decide, and `null` when the answer is all of it.
+ *
+ * It lives here rather than in the panel because it is a question about
+ * markdown source, not about layout, and because the caller needs the answer
+ * BEFORE it draws — a cap that is discovered after the fact can only be drawn
+ * unconditionally, which is exactly how a two-line remark ended up wearing a
+ * fade meant for something six times its length.
+ *
+ * Two measures, because they miss opposite things. Six lines is the height the
+ * panel's cap already drew — 7.5rem over a 20.25px line box is 5.9 — said as a
+ * number so it can be asked rather than measured. 500 characters is that same
+ * weight arriving as one paragraph, which a line count cannot see: many short
+ * lines is what a bot writes, one long one is what a person writes, and a cap
+ * that only knows the first is blind to half its traffic.
+ *
+ * The cut is at a line boundary, never mid-line. Truncating markdown source
+ * mid-line can leave an unclosed span or half a link, and a clamp that
+ * corrupts what it shows is worse than one that shows too much.
+ */
+export const CLAMP_LINES = 6
+export const CLAMP_CHARS = 500
+
+export const clamped = (body: string) => {
+  const lines = body.split("\n")
+  return lines.length <= CLAMP_LINES && body.length <= CLAMP_CHARS
+    ? null
+    : lines.slice(0, CLAMP_LINES).join("\n")
+}

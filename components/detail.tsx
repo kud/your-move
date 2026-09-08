@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { RowLabels } from "@/components/row-labels"
 import type { OnLabelChange } from "@/components/board"
 import { GitHubMark } from "@/components/github-mark"
-import { Markdown } from "@/lib/markdown"
+import { Markdown, clamped } from "@/lib/markdown"
 import type { Row } from "@/lib/github"
 
 /*
@@ -205,11 +205,17 @@ export const Detail = ({
   const [detail, setDetail] = useState<Detail>()
   const [failed, setFailed] = useState(false)
   const [wholeBody, setWholeBody] = useState(false)
+  const [shown, setShown] = useState<number[]>([])
 
   useEffect(() => {
     let live = true
     setDetail(undefined)
     setFailed(false)
+    /* Both reset with the row, or the second row you open arrives already
+       expanded — the panel is reused rather than remounted, so what you
+       unfolded on the last one is still unfolded on this one. */
+    setWholeBody(false)
+    setShown([])
 
     fetch(
       `/api/row?repo=${encodeURIComponent(row.repo)}&number=${row.number}`,
@@ -415,7 +421,7 @@ export const Detail = ({
                 type="button"
                 onClick={() => onMode(option)}
                 aria-pressed={mode === option}
-                  className={`px-2 py-1 text-[11.5px] ${
+                className={`px-2 py-1 text-[11.5px] ${
                   mode === option
                     ? "bg-accent-dim text-accent"
                     : "text-fg-quiet hover:text-fg"
@@ -596,10 +602,52 @@ export const Detail = ({
                         `-webkit-box` of text, and this is now a block of
                         elements. A height cap with the list fade does the same
                         job and cuts between lines rather than through one.
+
+                        The cap is asked of the comment first, and only then
+                        drawn. `fade-b` is a mask over the element's own box, so
+                        applied unconditionally it fades the last 28px of
+                        WHATEVER it is on — a two-line remark lost its second
+                        line and a one-line one rendered at 72% and vanished,
+                        which is not a cap doing its job but a cap on something
+                        that never needed one. Most comments are short. Those
+                        now render whole, with no cap and no fade, and the
+                        clamp appears only where there is genuinely more.
+
+                        Lines OR characters, because they miss opposite things:
+                        a bot summary is many short lines and a person writing
+                        one long paragraph is a single line that wraps to ten.
+                        The slice answers the first, the height cap the second,
+                        and the mask is honest under both because `Show the
+                        rest` is directly beneath it. That is the pairing the
+                        old code lacked — a fade means "this continues", and it
+                        was saying so with nowhere to continue to.
                       */}
-                      <div className="fade-b mt-0.5 max-h-[7.5rem] overflow-hidden text-[13.5px] leading-[1.5] text-fg-mute">
-                        <Markdown source={c.body} />
-                      </div>
+                      {(() => {
+                        const cut = clamped(c.body)
+                        const open = !cut || shown.includes(i)
+                        return (
+                          <>
+                            <div
+                              className={`mt-0.5 text-[13.5px] leading-[1.5] text-fg-mute ${
+                                open
+                                  ? ""
+                                  : "fade-b max-h-[7.5rem] overflow-hidden"
+                              }`}
+                            >
+                              <Markdown source={open ? c.body : cut} />
+                            </div>
+                            {cut && !open ? (
+                              <button
+                                type="button"
+                                onClick={() => setShown((s) => [...s, i])}
+                                className="mt-1 text-[12.5px] text-accent hover:underline"
+                              >
+                                Show the rest
+                              </button>
+                            ) : null}
+                          </>
+                        )
+                      })()}
                     </div>
                   ))}
                   <p className="pt-1 text-[12px] text-fg-quiet">
