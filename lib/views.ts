@@ -20,6 +20,24 @@ import type { Picks } from "@/components/filters"
  * the URL answers "what am I looking at", a view answers "the three shapes I
  * switch between", and a bookmark is a poor control on a phone.
  *
+ * Which is why the URL names FACETS and never the view — `?owners=x`, never
+ * `?view=work`, even while the sheet shows the view's name as the active thing.
+ * A view is device-local, so `?view=work` would resolve to nothing in another
+ * browser, on his other machine, or for anyone he sends the link to, and it
+ * would fail by rendering an unfiltered board — the silent kind of wrong this
+ * app exists not to do. Expanded facets are what make the link portable.
+ *
+ * The name is not lost, it is DERIVED: the sheet finds the view whose picks
+ * equal the current ones (`samePicks`), so a shared link lights up the
+ * recipient's own name for that shape if they happen to have one. Nothing
+ * round-trips through a name, so nothing depends on the two devices agreeing
+ * about it.
+ *
+ * The expansion is total, and it has to stay that way: every key of `Picks` is
+ * written to the query and read back by `picksFromQuery`. Add a sixth facet and
+ * it must appear in both, or the URL will quietly describe a different board
+ * from the one on screen.
+ *
  * Per device, and honestly so — see `EXPORT` below. Everything here is written
  * so that a store which is empty, corrupt, or from a future version degrades to
  * "no saved views" rather than to a broken sheet.
