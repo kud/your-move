@@ -354,6 +354,65 @@ select:not(:disabled),
 }
 
 /*
+ * Everywhere a scrollbar IS kept, which the rule above says is the board.
+ *
+ * The default is ugly for one reason above all, and it is not the thumb: it is
+ * the TRACK. A browser paints a pale channel down the right edge and across the
+ * bottom, and on this board both of those land on structure — the channel sits
+ * beside the 2px seam that says where the board ends, and reads as a second rule
+ * competing with it. Transparent track, and the thumb floats on the panel the
+ * way an overlay scrollbar does, so "Show scroll bars: Always" and the macOS
+ * default now differ only in whether the thumb is there.
+ *
+ * The thumb is `fg-quiet` at full strength, and it was measured rather than
+ * chosen: 5.0:1 on dark, 5.0:1 on light, 7.0 and 8.0 in the two high-contrast
+ * palettes. `--color-line` was the obvious candidate — it is what the runway
+ * spends, and it is what the grid's hairlines are — and it is unusable here at
+ * 1.1:1. A rule can be that quiet because it has length to be seen by; a thumb
+ * is a small object you have to find and hit.
+ *
+ * A token rather than a `color-mix`, so it re-derives per theme instead of
+ * holding one alpha over four grounds — which is also what makes high contrast
+ * come out stronger with nothing written for it.
+ *
+ * `fg-quiet` and no louder because the thumb must sit below every count and
+ * every card title. It is furniture, at the weight the palette already reserves
+ * for furniture — but legible furniture, since the rule above keeps the board's
+ * scrollbars specifically to answer where you are.
+ *
+ * Firefox has no hover state for `scrollbar-color` — the standard property
+ * takes two colours and that is all — so this one value is the resting AND the
+ * dragging appearance. That is the argument against a fainter thumb: nothing
+ * comes along later to reassure you it was grabbable.
+ *
+ * Inherited, so `:root` reaches the board, the sheets, the detail panel and the
+ * page itself in one declaration. `.no-scrollbar` still wins where it is set,
+ * because that is the element's own value.
+ */
+:root {
+  scrollbar-color: var(--color-fg-quiet) transparent;
+  /* `thin` rather than `auto`: a 15px bar is a column's worth of gutter down
+     the board's edge, and horizontally it is a band across the foot of every
+     lane. Thin still hits comfortably and reserves less of the board. */
+  scrollbar-width: thin;
+}
+
+/* Safari reads none of the above. Same two decisions, said the other way. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-fg-quiet);
+  border-radius: 4px;
+}
+
+/*
  * Chrome — headers, rails, chips, counts — is furniture, and a long press on
  * furniture selecting its text or raising a callout menu is a page behaviour,
  * not an app one. Card titles are deliberately excluded: those are content, and
