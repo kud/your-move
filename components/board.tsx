@@ -118,7 +118,20 @@ const COL_W = 300
  * lozenges.
  */
 const COL_MAX_W = 360
-export const BOARD_W = LANE_W + COLUMNS.length * COL_MAX_W
+
+/*
+ * The panel's own border, which the grid inside it does not get to spend.
+ *
+ * `inbox.tsx` wraps the scroller in `border border-line` — 1px each side — so the
+ * scroller's content box is two pixels narrower than the frame's. The narrow
+ * `--ym-tail` has subtracted this since it was written; the wide column did not,
+ * and two pixels is all it takes: the tracks summed to exactly the frame's
+ * content box, overshot the SCROLLER's by 2, and drew a full horizontal scrollbar
+ * on a board that had nothing to scroll to.
+ */
+const PANEL_BORDER_W = 2
+
+export const BOARD_W = LANE_W + COLUMNS.length * COL_MAX_W + PANEL_BORDER_W
 
 /*
  * The frame, as one string, because it was two.
@@ -993,6 +1006,17 @@ export const Swimlanes = ({
        * one number here CSS cannot derive — `lib/sections.test.ts` asserts it
        * against `COLUMNS`, and against the same literal in `.ym-skeleton-grid`.
        *
+       * The `4px` is two things and both are load-bearing: 2 for the panel border
+       * the scroller sits inside, and 2 of slack so that seven tracks carrying a
+       * repeating fraction cannot round UP past the box that holds them. A grid
+       * one hundredth of a pixel too wide draws a whole scrollbar, and it is a
+       * scrollbar with nowhere to go — so the slack is not tidiness, it is the
+       * difference between a board that fills the screen and one that only looks
+       * like it does. Two pixels is some thirty times the worst accumulation an
+       * engine's layout units can produce across seven tracks; it is not a guess
+       * at a scrollbar's width, which is a thing CSS cannot ask for and this does
+       * not try to.
+       *
        * It divides by SEVEN and not by the number of unfolded columns, which is
        * the whole of what makes folding survive a stretching board. Were the
        * track recomputed from what is showing, folding one column would widen
@@ -1002,7 +1026,7 @@ export const Swimlanes = ({
        * spends its width into the space after the last column instead, exactly as
        * it already did when the columns were fixed. Columns never move.
        */
-      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-4px-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"

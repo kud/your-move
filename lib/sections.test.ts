@@ -146,3 +146,101 @@ describe("the skeleton's hardcoded track count", () => {
   })
 })
 
+
+/*
+ * Whether the board fits the box that holds it — which is the whole of whether a
+ * horizontal scrollbar appears.
+ *
+ * The numbers are read out of the class list rather than restated here, because a
+ * test that carries its own copy of the arithmetic agrees with itself forever. It
+ * models one thing CSS does and the source cannot say: seven tracks and a lane,
+ * laid inside a frame that is capped, inside a panel that has a border.
+ *
+ * Both directions matter, and the second is the one worth guarding. A board that
+ * never overflows is not the goal — below the clamp's floor the columns stop
+ * shrinking and the board MUST overflow, or there is no way to reach the last
+ * column at all. The bug being pinned is an overflow of two pixels; the failure
+ * this could be traded for is a board that cannot be scrolled to its own end.
+ */
+describe("the board against the box that holds it", () => {
+  const board = readFileSync(
+    new URL("../components/board.tsx", import.meta.url),
+    "utf8",
+  )
+
+  const col = board.match(
+    /md:\[--ym-col:clamp\((\d+)px,calc\(\(100dvw-([\d.]+)rem-(\d+)px-var\(--ym-lane\)\)\/(\d+)\),(\d+)px\)\]/,
+  )
+  const lane = Number(board.match(/md:\[--ym-lane:(\d+)px\]/)?.[1])
+  const frameRem = Number(
+    board.match(/md:max-w-\[calc\(var\(--ym-frame\)_\+_([\d.]+)rem\)\]/)?.[1],
+  )
+  const border = Number(board.match(/const PANEL_BORDER_W = (\d+)/)?.[1])
+
+  it("declares every number this rests on", () => {
+    expect(col, "the wide --ym-col is in the shape this test reads").not.toBeNull()
+    for (const [name, value] of [
+      ["lane", lane],
+      ["frame gutters", frameRem],
+      ["panel border", border],
+    ] as const)
+      expect(Number.isFinite(value), `the board declares ${name}`).toBe(true)
+  })
+
+  const [floor, gutterRem, guard, divisor, ceiling] = (col ?? []).slice(1).map(Number)
+  const REM = 16
+  const gutters = frameRem * REM
+
+  /* The clamp and the frame have to be told the same gutter, or the frame stops
+     growing at a different width from the columns and one of them is wrong. */
+  it("subtracts the same gutters the frame adds", () => {
+    expect(gutterRem).toBe(frameRem)
+  })
+
+  it("keeps enough slack for seven tracks to round without overflowing", () => {
+    expect(guard).toBeGreaterThan(border)
+  })
+
+  const widest = lane + divisor * ceiling + border
+  const colAt = (vw: number) =>
+    Math.min(ceiling, Math.max(floor, (vw - gutters - guard - lane) / divisor))
+  /* The frame is `mx-auto max-w-…`, so it is the viewport until the cap bites. */
+  const scrollerBoxAt = (vw: number) =>
+    Math.min(vw, widest + gutters) - gutters - border
+  const gridAt = (vw: number) => lane + divisor * colAt(vw)
+
+  it("matches the frame cap the component actually exports", () => {
+    expect(widest).toBe(lane + divisor * ceiling + border)
+  })
+
+  it("never overflows while the columns are still stretching", () => {
+    const over: number[] = []
+    for (let vw = 768; vw <= 4000; vw++)
+      if (colAt(vw) > floor && gridAt(vw) > scrollerBoxAt(vw)) over.push(vw)
+    expect(over, "viewports where a scrollbar appears with room to spare").toEqual([])
+  })
+
+  it("still overflows below the clamp's floor, so the last column stays reachable", () => {
+    expect(colAt(1440)).toBe(floor)
+    expect(gridAt(1440)).toBeGreaterThan(scrollerBoxAt(1440))
+  })
+
+  it("fills the plateau exactly, with no trailing void", () => {
+    expect(gridAt(3840)).toBe(scrollerBoxAt(3840))
+  })
+
+  /*
+   * A folded column is 52px of rail where a column was, and the track divides by
+   * the constant count — so folding only ever makes the grid narrower. Pinned
+   * because the reverse (recomputing from what is showing) is the tempting change
+   * and it would put both the resize and the overflow back.
+   */
+  it("cannot overflow because a column is folded", () => {
+    const rail = Number(board.match(/\[--ym-rail:(\d+)px\]/)?.[1])
+    expect(Number.isFinite(rail)).toBe(true)
+    for (let vw = 2400; vw <= 4000; vw++)
+      expect(lane + (divisor - 1) * colAt(vw) + rail).toBeLessThanOrEqual(
+        scrollerBoxAt(vw),
+      )
+  })
+})
