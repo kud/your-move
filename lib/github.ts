@@ -1,8 +1,10 @@
 import {
   buildInboxQueries,
   mergeInboxData,
+  sourceCoverage,
   INBOX_SOURCES,
   type InboxSource,
+  type SourceCoverage,
 } from "@kud/gh/inbox"
 import { sortItems, toGHItem, whoseMove, type GHItem } from "@kud/gh-workflow"
 
@@ -67,6 +69,21 @@ export type Inbox = {
    * token was wrong, the query too expensive, or the function simply timed out.
    */
   reasons: string[]
+  /*
+   * What each source MATCHED, against what its cap let it return.
+   *
+   * The board is a live read with no store, so the one thing it can still be
+   * quietly wrong about is a source whose answer is a sample. `reviewRequests`
+   * asks for 20 and the account has 99: the column headed `20` was reporting
+   * the cap and reading as a total, which is precisely the failure the
+   * never-mirror rule exists to prevent — one layer in, where nothing looked
+   * broken.
+   *
+   * Optional because a payload from `lib/cache.ts` or `lib/kept.ts` written
+   * before this field existed has no coverage to report, and the honest
+   * degradation is "we do not know" rather than "nothing is truncated".
+   */
+  coverage?: Partial<Record<InboxSource, SourceCoverage>>
 }
 
 class GitHubError extends Error {
@@ -222,6 +239,7 @@ export const fetchInbox = async (
       ? { remaining: data.rateLimit.remaining, resetAt: data.rateLimit.resetAt }
       : undefined,
     reasons,
+    coverage: sourceCoverage(data),
   }
 }
 

@@ -408,11 +408,15 @@ export const Markdown = ({ source }: { source: string }) => {
  * fade meant for something six times its length.
  *
  * Two measures, because they miss opposite things. Six lines is the height the
- * panel's cap already drew — 7.5rem over a 20.25px line box is 5.9 — said as a
- * number so it can be asked rather than measured. 500 characters is that same
- * weight arriving as one paragraph, which a line count cannot see: many short
- * lines is what a bot writes, one long one is what a person writes, and a cap
- * that only knows the first is blind to half its traffic.
+ * panel's cap already drew — 7.5rem over a 20.9px line box is 5.7 — said as a
+ * number so it can be asked rather than measured. The line box is 13.5px at the
+ * 1.55 set on the wrapper below, and both live in this file precisely so this
+ * sum cannot go stale: it read 20.25 while nothing on the page was ever 1.5.
+ *
+ * 500 characters is that same weight arriving as one paragraph, which a line
+ * count cannot see: many short lines is what a bot writes, one long one is what
+ * a person writes, and a cap that only knows the first is blind to half its
+ * traffic.
  *
  * The cut is at a line boundary, never mid-line. Truncating markdown source
  * mid-line can leave an unclosed span or half a link, and a clamp that

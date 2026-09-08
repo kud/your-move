@@ -1,4 +1,4 @@
-import type { InboxSource } from "@kud/gh"
+import { INBOX_SOURCES, type InboxSource, type SourceCoverage } from "@kud/gh"
 
 /*
  * Presentation only.
@@ -78,7 +78,7 @@ const PRESENTATION: Record<string, Presentation> = {
     tone: "slate",
     empty: "No open issues.",
     meaning:
-      "Open issues on repositories you own.",
+      "Open issues on repositories you own, plus issues you opened on other people's.",
   },
   done: {
     title: "Recently done",
@@ -196,3 +196,51 @@ export const heatOf = (
   if (days >= band.warm) return "warm"
   return undefined
 }
+
+/*
+ * Which sources came back as a SAMPLE rather than as the set.
+ *
+ * `@kud/gh` decides the fact — `sourceCoverage` compares GitHub's own
+ * `issueCount` against what the cap let through — and this only puts a name to
+ * it, in the same second-person vocabulary as `SOURCE_TITLES`. Same division as
+ * the rest of this file: the library owns the number, the surface owns the word.
+ *
+ * In `INBOX_SOURCES` order, so the list reads in the same sequence as the board
+ * and cannot reorder itself between two fetches.
+ *
+ * An absent `coverage` yields nothing, and that is the direction to fail in: a
+ * board restored from a cache written before the field existed does not know
+ * whether it is truncated, and claiming a truncation it cannot see would be the
+ * same invention as hiding one.
+ */
+export type Truncation = {
+  source: InboxSource
+  title: string
+  /** Everything the search matched. */
+  total: number
+  /** What the cap let through. */
+  shown: number
+}
+
+export const truncations = (
+  coverage?: Partial<Record<InboxSource, SourceCoverage>>,
+): Truncation[] =>
+  coverage
+    ? INBOX_SOURCES.flatMap((source) => {
+        const seen = coverage[source]
+        return seen?.truncated
+          ? [
+              {
+                source,
+                title: sourceTitle(source),
+                total: seen.total,
+                shown: seen.shown,
+              },
+            ]
+          : []
+      })
+    : []
+
+/** How many rows the whole board is not showing. */
+export const hiddenRows = (rows: Truncation[]) =>
+  rows.reduce((n, r) => n + (r.total - r.shown), 0)
