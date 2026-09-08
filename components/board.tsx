@@ -5,7 +5,6 @@ import {
   Fragment,
   memo,
   useEffect,
-  useRef,
   useState,
   type CSSProperties,
 } from "react"
@@ -272,6 +271,16 @@ export const FOLD_MS = 280
  * kept mounted to play.
  */
 const SETTLE_MS = LEAD_MS + FOLD_MS + 40
+
+/**
+ * What moved between two fold sets, in either direction — a fold and an unfold
+ * are the same event to everything downstream, since both have to keep their
+ * cards mounted while the box travels.
+ */
+export const toggled = (before: Set<string>, after: Set<string>) => [
+  ...[...after].filter((id) => !before.has(id)),
+  ...[...before].filter((id) => !after.has(id)),
+]
 
 export const Slot = ({ id, tone }: { id: string; tone: string }) => (
   <span
@@ -1103,11 +1112,43 @@ export const Swimlanes = ({
    * one failure that would be visible.
    */
   const [settling, setSettling] = useState<Set<string>>(new Set())
-  const before = useRef(folded)
   /* The same trick on the horizontal axis: a column's cards stay mounted for
      exactly the length of the transition, then go. */
   const [settlingCols, setSettlingCols] = useState<Set<string>>(new Set())
-  const beforeCols = useRef(cols)
+
+  /*
+   * Which lanes and columns just changed, DERIVED DURING RENDER — for the same
+   * reason `colsClosing` below is, and this half was an effect until it was
+   * caught flickering.
+   *
+   * A cell's cards mount on `!shut || moving`, which reads both the prop and
+   * this state. Set from an effect, `moving` is one paint behind the prop: the
+   * first render of a fold saw `shut` true and `moving` still false, unmounted
+   * the cards for that paint, and the effect then remounted them to play
+   * `ym-fold-out` from the top. What you saw was the cards blink out, come back
+   * at full strength and only then fade — a fold playing its first beat twice.
+   * Unfolding had the mirror of it: the cards mounted with no animation class
+   * at all, painted at full opacity, then snapped to zero when `ym-fold-in`
+   * arrived a paint later.
+   *
+   * Passive effects flush either side of a paint depending on what else the
+   * frame is doing, which is the whole of why it was "sometimes". A
+   * render-phase update re-renders before the browser paints, so nothing is
+   * ever shown a half-built frame.
+   *
+   * The sets UNION rather than replace, which is the second half of the same
+   * bug: one shared timer covers every lane in flight, so `new Set(changed)`
+   * evicted a lane that was still compressing the moment a second one was
+   * folded. The timer restarts on every change, so it always fires at least a
+   * whole sequence after the LAST gesture — later than any lane needs, never
+   * earlier, which is the direction this is allowed to be wrong in.
+   */
+  const [seenFolded, setSeenFolded] = useState(folded)
+  if (seenFolded !== folded) {
+    const changed = toggled(seenFolded, folded)
+    setSeenFolded(folded)
+    if (changed.length) setSettling((held) => new Set([...held, ...changed]))
+  }
 
   /*
    * Which way the column fold is going, derived DURING RENDER rather than in an
@@ -1131,35 +1172,33 @@ export const Swimlanes = ({
   const [seenCols, setSeenCols] = useState(cols)
   const [colsClosing, setColsClosing] = useState(false)
   if (seenCols !== cols) {
+    const changed = toggled(seenCols, cols)
     setColsClosing([...cols].some((id) => !seenCols.has(id)))
     setSeenCols(cols)
+    if (changed.length)
+      setSettlingCols((held) => new Set([...held, ...changed]))
   }
 
+  /*
+   * All the effects still own is the going-away, which is the only part of this
+   * that is genuinely about time rather than about a frame.
+   *
+   * Keyed on the set rather than on the prop, so a second gesture arriving
+   * mid-flight clears the pending unmount and starts a fresh one. That is what
+   * makes the union above safe: the lanes accumulate, and the clock they share
+   * is always measured from the most recent of them.
+   */
   useEffect(() => {
-    const changed = [
-      ...[...folded].filter((repo) => !before.current.has(repo)),
-      ...[...before.current].filter((repo) => !folded.has(repo)),
-    ]
-    before.current = folded
-    if (!changed.length) return
-
-    setSettling(new Set(changed))
+    if (!settling.size) return
     const done = setTimeout(() => setSettling(new Set()), SETTLE_MS)
     return () => clearTimeout(done)
-  }, [folded])
+  }, [settling])
 
   useEffect(() => {
-    const changed = [
-      ...[...cols].filter((id) => !beforeCols.current.has(id)),
-      ...[...beforeCols.current].filter((id) => !cols.has(id)),
-    ]
-    beforeCols.current = cols
-    if (!changed.length) return
-
-    setSettlingCols(new Set(changed))
+    if (!settlingCols.size) return
     const done = setTimeout(() => setSettlingCols(new Set()), SETTLE_MS)
     return () => clearTimeout(done)
-  }, [cols])
+  }, [settlingCols])
 
   return (
     <div

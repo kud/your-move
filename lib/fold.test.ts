@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 
 import { describe, expect, it } from "vitest"
 
-import { FOLD_MS, LEAD_MS } from "@/components/board"
+import { FOLD_MS, LEAD_MS, toggled } from "@/components/board"
 
 /*
  * The seam between a stylesheet and a `setTimeout`.
@@ -65,5 +65,68 @@ describe("the fold's two beats", () => {
     )
     expect(going, "and arrive on it too").toContain("var(--dur-pointer)")
     expect(going, "after waiting out the compress").toContain("var(--dur-fold)")
+  })
+})
+
+/*
+ * The bookkeeping that keeps the cards mounted while the box travels.
+ *
+ * Nothing here can be driven through a DOM — there is no browser in this suite
+ * and adding one to check an animation would be the wrong trade. So this pins
+ * the two properties whose absence Erwann could see, in the same source-reading
+ * idiom the block above uses on the stylesheet.
+ *
+ * Both were real, and both were invisible slowly. The bug was intermittent
+ * because a passive effect flushes either side of a paint depending on what
+ * else the frame is doing; testing it by hand, one toggle at a time, it behaves
+ * perfectly.
+ */
+const board = readFileSync(
+  new URL("../components/board.tsx", import.meta.url),
+  "utf8",
+)
+
+describe("what stays mounted through a fold", () => {
+  it("reads a toggle in either direction", () => {
+    const was = new Set(["a", "b"])
+
+    expect(toggled(was, new Set(["a", "b", "c"])), "one folded").toEqual(["c"])
+    expect(toggled(was, new Set(["a"])), "one unfolded").toEqual(["b"])
+    expect(toggled(was, was), "nothing moved").toEqual([])
+  })
+
+  /*
+   * A render-phase derivation, never an effect. From an effect the flag is one
+   * paint behind the prop it describes, and the cards' mount condition reads
+   * both — so the first painted frame of a fold had them already gone, and the
+   * effect remounted them to play the fade from the top.
+   */
+  it("derives the settle sets while rendering", () => {
+    expect(board, "the lane axis is derived from the prop it saw last").toMatch(
+      /if \(seenFolded !== folded\) \{/,
+    )
+    expect(board, "and never from an effect keyed on the prop").not.toMatch(
+      /\}, \[folded\]\)/,
+    )
+    expect(board, "the column axis likewise").not.toMatch(/\}, \[cols\]\)/)
+  })
+
+  /*
+   * One timer covers every lane in flight, so the set has to accumulate: a
+   * replace evicted a lane that was still compressing the moment a second one
+   * was folded, and its cards left the tree mid-travel. Keying the timer on the
+   * set rather than on the prop is what restarts it on re-entry.
+   */
+  it("accumulates them, and restarts the one clock on re-entry", () => {
+    expect(board, "lanes accumulate").toMatch(
+      /setSettling\(\(held\) => new Set\(\[\.\.\.held, \.\.\.changed\]\)\)/,
+    )
+    expect(board, "columns accumulate").toMatch(
+      /setSettlingCols\(\(held\) => new Set\(\[\.\.\.held, \.\.\.changed\]\)\)/,
+    )
+    expect(board, "and the unmount clock is keyed on the set").toMatch(
+      /\}, \[settling\]\)/,
+    )
+    expect(board, "on both axes").toMatch(/\}, \[settlingCols\]\)/)
   })
 })
