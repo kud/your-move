@@ -39,6 +39,102 @@
   --ease-flip: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * ═══ THE EDGE VOCABULARY ═══
+ *
+ * This board draws nine different lines and had no stated rule for which one
+ * means what, which is why the same corner was patched three times in an
+ * afternoon and each fix disagreed with the one before it. What follows is
+ * mostly a description of what is already drawn rather than a new design — but
+ * it is a description that can be CHECKED, which is the whole point of writing
+ * it down. Every edge on this board should be identifiable as exactly one of
+ * the four jobs below.
+ *
+ * ── 1. STRUCTURE — the grid, and the frame around it
+ *
+ * Square, never rounded, and always the box's OWN border. Two weights, and the
+ * step between them carries meaning:
+ *
+ *   peer boundary       1px `line-soft`   column|column, lane|lane
+ *   structural boundary 2px `line`        group|group (Yours|Theirs|Closed)
+ *   the frame           1px `line`        the panel, and the panel alone
+ *
+ * A peer boundary says "the same kind of thing continues". A structural one
+ * says "a different lifecycle starts here". The frame is a third thing again:
+ * it is the only line on the board that means "there is nothing beyond this".
+ *
+ * ── 2. OBJECTS — a card, and the board itself
+ *
+ * 1px `line` AND a radius. The radius is what separates an object from a
+ * region: a card is a thing you can pick out and open, a cell is an area that
+ * happens to contain things. Structure is never rounded; objects always are.
+ * The panel is rounded for the same reason — on the sky, the board is itself an
+ * object.
+ *
+ * ── 3. STATE ON AN OBJECT — whose, how old, what just happened
+ *
+ * Never the box's own border, with one deliberate exception below. State is an
+ * inset overlay: 2px, `rounded-full`, held clear of the corners so it reads as
+ * a mark ON the card rather than as part of its outline.
+ *
+ *   yours       LEFT edge, accent      persistent
+ *   stale       BOTTOM edge, brass     persistent
+ *   arrived     ALL FOUR edges, accent transient
+ *
+ * The split is the system, and it is worth stating because it looks like an
+ * inconsistency and is not. A PERSISTENT fact takes ONE edge — it is a mark you
+ * read when you look at the card. A TRANSIENT event takes the WHOLE OUTLINE —
+ * it has to be caught peripherally, by someone who is not looking at that card,
+ * and a 2px bar on one edge cannot do that. So `ym-arrived` animating
+ * `border-color` is the exception that the rule predicts rather than a
+ * violation of it.
+ *
+ * It does cost something, and the cost is already recorded elsewhere in this
+ * file: because arrival owns the border, hover had to be re-derived from
+ * `--color-fg`, and the ember went to the bottom edge because it was the only
+ * edge left. Which is the forward-looking constraint: THERE ARE NO PERSISTENT
+ * STATE EDGES REMAINING. Top and right are structurally unavailable — a card
+ * sits under the cell above it and beside the next column's seam — so a third
+ * persistent state must find a carrier that is not an edge. A chip, a tone, a
+ * glyph. Do not go looking for a fourth edge; there isn't one.
+ *
+ * ── 4. NOT STATE — pointer and viewport
+ *
+ * Hover and focus are facts about the READER, never about the row, and they are
+ * deliberately drawn from neutral values so they can never be mistaken for
+ * meaning: hover is `--color-fg` (a halo on dark, a drop on light), focus is a
+ * 2px `--color-fg` OUTLINE, which sits outside the box and so cannot collide
+ * with any border above.
+ *
+ * ═══ THE THREE RULES THAT ACTUALLY CATCH BUGS ═══
+ *
+ * The vocabulary above says what to draw. These say where, and every border
+ * defect on this board so far has been a breach of one of them.
+ *
+ *   (a) EVERY RULE IS PAINTED BY THE BOX ON ITS LEFT, OR ABOVE.
+ *       One owner per boundary. Where both sides paint, you get two lines in
+ *       two tones with a gap between them, which is what a "3px seam" was.
+ *
+ *   (b) AN OUTER BOUNDARY BELONGS TO THE CONTAINER, NEVER TO THE LAST CHILD.
+ *       The panel draws the board's edge; the last column must not. A child
+ *       cannot draw the container's edge even in principle — its border sits
+ *       inside the content box, so the two can only ever be adjacent, never
+ *       coincident.
+ *
+ *   (c) A RULE RUNS THE FULL LENGTH OF THE THING IT SEPARATES, OR IT IS A BUG.
+ *       A boundary that stops partway reads as damage, not as a divider. The
+ *       group band drawing a seam the columns below it had stopped drawing left
+ *       a 2px stub 16px tall hanging off the top-right corner — which is what
+ *       "the borders are still weird on closed" was. The band spans its group,
+ *       so it asks `cellRule` for its right edge rather than deciding
+ *       separately: same boundary, same decision, one source.
+ *
+ * The generalisation behind (b) and (c) together: WHEN TWO ELEMENTS COULD BOTH
+ * DRAW THE SAME BOUNDARY, THEY MUST CONSULT THE SAME FUNCTION, NOT AGREE BY
+ * HAND. Every border bug here has been two correct-looking pieces of code
+ * holding different opinions about one line.
+ */
+
 html {
   background: var(--color-void);
   color-scheme: dark;
