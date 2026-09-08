@@ -341,11 +341,12 @@ const CardBody = ({
    * and its URL is not in the payload — so it would cost a wider query to say
    * less.
    */
-  const byOther =
-    row.author && row.author !== viewer ? row.author : undefined
+  const byOther = row.author && row.author !== viewer ? row.author : undefined
 
   return (
-    <article className={`ym-card group relative rounded-[9px] border border-line bg-panel-2 p-2.5 hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
+    <article
+      className={`ym-card group relative rounded-[9px] border border-line bg-panel-2 p-2.5 hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}
+    >
       {/*
         The ember, on the edge nothing else claims.
 
@@ -467,7 +468,7 @@ const CardBody = ({
   )
 }
 
-/* The label column is 104px narrow, 150px wide; at 14px this is where a short
+/* The label column is 104px narrow, 180px wide; at 14px this is where a short
    name stops fitting. Approximate on purpose — the cost of being wrong is an
    ellipsis that reveals a name you could already read. */
 const FITS = 11
@@ -531,7 +532,7 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
             </span>
           ) : null}
           <span className="font-mono text-[11.5px] tabular-nums text-fg-quiet">
-            {lane.total} open
+            {lane.total} {lane.total === 1 ? "item" : "items"}
           </span>
         </p>
 
@@ -547,7 +548,10 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
                   key={c}
                   className="flex items-center gap-2 py-0.5 text-[13px] text-fg-mute"
                 >
-                  <SectionMark id={c} className="size-3 shrink-0 text-fg-quiet" />
+                  <SectionMark
+                    id={c}
+                    className="size-3 shrink-0 text-fg-quiet"
+                  />
                   {p.title}
                   <span className="ml-auto font-mono tabular-nums text-fg-quiet">
                     {(lane.cells.get(c) ?? []).length}
@@ -638,15 +642,15 @@ const Cell = ({
     <>
       {shown.map((row) => (
         <Card
-            key={row.url}
-            row={row}
-            onChanged={onChanged}
-            onOpen={onOpen}
-            arrived={arrived.has(row.url)}
-            inApp={inApp}
-            viewer={viewer}
-            heat={heatOf(column, row.ts, now)}
-          />
+          key={row.url}
+          row={row}
+          onChanged={onChanged}
+          onOpen={onOpen}
+          arrived={arrived.has(row.url)}
+          inApp={inApp}
+          viewer={viewer}
+          heat={heatOf(column, row.ts, now)}
+        />
       ))}
       {rows.length > cap && !all ? (
         <button
@@ -694,103 +698,103 @@ export const BoardHead = ({
   onFoldCol?: (id: string) => void
 }) => (
   <>
-      <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
-      {GROUPS.map((group, i) => (
-        <div
-          key={group.label}
-          /* Painted by the group to the left, like every other rule here, so
+    <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
+    {GROUPS.map((group, i) => (
+      <div
+        key={group.label}
+        /* Painted by the group to the left, like every other rule here, so
              the seam runs unbroken from the top edge at one width. */
-          className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
-            /* The last group draws its seam too, now that the board's own
+        className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
+          /* The last group draws its seam too, now that the board's own
                right edge is a seam rather than a hairline. Without it the
                vertical rule had a 16px notch at the very top, where the band
                sits — the one row that was still saying the board carried on. */
-            "border-r-2 border-r-line"
-          }`}
-          style={{ gridColumn: `span ${group.ids.length}` }}
-        >
-          {group.label}
-        </div>
-      ))}
-      {/* Runway, in the header row too. The board ends at the 2px seam on the
+          "border-r-2 border-r-line"
+        }`}
+        style={{ gridColumn: `span ${group.ids.length}` }}
+      >
+        {group.label}
+      </div>
+    ))}
+    {/* Runway, in the header row too. The board ends at the 2px seam on the
           last column; carrying the band and the header bar past it made the
           bar look cut rather than finished. It keeps `bg-panel` under the
           wash because it is sticky and the lane tails scroll beneath it. */}
-      <div className="runway sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
+    <div className="runway sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
 
-      {/* Corner: the one cell belonging to both sticky axes. */}
-      <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
+    {/* Corner: the one cell belonging to both sticky axes. */}
+    <div className="sticky left-0 top-0 z-30 h-[41px] border-b border-r-2 border-b-line border-r-line bg-panel md:top-[16px]" />
 
-      {COLUMNS.map((id) => {
-        const p = presentationFor(id)
-        const shut = Boolean(cols?.has(id))
-        const count = counts ? (counts.get(id) ?? 0) : "–"
+    {COLUMNS.map((id) => {
+      const p = presentationFor(id)
+      const shut = Boolean(cols?.has(id))
+      const count = counts ? (counts.get(id) ?? 0) : "–"
 
-        /*
-         * Folded: the mark and the count, nothing else.
-         *
-         * `Slot` is already the column's identity — square, tuned per section,
-         * and the one element a 52px rail leaves unchanged. The title comes
-         * back the instant you unfold, and so does the `?`.
-         *
-         * The count is not a nicety here, it is what makes `ym:cols` safe to
-         * persist: a column folded on Monday and met again on Friday would
-         * otherwise read as "nothing in review", and a rail showing `12`
-         * cannot be. If the count ever leaves the rail, the persistence should
-         * leave with it.
-         */
-        if (shut)
-          return (
-            <div
-              key={id}
-              ref={(el) => register?.(id, el)}
-              data-column={id}
-              onClick={() => foldable() && onFoldCol?.(id)}
-              {...tip(`Expand ${p.title}`)}
-              aria-label={`Expand ${p.title} — ${count} rows`}
-              className={`sticky top-0 z-20 flex h-[41px] cursor-pointer items-center justify-center gap-1 border-b border-b-line bg-panel px-1 transition-colors hover:bg-raise [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
-            >
-              <Slot id={id} tone={p.tone} />
-              <span className="font-mono text-[12px] tabular-nums text-fg-quiet">
-                {count}
-              </span>
-            </div>
-          )
-
+      /*
+       * Folded: the mark and the count, nothing else.
+       *
+       * `Slot` is already the column's identity — square, tuned per section,
+       * and the one element a 52px rail leaves unchanged. The title comes
+       * back the instant you unfold, and so does the `?`.
+       *
+       * The count is not a nicety here, it is what makes `ym:cols` safe to
+       * persist: a column folded on Monday and met again on Friday would
+       * otherwise read as "nothing in review", and a rail showing `12`
+       * cannot be. If the count ever leaves the rail, the persistence should
+       * leave with it.
+       */
+      if (shut)
         return (
-          /*
-           * A `div` with a handler, never a `button` — this contains `About`'s
-           * button, and a button inside a button is invalid, which is the trap
-           * `LaneName` already hit once.
-           *
-           * The tint says "clicking here folds", so it is cancelled over the
-           * `?`, which does something else. `stopPropagation` handles the click
-           * but not the hover, so the cancel has to be CSS: `:has()` at 0,3,0
-           * beats `hover:bg-raise` at 0,2,0 with no `!important`.
-           */
           <div
             key={id}
             ref={(el) => register?.(id, el)}
             data-column={id}
             onClick={() => foldable() && onFoldCol?.(id)}
-            className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 transition-colors [scroll-snap-align:none_start] md:top-[16px] ${
-              onFoldCol
-                ? "md:cursor-pointer md:hover:bg-raise md:has-[[data-about]:hover]:bg-panel"
-                : ""
-            } ${cellRule(id)}`}
+            {...tip(`Expand ${p.title}`)}
+            aria-label={`Expand ${p.title} — ${count} rows`}
+            className={`sticky top-0 z-20 flex h-[41px] cursor-pointer items-center justify-center gap-1 border-b border-b-line bg-panel px-1 transition-colors hover:bg-raise [scroll-snap-align:none_start] md:top-[16px] ${cellRule(id)}`}
           >
-            {onFoldCol ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (foldable()) onFoldCol(id)
-                }}
-                aria-expanded
-                aria-label={`Collapse ${p.title}`}
-                className="hidden size-4 shrink-0 place-items-center rounded text-fg-quiet transition-colors hover:text-fg md:grid"
-              >
-                {/*
+            <Slot id={id} tone={p.tone} />
+            <span className="font-mono text-[12px] tabular-nums text-fg-quiet">
+              {count}
+            </span>
+          </div>
+        )
+
+      return (
+        /*
+         * A `div` with a handler, never a `button` — this contains `About`'s
+         * button, and a button inside a button is invalid, which is the trap
+         * `LaneName` already hit once.
+         *
+         * The tint says "clicking here folds", so it is cancelled over the
+         * `?`, which does something else. `stopPropagation` handles the click
+         * but not the hover, so the cancel has to be CSS: `:has()` at 0,3,0
+         * beats `hover:bg-raise` at 0,2,0 with no `!important`.
+         */
+        <div
+          key={id}
+          ref={(el) => register?.(id, el)}
+          data-column={id}
+          onClick={() => foldable() && onFoldCol?.(id)}
+          className={`sticky top-0 z-20 flex h-[41px] items-center gap-1.5 border-b border-b-line bg-panel px-2 transition-colors [scroll-snap-align:none_start] md:top-[16px] ${
+            onFoldCol
+              ? "md:cursor-pointer md:hover:bg-raise md:has-[[data-about]:hover]:bg-panel"
+              : ""
+          } ${cellRule(id)}`}
+        >
+          {onFoldCol ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (foldable()) onFoldCol(id)
+              }}
+              aria-expanded
+              aria-label={`Collapse ${p.title}`}
+              className="hidden size-4 shrink-0 place-items-center rounded text-fg-quiet transition-colors hover:text-fg md:grid"
+            >
+              {/*
                   The mark points along the axis the thing collapses on. That is
                   the rule, and it is why this is not the lane's chevron: a
                   chevron is an arrowhead and cannot be asked to read
@@ -807,33 +811,33 @@ export const BoardHead = ({
                   No rotation, unlike the lane's. This only ever renders in the
                   open state, so it has one orientation to be right in.
                 */}
-                <svg
-                  viewBox="0 0 12 12"
-                  aria-hidden
-                  className="size-3"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5.75 3.5 L3 6 L5.75 8.5" />
-                  <path d="M9.25 3.5 L6.5 6 L9.25 8.5" />
-                </svg>
-              </button>
-            ) : null}
-            <Slot id={id} tone={p.tone} />
-            <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
-              {p.title}
-            </h3>
-            <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
-              {count}
-            </span>
-            <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
-          </div>
-        )
-      })}
-      <div className="runway sticky top-0 z-20 h-[41px] bg-panel md:top-[16px]" />
+              <svg
+                viewBox="0 0 12 12"
+                aria-hidden
+                className="size-3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.25"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5.75 3.5 L3 6 L5.75 8.5" />
+                <path d="M9.25 3.5 L6.5 6 L9.25 8.5" />
+              </svg>
+            </button>
+          ) : null}
+          <Slot id={id} tone={p.tone} />
+          <h3 className="truncate text-[13px] font-semibold text-fg md:text-[13.5px]">
+            {p.title}
+          </h3>
+          <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-quiet">
+            {count}
+          </span>
+          <About id={`about-${id}`} title={p.title} meaning={p.meaning} />
+        </div>
+      )
+    })}
+    <div className="runway sticky top-0 z-20 h-[41px] bg-panel md:top-[16px]" />
   </>
 )
 
@@ -1028,9 +1032,7 @@ export const Swimlanes = ({
    */
   const track = [
     "var(--ym-lane)",
-    ...columns.map((id) =>
-      cols.has(id) ? "var(--ym-rail)" : "var(--ym-col)",
-    ),
+    ...columns.map((id) => (cols.has(id) ? "var(--ym-rail)" : "var(--ym-col)")),
     "var(--ym-tail)",
   ].join(" ")
 
@@ -1223,14 +1225,38 @@ export const Swimlanes = ({
                 <LaneName lane={lane} columns={columns} />
               </div>
 
-              <p className="flex items-center gap-1.5">
+              {/*
+               * The count says what it counts.
+               *
+               * It was a bare number, and it was only legible by accident: next
+               * to the `N you` pill it borrows that pill's noun and reads as
+               * "2 of these 7". On a repo with nothing of yours the pill is not
+               * there, and what is left under the name is a naked `2` with
+               * nothing on the cell to say what it counts. That is the state
+               * Erwann saw, and a count nobody can interpret is worse than no
+               * count — it takes the same room and answers nothing.
+               *
+               * `items` rather than `open`, which is what the panel said and
+               * was untrue: `Closed` is one of the seven columns, so `total`
+               * has closed and merged rows in it. `items` is also GitHub's own
+               * word for a mixed set of issues and pull requests, which is what
+               * a lane holds.
+               *
+               * `flex-wrap` because the noun does not fit beside the pill in a
+               * 104px lane on a phone. Wrapping is the right failure: the cell
+               * is a grid row beside cells full of cards, so a second line
+               * costs nothing, where truncating or hiding the word below `md`
+               * would take it away precisely where the cell is tightest and the
+               * number least explicable.
+               */}
+              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 {lane.yours ? (
                   <span className="rounded-full border border-accent bg-accent-dim px-1.5 py-px text-[10.5px] text-accent">
                     {lane.yours} you
                   </span>
                 ) : null}
                 <span className="font-mono text-[11.5px] tabular-nums text-fg-quiet">
-                  {lane.total}
+                  {lane.total} {lane.total === 1 ? "item" : "items"}
                 </span>
               </p>
             </div>
