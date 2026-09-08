@@ -70,7 +70,27 @@ const BUDGET_FLOOR = 500
  * than pretending to be current.
  */
 
-export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
+/*
+ * `offline` mode, which `/offline` runs in — and the reason it is a mode here
+ * rather than a second hook.
+ *
+ * That route renders the stored board so the reader has something, but it is
+ * NOT the board's address. Everything that would normally bring it up to date —
+ * the mount fetch, the poll, the return-to-visible refetch, the button — must
+ * therefore leave rather than succeed in place, because a live board rendered
+ * at `/offline` is a page whose URL contradicts its contents, and the next
+ * navigation or reload from there is a coin toss.
+ *
+ * Leaving is also what keeps `public/sw.js` out of this change entirely. The
+ * service worker's rule — never put an access-controlled response into Cache
+ * Storage — is untouched and stays untouched; this route reads `localStorage`,
+ * which is same-origin script-gated storage the worker never sees.
+ */
+export const useInbox = (
+  initial?: Inbox,
+  doneDays: 7 | 14 | 30 = 7,
+  offline = false,
+) => {
   const [inbox, setInbox] = useState<Inbox | undefined>(initial)
   const [liveness, setLiveness] = useState<Liveness>(
     initial ? "live" : "refreshing",
@@ -84,10 +104,17 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
      resubscribes the interval on every render. */
   const doneDaysRef = useRef(doneDays)
   doneDaysRef.current = doneDays
+  /* Same reason: the one caller passes a constant, but reading it through a ref
+     is what lets `refresh` keep an empty dependency list. */
+  const offlineRef = useRef(offline)
+  offlineRef.current = offline
   const lastFetched = useRef<number | undefined>(initial?.fetchedAt)
   const budget = useRef<number | undefined>(initial?.budget?.remaining)
 
   const refresh = useCallback(async () => {
+    /* The refresh control is a link home here, not a request. Anything that
+       fetched in place would paint a live board at the wrong URL. */
+    if (offlineRef.current) return void location.assign("/")
     if (inFlight.current) return
     inFlight.current = true
     setLiveness((was) => (was === "expired" ? was : "refreshing"))
@@ -136,6 +163,25 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
   }, [])
 
   useEffect(() => {
+    /* The only thing this drives is a relative timestamp whose smallest unit
+       is a minute, and it re-renders the tree. Half as often is invisible. */
+    const tick = setInterval(() => setNow(Date.now()), 60 * 1000)
+
+    if (offline) {
+      /* No mount fetch and no poll: there is nothing to ask and, on this route,
+         nowhere to put an answer. The age label still ticks, because a board
+         that stops saying how old it is stops being honest as it sits there.
+
+         `online` navigates for the same reason the button does — reconnecting
+         is precisely when a live board would otherwise appear at `/offline`. */
+      const onOnline = () => location.assign("/")
+      window.addEventListener("online", onOnline)
+      return () => {
+        clearInterval(tick)
+        window.removeEventListener("online", onOnline)
+      }
+    }
+
     if (!initial) {
       const last = readKept()
       if (last) {
@@ -153,9 +199,6 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
       if (document.visibilityState !== "visible") return
       void refresh()
     }, POLL_MS)
-    /* The only thing this drives is a relative timestamp whose smallest unit
-       is a minute, and it re-renders the tree. Half as often is invisible. */
-    const tick = setInterval(() => setNow(Date.now()), 60 * 1000)
 
     /* Coming back to a backgrounded tab is the moment the answer on screen is
        most likely to be old, and the moment someone is most likely to act on
@@ -176,7 +219,7 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
       document.removeEventListener("visibilitychange", onVisible)
       window.removeEventListener("online", onVisible)
     }
-  }, [initial, refresh])
+  }, [initial, refresh, offline])
 
   const applyLabel = useCallback(
     (repo: string, number: number, label: string, action: "add" | "remove") =>
@@ -213,9 +256,13 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
     /* `refreshing` ages too. It used to be terminal-looking in the other
        direction: a request that never returned kept the ◐ and suppressed every
        banner, so an indefinitely broken board read as one that was working. */
-    liveness:
-      (liveness === "live" || liveness === "refreshing") &&
-      age > STALE_AFTER_MS
+    /* Pinned, not merely initialised: nothing on this route can move it, and a
+       state that cannot change should be stated once rather than defended at
+       every setter. */
+    liveness: offline
+      ? "offline"
+      : (liveness === "live" || liveness === "refreshing") &&
+          age > STALE_AFTER_MS
         ? "stale"
         : liveness,
   }
