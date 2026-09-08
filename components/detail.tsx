@@ -464,7 +464,7 @@ export const Detail = ({
           </div>
 
           {failed ? (
-            <p className="mt-4 text-[13px] text-brass">
+            <p className="mt-6 text-[13px] text-brass">
               <span aria-hidden>! </span>
               Could not read the detail. The row above is still what the board
               knows.
@@ -473,7 +473,7 @@ export const Detail = ({
             /* Everything already in hand is rendered above; only what needs a
                request shimmers. The reference pane shimmered its own heading
                despite holding the title, and visibly re-rendered under you. */
-            <div className="mt-4 flex flex-col gap-2">
+            <div className="mt-6 flex flex-col gap-2">
               <div className="shimmer h-4 w-1/3 rounded bg-panel-2" />
               <div className="shimmer h-16 rounded bg-panel-2" />
               <div className="shimmer h-16 rounded bg-panel-2" />
@@ -482,7 +482,7 @@ export const Detail = ({
             <>
               {/* The evidence for the verdict — structured, never a feed. */}
               {detail.checks.length || detail.reviews.length ? (
-                <section className="mt-4">
+                <section className="mt-6">
                   <h3 className="pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
                     Where it stands
                   </h3>
@@ -536,7 +536,7 @@ export const Detail = ({
               ) : null}
 
               {detail.body.trim() ? (
-                <section className="mt-4">
+                <section className="mt-6">
                   <h3 className="pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
                     What it says
                   </h3>
@@ -577,7 +577,7 @@ export const Detail = ({
               ) : null}
 
               {detail.comments.length ? (
-                <section className="mt-4">
+                <section className="mt-6">
                   <h3 className="pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-quiet">
                     Last said
                   </h3>
