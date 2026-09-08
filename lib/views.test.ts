@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest"
 
 import {
   decodeShare,
+  emptyPicks,
   encodeShare,
   exportViews,
   importViews,
+  picksFromQuery,
   samePicks,
 } from "./views.js"
 
@@ -127,5 +129,50 @@ describe("owners", () => {
     expect(
       samePicks(picks({ owners: ["acme"] }), picks({ repos: ["acme/a"] })),
     ).toBe(false)
+  })
+})
+
+/*
+ * The URL is the only thing that carries a filter between the server's paint,
+ * the client's hydration, a reload and a shared link — and it carries FACETS,
+ * never the view's name, because a view lives in this device's `localStorage`
+ * and a name would resolve to nothing anywhere else.
+ *
+ * That makes the expansion load-bearing rather than convenient: whatever `Picks`
+ * holds must survive a trip through the query string, or the URL describes a
+ * different board from the one on screen. Driven off `emptyPicks()` rather than
+ * a written-out list, so a sixth facet added to the type fails here instead of
+ * being noticed as a filter that silently stops surviving a reload.
+ */
+describe("picksFromQuery", () => {
+  it("reads back every facet the picks type carries", () => {
+    const full = {
+      ...emptyPicks(),
+      repos: ["owner/one", "owner/two"],
+      owners: ["owner"],
+      status: ["red"],
+      labels: ["plan"],
+      move: ["you"],
+    }
+
+    for (const key of Object.keys(emptyPicks())) {
+      expect(
+        full[key as keyof typeof full],
+        `${key} is missing from this test's sample`,
+      ).not.toHaveLength(0)
+    }
+
+    /* Exactly what the board writes: one comma-joined parameter per facet. */
+    const query = new URLSearchParams(
+      Object.entries(full).map(([key, values]) => [key, values.join(",")]),
+    )
+
+    expect(picksFromQuery((key) => query.get(key) ?? undefined)).toEqual(full)
+  })
+
+  /* An absent parameter is an empty facet, never `undefined` — the sheet
+     indexes into these arrays without checking. */
+  it("gives every facet an array when the query is empty", () => {
+    expect(picksFromQuery(() => undefined)).toEqual(emptyPicks())
   })
 })

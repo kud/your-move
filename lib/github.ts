@@ -170,6 +170,52 @@ const dedupe = (rows: Row[]): Row[] => {
   )
 }
 
+/*
+ * The board's filter does NOT reach this function, and that is a measured
+ * decision rather than an unfinished one.
+ *
+ * The intuition is strong and wrong: the header says "130 hidden", so the fetch
+ * looks like it is buying rows the render throws away, and narrowing the search
+ * looks like the obvious saving. GraphQL is not billed that way. A search is
+ * scored on the nodes it COULD return — `first: N` multiplied by the fragment
+ * beneath it — so the price is set by the cap and the shape, and the number of
+ * rows that actually match is not an input to it.
+ *
+ * Measured 2026-09-08 on this account, one source, identical fragment:
+ *
+ *   unscoped, 100 matched      cost 11   2,480 nodes
+ *   owner-scoped, 100 matched  cost 11   2,480 nodes
+ *   repo-scoped, ZERO matched  cost 11   2,480 nodes
+ *
+ * A search matching nothing at all costs exactly what one matching a hundred
+ * rows costs. There is no budget behind the hidden rows to recover.
+ *
+ * Nor does scoping rescue the truncated source, which was the better reason to
+ * want it. `reviewRequests` shows 20 of 99 — and all 99 sit inside the single
+ * owner the filter selects, so the scope that was meant to shrink the set to
+ * fit the cap leaves every row in it. Raising the cap instead fails on WALL
+ * CLOCK at GitHub's proxy, independently of all of this: `first: 100` returns
+ * 502 after ~11s scoped and unscoped alike, and still 502s with the nested
+ * `reviewThreads` window cut to a fifth — so it is the search itself timing
+ * out, not the nodes hanging off it. `first: 50` answers in 8-11s, which is not
+ * headroom, it is the ceiling.
+ *
+ * What scoping does buy is latency — 0.7s against 3.9s where the scope is
+ * genuinely narrow — and that is worth having on the day a repo view is wanted.
+ * It is not a saving, and it must not be sold as one.
+ *
+ * The real cost lever is the fragment, not the scope: at `first: 20` this
+ * source costs 11 points with `reviewThreads(first: 50)`, 5 with 20, and 3 with
+ * 10. That belongs to `@kud/gh`, which owns the query, and it is the change to
+ * make if the budget ever needs to come down.
+ *
+ * `repo` also stays the only scope this signature accepts. `owners` cannot be
+ * added by interpolating one more qualifier: `user:@me` is REPLACED rather than
+ * joined for a reason `@kud/gh` documents, and the value lands inside a GraphQL
+ * string literal, which is the injection surface `app/api/inbox/route.ts`
+ * deleted `?repo=` over. Both are library-side problems, and neither is a thing
+ * to route around from here.
+ */
 export const fetchInbox = async (
   token: string,
   options: { repo?: string; doneWithinDays?: number } = {},
