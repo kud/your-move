@@ -662,6 +662,83 @@ h4 {
 }
 
 /*
+ * ═══ A FOLD HAPPENS IN TWO BEATS ═══
+ *
+ * The cards leave, and THEN the box moves. Both folds on this board — a lane
+ * collapsing downward, a column collapsing sideways — play the same two beats
+ * in the same order, and unfold plays them in reverse: the box opens onto
+ * nothing, and the cards arrive into a box that has already stopped.
+ *
+ * Simultaneous was the previous behaviour and it is the thing being fixed.
+ * Fading content while its own container is moving reads as the content being
+ * CRUSHED rather than removed: on the lane axis the cards compress vertically
+ * as they dim, and on the column axis they are wiped by the narrowing edge
+ * mid-fade. Either way two motions share one moment and neither is legible.
+ *
+ * The argument is stronger on the column axis, which is why both got it rather
+ * than only the one Erwann asked about first: a lane collapsing MOVES OTHER
+ * CONTENT — every lane below it travels up — where a column fold spends its
+ * width into the tail after the last column and moves nothing. A gesture that
+ * displaces the rest of the board is the one that can least afford a second
+ * animation competing for the same instant.
+ *
+ * ONE implementation, deliberately. The two axes already shared their curve and
+ * their duration; splitting the sequence between them would have been a third
+ * pair of numbers to hand-reconcile, and the cell below renders both states
+ * from the same element.
+ *
+ * ── The numbers, and where the sequencing actually lives
+ *
+ * The fade is `--dur-pointer` in BOTH directions — it covers no distance, so
+ * the ladder gives it the shortest rung, and keeping it symmetric means the
+ * only thing that changes between folding and unfolding is the fade's PLACE IN
+ * THE SEQUENCE rather than its speed. Total either way is 150 + 280 = 430ms,
+ * which is the budget for a gesture repeated casually all day.
+ *
+ * The delay does the sequencing, and it is split across two owners because the
+ * two axes compress different boxes:
+ *
+ *   lane    each cell's own `grid-template-rows`, delayed while `shut`
+ *   column  the ONE shared `grid-template-columns` on the grid, delayed while
+ *           the change is a closing one
+ *
+ * The lane axis needs no direction flag: `shut` is a prop, so the delay and the
+ * `0fr` land in the same commit and are correct in both directions by
+ * construction. The column axis cannot do that — the track is one style on one
+ * element serving every column — so `board.tsx` derives the direction during
+ * render. Deriving it in an effect would be a frame late, which means applying
+ * the PREVIOUS fold's delay to this one.
+ *
+ * ── Why an animation and not a transition
+ *
+ * A transition would be the obvious tool and it cannot do the unfold. The cards
+ * are unmounted while a fold is settled — that is what folding is FOR, and the
+ * comment on `settling` in `board.tsx` argues the cost — so on unfold they
+ * MOUNT at opacity 0 with no previous value to transition from, and would
+ * simply appear. An animation with `both` fill holds them at 0 through its
+ * delay and brings them in afterwards, which is the beat this needs.
+ */
+@keyframes ym-fold-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ym-fold-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.ym-fold-out {
+  animation: ym-fold-out var(--dur-pointer) ease-in both;
+}
+
+.ym-fold-in {
+  animation: ym-fold-in var(--dur-pointer) ease-out var(--dur-fold) both;
+}
+
+/*
  * The mark reacts, and it is the only thing on this board that moves purely for
  * pleasure.
  *
@@ -849,6 +926,21 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+  /* The DELAYS go too, and this is the half that was missing.
+
+     Zeroing a duration collapses each beat of a SEQUENCED animation to nothing
+     but leaves the wait between the beats intact — so the two-beat fold above
+     would have sat still here for 150ms and then jumped, which is a worse thing
+     to hand someone who asked for less motion than the animation it spares
+     them. A kill that is not total is not a kill, it is a stutter.
+
+     It was invisible until something was sequenced. Nothing on this board used
+     a delay to ORDER two motions before the fold did, so every previously
+     written rule survived the duration kill intact and this gap cost nothing.
+     That is exactly why it is worth a comment: the next sequenced animation
+     will not fail loudly either. */
+  animation-delay: 0s !important;
+  transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }
 
