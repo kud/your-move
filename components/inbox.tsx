@@ -682,7 +682,10 @@ export const Inbox = ({
             block's marker instead of as a very large piece of punctuation.
           */}
             <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
-              <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
+              {/* `ym-hop` is a one-shot reaction, not a hover state — the
+                  argument for that, and for the literal 420ms, is beside the
+                  keyframes in `app/globals.css`. */}
+              <Mark className="ym-hop h-auto w-6 shrink-0 md:w-[30px]" />
 
               <div className="min-w-0 flex-1">
                 <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
