@@ -17,9 +17,20 @@ import { Mark } from "@/components/mark"
  *
  * The board's FURNITURE is schema — the two lifecycles, the seven columns,
  * their marks and their names all exist before GitHub answers — so it is drawn
- * for real and only the cells shimmer. That is what makes the hand-off a board
- * filling in rather than one screen replacing another: nothing reflows, because
- * the grid, the seams and the sticky offsets were already right. The one thing
+ * for real and only the cells shimmer.
+ *
+ * The GRID does not reflow at hand-off, and that much is by construction rather
+ * than by care: `BoardSkeleton` mounts the board's own `BoardHead`, and the two
+ * track lists resolve to the same 2250px. What is NOT yet true is the frame
+ * around it. A filtered board renders a chip row that this shell has no
+ * counterpart for, so at hand-off a whole row appears and shoves the board
+ * down; and the loaded board is a scroll container where this shell is
+ * `overflow-hidden`, so where the OS draws classic scrollbars one side reserves
+ * a gutter the other does not.
+ *
+ * Both are being fixed. Until they are, do not let this comment say the
+ * hand-off is still — it was written as an intention and read as a fact, which
+ * is how it survived a screen recording that plainly showed otherwise. The one thing
  * a header cannot honestly say yet is a count, so it says `–` rather than `0`.
  *
  * It used to be one shimmering rectangle where the board goes, which is exactly

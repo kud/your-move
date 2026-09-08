@@ -533,9 +533,14 @@ const Cell = ({
  * Everything here is SCHEMA — the two lifecycles, the seven columns, their
  * marks, names and seam weights — so it is correct before GitHub answers, and
  * rendering it grey would be a lie in the other direction: pretending not to
- * know something we do know. `Booting` mounts the same component, which is what
- * makes the hand-off a board filling in rather than one screen replacing
- * another. Nothing reflows, because the grid was already right.
+ * know something we do know. `Booting` mounts the same component, so the
+ * columns, their marks and their seam weights are identical on both sides of
+ * the hand-off and the grid itself cannot reflow.
+ *
+ * That is a claim about the GRID and nothing wider. The frame around it does
+ * still move — see the note at the top of `booting.tsx` for what and why. This
+ * comment used to say "nothing reflows", which was true of the only thing it
+ * could speak for and false of what a reader took it to mean.
  *
  * Shared rather than re-typed: widening the frame once already cost an edit in
  * two files, and a second copy of these sticky offsets is a copy that drifts.
@@ -931,7 +936,7 @@ export const Swimlanes = ({
           ? ({ "--ym-last": "var(--ym-rail)" } as CSSProperties)
           : undefined
       }
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
