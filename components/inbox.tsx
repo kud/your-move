@@ -1059,6 +1059,7 @@ export const Inbox = ({
                     onFoldCol={foldCol}
                     arrived={arrived}
                     inApp={openMode !== "github"}
+                    viewer={inbox?.login}
                   />
                 </div>
               </>
