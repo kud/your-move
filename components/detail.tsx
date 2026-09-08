@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { RowLabels } from "@/components/row-labels"
 import type { OnLabelChange } from "@/components/board"
 import { GitHubMark } from "@/components/github-mark"
+import { CopyMark, SectionMark } from "@/components/section-mark"
 import { Markdown, clamped } from "@/lib/markdown"
 import type { Row } from "@/lib/github"
 
@@ -205,6 +206,7 @@ export const Detail = ({
   const [detail, setDetail] = useState<Detail>()
   const [failed, setFailed] = useState(false)
   const [wholeBody, setWholeBody] = useState(false)
+  const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle")
   const [shown, setShown] = useState<number[]>([])
 
   useEffect(() => {
@@ -246,6 +248,33 @@ export const Detail = ({
    * side panel the board behind stays deliberately readable and reachable, and
    * `showModal()` would make it inert. The trap is the price of that choice.
    */
+  /*
+   * `writeText` rejects on an insecure origin and can simply be refused, and
+   * this app has already ruled on that class of failure once, in
+   * `row-labels.tsx`: a control that ignores you is worse than one that refuses
+   * you. So the failure gets the same brass `!` vocabulary rather than a silent
+   * no-op — which, on a control whose entire output is invisible, would be
+   * indistinguishable from success.
+   */
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(row.url)
+      setCopied("copied")
+    } catch {
+      setCopied("failed")
+    }
+  }
+
+  /* Reset on the row as well as on the clock: opening a different ticket must
+     not inherit the last one's confirmation. */
+  useEffect(() => setCopied("idle"), [row.url])
+
+  useEffect(() => {
+    if (copied === "idle") return
+    const t = setTimeout(() => setCopied("idle"), 1600)
+    return () => clearTimeout(t)
+  }, [copied])
+
   const panel = useRef<HTMLElement>(null)
   const cameFrom = useRef<HTMLElement | null>(null)
 
@@ -743,6 +772,53 @@ export const Detail = ({
             <GitHubMark className="size-4 shrink-0" />
             Open on GitHub ↗
           </a>
+
+          {/*
+            A third exit, and the footer is where the exits live — copying a
+            link is the "I am taking this elsewhere" act, so it belongs beside
+            `Open on GitHub` rather than up in the identity block. The
+            `repo#number` line stays a label: making a 12px quiet mono line
+            secretly pressable puts a tab stop between the dialog's entry and
+            its content, and relies on a hover that does not exist on the phone
+            where this panel is the whole screen.
+
+            Bordered neutral, never a second accent button — two equal calls to
+            action in one footer spends the accent twice.
+
+            The confirmation changes the WHOLE button in three channels at once
+            — word, mark and colour — because on a full-screen phone panel the
+            button is under the thumb and a corner badge would be under it too.
+            Sage is reinforcement here and never the carrier.
+
+            `row.url` bare: a URL unfurls in Slack and is usable in a terminal,
+            where a markdown link helps in one destination and breaks two.
+          */}
+          <button
+            type="button"
+            onClick={() => void copyLink()}
+            className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-center text-[15px] md:py-1.5 md:text-[13.5px] ${
+              copied === "copied"
+                ? "border-sage/40 text-sage"
+                : copied === "failed"
+                  ? "border-brass/40 text-brass"
+                  : "border-line text-fg-mute hover:bg-raise hover:text-fg"
+            }`}
+          >
+            {copied === "copied" ? (
+              <SectionMark id="done" className="size-4 shrink-0" />
+            ) : copied === "failed" ? (
+              <span aria-hidden>!</span>
+            ) : (
+              <CopyMark className="size-4 shrink-0" />
+            )}
+            <span aria-live="polite">
+              {copied === "copied"
+                ? "Copied"
+                : copied === "failed"
+                  ? "Could not copy"
+                  : "Copy link"}
+            </span>
+          </button>
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet md:ml-auto md:inline">
             labels only
           </span>
