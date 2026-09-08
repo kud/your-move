@@ -747,29 +747,46 @@ export const BoardHead = ({
       <div
         key={group.label}
         /*
-         * Painted by the group to the left, like every other rule here, so the
-         * seam runs unbroken from the top edge at one width.
+         * NO vertical rule here, in any group. The band is a caption over the
+         * board, not a row of it.
          *
-         * And painted by `cellRule`, which is the fix rather than the tidying.
+         * Which is what makes the grid statable in one sentence: EVERY VERTICAL
+         * RULE BEGINS AT THE COLUMN HEADER. The lane spine on the far left is
+         * the one exception and is a different kind of line — it frames the
+         * sticky rail rather than separating two peers, so it runs the full
+         * height of what the rail sits beside, this band included.
          *
-         * This used to hard-code `border-r-2 border-r-line` for EVERY group,
-         * under a comment reasoning that the last one should draw its seam too
-         * "now that the board's own right edge is a seam rather than a
-         * hairline". That was true when it was written and stopped being true
-         * the moment the last column's seam was removed — at which point the
-         * band was the only row still drawing it. The result was a 2px rule,
-         * exactly 16px tall, hanging off the top-right corner just inside the
-         * panel border and stopping dead where the column headers began. Which
-         * is what "the borders are still weird on closed" was: not a rule in
-         * the wrong place, a rule that ends.
+         * Two earlier answers stood here, and both are worth keeping: each was
+         * right about a real defect, and neither survives as the fix.
          *
-         * A band spans its group, so the band's right edge IS the right edge of
-         * the group's last column, and the two must therefore be the same
-         * decision. Asking `cellRule` makes it literally the same decision
-         * instead of a second copy of it — which is what let these drift apart
-         * while each looked correct on its own.
+         * It first hard-coded `border-r-2 border-r-line` for EVERY group, under
+         * a comment reasoning that the last one should draw its seam too "now
+         * that the board's own right edge is a seam rather than a hairline".
+         * True when written, and untrue the moment the last column's seam was
+         * removed — at which point the band was the only row still drawing it: a
+         * 2px rule exactly 16px tall, hanging off the top-right corner just
+         * inside the panel border and stopping dead where the column headers
+         * began. That is what "the borders are still weird on closed" was. Not a
+         * rule in the wrong place; a rule that ends.
+         *
+         * It then asked `cellRule`, so that the band's right edge and its last
+         * column's right edge were literally one decision rather than two copies
+         * free to drift. That killed the stub and was correct on its own terms.
+         * What it left standing was a quieter form of the same defect: a band is
+         * ONE grid item spanning its whole group, so a 2px structural seam
+         * coincides with a band's own right edge and gets drawn, while a 1px
+         * peer seam has no band segment in which to be drawn at all. Inside
+         * those 16px the heavy rules survived and the light ones did not, and
+         * which weight you got was an accident of the markup rather than a
+         * decision about meaning. The seams below were not fading at the top —
+         * they were not REACHING it.
+         *
+         * Clearing the strip is what makes the two weights agree, by giving
+         * neither of them anything to draw. Do not put a border back here to
+         * "finish" a seam that looks short: it is not short, it starts where it
+         * is meant to.
          */
-        className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${cellRule(group.ids[group.ids.length - 1])}`}
+        className="sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex"
         style={{ gridColumn: `span ${group.ids.length}` }}
       >
         {group.label}
