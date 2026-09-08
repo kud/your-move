@@ -102,6 +102,32 @@ export const samePicks = (a: Picks, b: Picks) =>
 export const emptyPicks = (): Picks => ({ ...EMPTY })
 
 /*
+ * The picks the URL is currently asking for.
+ *
+ * Server and client both call this, and that is the whole point of it being a
+ * function rather than two effects. `picks` used to start empty and be filled
+ * on mount, so the board's own server HTML rendered UNFILTERED — the chip row
+ * then appeared a flush later and shoved every lane down it. One reader, called
+ * in both places, and the row is either in the first paint or in neither.
+ *
+ * Takes a getter rather than a `URLSearchParams`, because the two callers do not
+ * hold the same thing: the server is handed a bag whose values may be arrays,
+ * the client has `location.search`. Neither should have to convert for the other.
+ */
+export const picksFromQuery = (
+  get: (key: string) => string | undefined,
+): Picks => {
+  const read = (key: string) => (get(key) ?? "").split(",").filter(Boolean)
+  return {
+    repos: read("repos"),
+    owners: read("owners"),
+    status: read("status"),
+    labels: read("labels"),
+    move: read("move"),
+  }
+}
+
+/*
  * The file, and the reason it exists.
  *
  * These live on one device. A second device is a real want and there is a real

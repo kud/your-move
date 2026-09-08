@@ -73,7 +73,13 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
   expired: "Session expired",
 }
 
-export const Inbox = ({ initial }: { initial?: InboxData }) => {
+export const Inbox = ({
+  initial,
+  picks: initialPicks,
+}: {
+  initial?: InboxData
+  picks?: Picks
+}) => {
   /* Declared before the hook that consumes it. */
   const [doneDays, setDoneDays] = useState<7 | 14 | 30>(7)
   /* `owner/repo#number`, or nothing. */
@@ -128,7 +134,19 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     initial,
     doneDays,
   )
-  const [picks, setPicks] = useState<Picks>(emptyPicks)
+  /*
+   * The server already read the URL — see `app/page.tsx` — so this starts
+   * filtered rather than starting empty and being corrected on mount.
+   *
+   * That correction was the second half of the boot jump: the chip row was
+   * absent from the board's own server HTML too, so it appeared at hydration
+   * and pushed every lane down a second time, just after the shell had finished
+   * pushing them down the first time. An initialiser cannot reflow.
+   *
+   * The prop is optional so that a board mounted without a server pass — a test,
+   * a story — still gets empty picks rather than `undefined`.
+   */
+  const [picks, setPicks] = useState<Picks>(() => initialPicks ?? emptyPicks())
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
   /* Folded COLUMNS, the horizontal twin of `folded`. Same per-device rationale
@@ -210,22 +228,11 @@ export const Inbox = ({ initial }: { initial?: InboxData }) => {
     })
   }, [])
 
-  /* Restored from and written back to the URL, so a filtered board is
-     shareable and can be installed to a home screen as its own view — one per
-     facet, so a link says which dimension it narrowed. */
-  useEffect(() => {
-    const query = new URLSearchParams(location.search)
-    const read = (key: string) =>
-      (query.get(key) ?? "").split(",").filter(Boolean)
-    setPicks({
-      repos: read("repos"),
-      owners: read("owners"),
-      status: read("status"),
-      labels: read("labels"),
-      move: read("move"),
-    })
-  }, [])
-
+  /* Written back to the URL, so a filtered board is shareable and can be
+     installed to a home screen as its own view — one per facet, so a link says
+     which dimension it narrowed. Reading it back is the server's job now, and
+     deliberately not also a job here: two readers is how the board came to
+     disagree with its own shell. */
   useEffect(() => {
     const url = new URL(location.href)
     for (const key of [
