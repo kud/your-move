@@ -956,7 +956,7 @@ html:has([popover]:popover-open) main {
 
 @media (min-width: 768px) {
   .ym-skeleton-grid {
-    grid-template-columns: 150px repeat(7, 300px) 0px;
+    grid-template-columns: 180px repeat(7, 300px) 0px;
   }
 }
 
