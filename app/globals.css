@@ -36,6 +36,11 @@
     sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
+  /* How far the eye travels along a line, held the same in all three panel
+     widths. Argued at `.measure` further down — the number is the side panel's
+     own content width, which is why it can never bind there. */
+  --measure: 590px;
+
   --ease-flip: cubic-bezier(0.22, 1, 0.36, 1);
 
   /*
@@ -245,6 +250,65 @@ body {
   min-height: calc(
     100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
   );
+}
+
+/*
+ * ═══ THE MEASURE ═══
+ *
+ * How far the eye travels along a line, held constant across all three panel
+ * widths. `Side`, `Modal` and `Full` change how MUCH of a row you see and how
+ * much chrome sits around it. None of them changes how long a line is.
+ *
+ * The three widths are literal numbers in `detail.tsx`, so the content widths
+ * are arithmetic rather than estimate:
+ *
+ *   Side    620 − 1 border − 32 padding =  587px
+ *   Modal   780 − 2 border − 32 padding =  746px
+ *   Full    viewport − 32 padding       = 1408px on a 1440 desk
+ *
+ * Against a readable 45–75 characters those are about 84–95, 107–120 and 200+.
+ * The band is honest rather than coy: mean character advance in this sans is not
+ * something this file can measure, so it is bracketed by two independent
+ * anchors — 6.2px taken off the rendered panel, and 6.96px derived from the
+ * equivalence `lib/markdown.tsx` already asserts between 500 characters and the
+ * six lines its height cap draws. The conclusion holds at either end, and it is
+ * the uncomfortable one: THE MODE MEANT TO GIVE THE TEXT ROOM WAS THE LEAST
+ * READABLE OF THE THREE.
+ *
+ * 590px is the side panel's own content width, rounded up. Two consequences,
+ * and both are why it beats a textbook 65ch:
+ *
+ *   THE DEFAULT MODE IS UNTOUCHED. `max()` falls back to the 1rem that was
+ *   already there, so Side and every phone width render identically to before —
+ *   provable from the numbers above rather than by looking. A cap that opens a
+ *   void in the view people actually use has bought readability in the wrong
+ *   currency, and that is the reason an earlier pass declined to cap at all.
+ *
+ *   84–95 characters is still over the textbook range, and stopping there is a
+ *   decision, not an oversight. Almost nothing on this panel runs long — a body
+ *   is cut at twelve lines and a comment at six — and the return-sweep cost that
+ *   makes a long measure tiring is what compounds over many lines. Tightening
+ *   further is available to whoever argues for it; it is not a gap to close in
+ *   passing.
+ *
+ * It caps the WHOLE column, not only the prose, and the obvious alternative is
+ * worth naming so it is not mistaken for something nobody considered: cap the
+ * text and let code blocks and tables run full width, the way an article lets a
+ * figure break its margin. Two things rule that out here. The verdict band, the
+ * labels and the section headings are full-width siblings of the prose, so
+ * capping paragraphs alone leaves a narrow ragged strip inside a wide panel
+ * wherever a comment contains no code — which is most comments — and a right
+ * edge that moves per element reads as inconsistency rather than as intent. And
+ * `lib/markdown.tsx` has already settled the other half: a wide table scrolls
+ * inside its own box rather than widening the layout. A full-bleed table would
+ * reverse that decision, not extend it.
+ *
+ * Padding rather than a wrapper element, so the scroll container keeps the
+ * panel's full width. A capped scroller would put the scrollbar 425px inside
+ * the frame on `Full` and leave both margins dead to the wheel.
+ */
+.measure {
+  padding-inline: max(1rem, calc((100% - var(--measure)) / 2));
 }
 
 /*
