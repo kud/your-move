@@ -10,7 +10,6 @@ import {
   type CSSProperties,
 } from "react"
 
-import { MarkMono } from "@/components/mark"
 import { RowLabels } from "@/components/row-labels"
 import { SectionMark } from "@/components/section-mark"
 import { presentationFor } from "@/lib/sections"
@@ -100,9 +99,10 @@ export const BOARD_W = LANE_W + COLUMNS.length * COL_W
  * column rather than as a divider.
  */
 /* `CLOSED.at(-1)` too: the board's own right edge is a boundary like any other
-   and the most final one on the grid — past it there is no next lifecycle, only
-   the runway the last column needs to reach its snap line. Drawn at the soft
-   weight it made the board appear to trail off rather than to end. */
+   and the most final one on the grid — past it there is no next lifecycle and,
+   on a wide screen, nothing at all. Drawn at the soft weight it made the board
+   appear to trail off rather than to end, and on wide it is now the only thing
+   saying where the board stops. */
 const SEAM_END = new Set([YOURS.at(-1), THEIRS.at(-1), CLOSED.at(-1)])
 
 export const DONE = "done"
@@ -920,17 +920,18 @@ export const Swimlanes = ({
     <div
       ref={scroller}
       /*
-       * `--ym-last` is an indirection the tail needs and nothing else uses: the
-       * runway is sized so the LAST column can reach its snap line, so folding
-       * that one column — and only that one — leaves it short by the difference
-       * between a column and a rail. A middle column folding does not touch it.
+       * `--ym-last` is an indirection the narrow tail needs and nothing else
+       * uses: there the runway is sized so the LAST column can reach its snap
+       * line, so folding that one column — and only that one — leaves it short
+       * by the difference between a column and a rail. A middle column folding
+       * does not touch it. Wide has no tail to size, so this is inert there.
        */
       style={
         cols.has(COLUMNS[COLUMNS.length - 1] ?? "")
           ? ({ "--ym-last": "var(--ym-rail)" } as CSSProperties)
           : undefined
       }
-      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:max(0px,calc(min(100dvw,var(--ym-frame))-3rem-2px-var(--ym-lane)-var(--ym-last)))] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
@@ -960,7 +961,7 @@ export const Swimlanes = ({
           onFoldCol={onFoldCol}
         />
 
-        {lanes.map((lane, laneIndex) => (
+        {lanes.map((lane) => (
           <Fragment key={lane.repo}>
             {/* Sticky left: without it you lose which lane you are in the
                 moment you scroll right, and the grid becomes unreadable. */}
@@ -1205,52 +1206,32 @@ export const Swimlanes = ({
               )
             })}
             {/*
-              The runway, past the board's right edge.
+              The runway, past the board's right edge — NARROW ONLY, and a few
+              dozen pixels of it.
 
-              It keeps its width — that is exactly what lets the last column
-              reach its snap line — and it carries no rule, no hatch and no
-              content. Zeroing the track was the other candidate and it is
-              wrong for the same reason.
+              Snapping is mandatory on a phone, one column at a time, so the
+              last column has to be able to reach the start line or the final
+              snap position is unreachable. That is what this track buys, and
+              at 64vw columns it costs `36vw - 130px`: ten pixels at 390.
 
-              What it does carry is a wash one step behind the panel, because
-              the trouble was never that it is empty. It is scroll runway, no
-              more content than the margin beside a paragraph — but it was
-              dressed as board, sitting on the panel's ground inside the panel's
-              border, so a thousand pixels of it read as a board that had failed
-              to fill. The fix is to stop the board claiming it.
+              On wide it is zero, which is the whole of this change. There the
+              width was `viewport - lane - column` — seventeen hundred pixels on
+              a large display — and it bought a gesture nobody wants: bringing
+              the LAST column to the reading position, where by definition there
+              is nothing to its right to read alongside it. So the board could
+              be scrolled into a void, scroll memory restored you into it, and
+              half the viewport was runway. A board ends at its last column; the
+              2px seam on `CLOSED.at(-1)` is what says so.
 
-              It used to hatch along with a folded lane, which was the one place
-              the fold's texture claimed a region that had never held anything.
+              Wide snapping is `proximity`, so nothing there depends on every
+              column being reachable at the start line. Narrow is `mandatory`,
+              which is why the two ends of the breakpoint answer differently.
+
+              The mark that used to rest here went with the space. It was only
+              ever legible once you had scrolled into the void, so it was a
+              consolation for the fault rather than a reason to keep it.
             */}
-            {/*
-              The runway, past the board's right edge — and on the first lane
-              only, the mark resting in it.
-
-              Anchored rather than centred, which is the whole of why it works:
-              this track's width is `max(0px, calc(...))` — about 700px on a
-              laptop, 1400px on a large display, 0px on a phone, and different
-              again the moment a column folds. Nothing can be COMPOSED against a
-              width like that; a centred object would be adrift on every screen
-              but one. Pinned a fixed distance past the seam, it never has to
-              know how much room it has.
-
-              Quiet enough to be furniture rather than content: it carries no
-              fact, it does not react to state, and it never moves. The moment
-              it reported anything you would start checking it, and a thing you
-              check is a UI element in the one region of the board nobody sees
-              without scrolling.
-
-              `hidden md:block` because on a phone this track is zero wide, and
-              `overflow-hidden` so a narrow runway clips it rather than letting
-              it paint over the board.
-            */}
-            <div className="runway relative overflow-hidden">
-              {laneIndex === 0 ? (
-                <MarkMono
-                  className="pointer-events-none absolute left-10 top-8 hidden h-auto w-[132px] text-fg opacity-[0.05] md:block"
-                />
-              ) : null}
-            </div>
+            <div className="runway relative overflow-hidden" />
           </Fragment>
         ))}
       </div>
