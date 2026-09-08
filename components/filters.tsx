@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
-import { REASON_TONE, shortName } from "@/components/board"
+import { REASON_TONE } from "@/components/board"
+import { shortName } from "@/lib/order"
 import type { Row } from "@/lib/github"
 import { emptyPicks, isEmptyPicks, samePicks, type View } from "@/lib/views"
 

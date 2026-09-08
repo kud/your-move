@@ -10,7 +10,8 @@ import {
 } from "react"
 
 import { RowLabels } from "@/components/row-labels"
-import { SectionMark } from "@/components/section-mark"
+import { PinMark, SectionMark } from "@/components/section-mark"
+import { shortName } from "@/lib/order"
 import { heatOf, presentationFor, type Heat } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
@@ -239,7 +240,6 @@ export const reasonFor = (row: Row): string => {
   return row.kind === "issue" ? "Issue" : "Open"
 }
 
-export const shortName = (repo: string) => repo.split("/").pop() ?? repo
 
 /** A cell shows this many, then says how many it is holding back. */
 const PER_CELL = 4
@@ -517,7 +517,17 @@ const CardBody = ({
    ellipsis that reveals a name you could already read. */
 const FITS = 11
 
-const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
+const LaneName = ({
+  lane,
+  columns,
+  pinned,
+  onPin,
+}: {
+  lane: Lane
+  columns: string[]
+  pinned: boolean
+  onPin: (repo: string) => void
+}) => {
   const repo = lane.repo
   const short = shortName(repo)
   const long = short.length > FITS
@@ -549,12 +559,31 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
         entirely and silently: no error, no warning, and a tap that does
         nothing. Which is exactly what it did.
       */}
+      {/*
+        Before the name, at a fixed x, and only when pinned.
+
+        The left edge of the lane column is what the eye runs down, so a mark
+        trailing a `line-clamp-2` name would land at a different x on every lane
+        and stop being scannable. And the slot is NOT reserved on unpinned lanes:
+        it would cost 14px of a 104px name everywhere to buy an alignment nobody
+        wants. Pinned lanes are contiguous, so the alignment breaks exactly once
+        — at the boundary of the pinned block — and that break IS the grouping,
+        drawn for free.
+
+        `text-fg-mute` and never the accent. Every coloured thing on this board
+        is a fact about the WORK; a pin is a fact about you. Neutral is the
+        statement, not a compromise.
+      */}
+      {pinned ? (
+        <PinMark className="size-3 shrink-0 text-fg-mute" />
+      ) : null}
+
       <button
         type="button"
         /* No tooltip. The tap opens a panel whose first line is the full
            `owner/name`, so a hover copy would be a redundant fallback for a
            mechanism that is already there and better. */
-        aria-label={`About ${repo}`}
+        aria-label={`About ${repo}${pinned ? ", pinned" : ""}`}
         popoverTarget={id}
         onClick={(e) => e.stopPropagation()}
         data-lane-name=""
@@ -603,6 +632,36 @@ const LaneName = ({ lane, columns }: { lane: Lane; columns: string[] }) => {
                 </p>
               )
             })}
+        </div>
+
+        {/*
+          Above the ways out, not among them. The panel reads identity → counts
+          → breakdown → exits, and a state change dropped into a list of three
+          outbound links reads as a fourth destination.
+
+          The copy is stable in both states and the state rides `aria-pressed`
+          plus the trailing word: a label flipping "Pin"/"Unpin" changes the
+          row's width and makes you read it to learn where you are. "To the top"
+          also teaches what the new mark means, which it has to do somewhere.
+        */}
+        <div className="mt-2 border-t border-line-soft pt-1">
+          <button
+            type="button"
+            aria-pressed={pinned}
+            onClick={() => onPin(repo)}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-fg-mute hover:bg-raise hover:text-fg aria-pressed:text-fg"
+          >
+            <PinMark
+              className={`size-3 shrink-0 ${pinned ? "text-fg" : "text-fg-quiet"}`}
+            />
+            Pin to the top
+            {/* The footer's `labels only` idiom, so the state reads as house
+                vocabulary rather than invention — and as a WORD, so it never
+                rests on the mark's fill alone. */}
+            <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.12em] text-fg-quiet">
+              {pinned ? "on" : "off"}
+            </span>
+          </button>
         </div>
 
         <div className="mt-2 border-t border-line-soft pt-1">
@@ -1052,6 +1111,8 @@ export const Swimlanes = ({
   scroller,
   folded,
   onFold,
+  pinned,
+  onPin,
   cols,
   onFoldCol,
   arrived,
@@ -1068,6 +1129,8 @@ export const Swimlanes = ({
   scroller: React.Ref<HTMLDivElement>
   folded: Set<string>
   onFold: (repo: string) => void
+  pinned: Set<string>
+  onPin: (repo: string) => void
   cols: Set<string>
   onFoldCol: (id: string) => void
   /* Row urls that changed column since the previous read. */
@@ -1376,7 +1439,12 @@ export const Swimlanes = ({
                   </svg>
                 </button>
 
-                <LaneName lane={lane} columns={columns} />
+                <LaneName
+                  lane={lane}
+                  columns={columns}
+                  pinned={pinned.has(lane.repo)}
+                  onPin={onPin}
+                />
               </div>
 
               {/*

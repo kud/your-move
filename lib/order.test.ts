@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { byCellOrder } from "./order.js"
+import { byCellOrder, byLaneOrder } from "./order.js"
 import type { Row } from "./github.js"
 
 /*
@@ -70,5 +70,87 @@ describe("byCellOrder", () => {
         row("you", "draft", 300, "newer-draft"),
       ]),
     ).toEqual(["newer-draft", "older-draft"])
+  })
+})
+
+/*
+ * A lane order that is wrong is still a lane order, and the only person who
+ * could notice is one who already knew where the lane should have been. These
+ * pin the two things pinning promised: that it leads under BOTH modes, and that
+ * it changes nothing else about either.
+ */
+const lane = (repo: string, yours: number, total: number) => ({
+  repo,
+  yours,
+  total,
+})
+
+const lanes = (
+  how: "urgency" | "name",
+  pins: string[],
+  ls: ReturnType<typeof lane>[],
+) => [...ls].sort(byLaneOrder(how, new Set(pins))).map((l) => l.repo)
+
+describe("byLaneOrder", () => {
+  it("leaves urgency exactly as it was when nothing is pinned", () => {
+    expect(
+      lanes("urgency", [], [
+        lane("kud/quiet", 0, 9),
+        lane("kud/one-of-yours", 1, 1),
+        lane("kud/busiest", 4, 40),
+      ]),
+    ).toEqual(["kud/busiest", "kud/one-of-yours", "kud/quiet"])
+  })
+
+  it("lifts a quiet pinned project over one that is shouting", () => {
+    expect(
+      lanes("urgency", ["kud/quiet"], [
+        lane("kud/busiest", 4, 40),
+        lane("kud/quiet", 0, 1),
+      ]),
+    ).toEqual(["kud/quiet", "kud/busiest"])
+  })
+
+  /* The point of a leading key rather than a third mode: inside each group the
+     order you chose is untouched. */
+  it("keeps the chosen order within the pinned group and within the rest", () => {
+    expect(
+      lanes("urgency", ["kud/pinned-quiet", "kud/pinned-loud"], [
+        lane("kud/loose-loud", 3, 30),
+        lane("kud/pinned-quiet", 0, 2),
+        lane("kud/loose-quiet", 0, 1),
+        lane("kud/pinned-loud", 2, 20),
+      ]),
+    ).toEqual([
+      "kud/pinned-loud",
+      "kud/pinned-quiet",
+      "kud/loose-loud",
+      "kud/loose-quiet",
+    ])
+  })
+
+  it("leads under the name sort too, not only under urgency", () => {
+    expect(
+      lanes("name", ["kud/zebra"], [
+        lane("kud/apple", 0, 1),
+        lane("kud/zebra", 0, 1),
+        lane("kud/mango", 0, 1),
+      ]),
+    ).toEqual(["kud/zebra", "kud/apple", "kud/mango"])
+  })
+
+  it("sorts by the name you can see, not by owner/repo", () => {
+    expect(
+      lanes("name", [], [lane("zzz/apple", 0, 1), lane("aaa/zebra", 0, 1)]),
+    ).toEqual(["zzz/apple", "aaa/zebra"])
+  })
+
+  /* A pin promotes; it never conjures. A repository with no lane has no row to
+     sort, so an empty or filtered-out pin is simply absent — and returns the
+     moment it has something to show. */
+  it("cannot bring back a lane that the board is not drawing", () => {
+    expect(
+      lanes("urgency", ["kud/absent"], [lane("kud/present", 0, 1)]),
+    ).toEqual(["kud/present"])
   })
 })

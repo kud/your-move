@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 
-import { REASON_TONE, reasonFor, shortName } from "@/components/board"
+import { REASON_TONE, reasonFor } from "@/components/board"
+import { shortName } from "@/lib/order"
 import { DOT } from "@/components/filters"
 import type { Row } from "@/lib/github"
 
