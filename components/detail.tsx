@@ -48,6 +48,10 @@ type Detail = {
   mergeable: string | null
   reviewDecision: string | null
   author?: string
+  /* Sent by `/api/row` since it was written, and declared nowhere until now —
+     so it crossed the wire on every open and was discarded on arrival. It is
+     the one absolute date in here; everything else is relative. */
+  createdAt?: string
   body: string
   labels: string[]
   unresolved: number
@@ -284,6 +288,39 @@ export const Detail = ({
   }, [onClose])
 
   const verdict = verdictFor(row, detail)
+
+  /*
+   * Who made this, how old it is, and whether anyone has touched it since.
+   *
+   * \`age\` is when it was opened and \`activityAge\` is when it last moved — two
+   * different facts that happen to be the same number on a row nobody has
+   * answered yet. So the last-touch segment asks whether anything ACTUALLY
+   * happened — a different hand on it, or a different age — rather than whether
+   * the field is present. Otherwise the panel prints "opened 12d · last 12d",
+   * which is one fact said twice and presented as two.
+   *
+   * The detail's author wins over the row's: same field, but the row's may have
+   * come from a \`minimal\` fetch that never asked for it.
+   */
+  const author = detail?.author ?? row.author
+  const moved =
+    (row.lastActor && row.lastActor !== author) ||
+    (row.activityAge && row.activityAge !== row.age)
+  const meta = [
+    author ? `by ${author}` : undefined,
+    row.age ? `opened ${row.age}` : undefined,
+    moved
+      ? `last ${[row.lastActor, row.activityAge].filter(Boolean).join(" ")}`
+      : undefined,
+  ].filter((part): part is string => Boolean(part))
+
+  /* The one absolute date, and it stays in the tooltip: the line reads in
+     relative time because "how long has this been sitting" is the question, and
+     the exact stamp is there for the one time it is not. Client-only — the
+     detail arrives from a fetch — so no locale can differ across a hydration. */
+  const opened = detail?.createdAt
+    ? new Date(detail.createdAt).toLocaleString()
+    : undefined
   const failures = detail?.checks.filter((c) =>
     /FAIL|ERROR|TIMED|CANCEL/i.test(c.state),
   )
@@ -330,6 +367,43 @@ export const Detail = ({
             <h2 className="mt-1 text-pretty font-serif text-[20px] font-semibold leading-tight">
               {row.title}
             </h2>
+
+            {/*
+              Provenance, which the panel was losing.
+
+              Opening a card dropped two things the card itself had just shown —
+              who wrote it and how old it is — so going from the summary to the
+              detail made the answer smaller. That is backwards, and it is most
+              of what "missing metadata" meant.
+
+              In the HEADER and not the body, because every word of it is already
+              in hand: it comes off the row, so it is drawn at once and never
+              shimmers. The panel's own rule, one screen down — only what needs a
+              request is allowed to shimmer.
+
+              Assembled as segments rather than written as a sentence, because
+              four of these five fields are optional and a `minimal` fetch makes
+              them vanish rather than degrade. A missing segment leaves no gap and
+              no stray separator; all of them missing leaves no line at all.
+            */}
+            {meta.length ? (
+              <p
+                className="mt-1.5 font-mono text-[11.5px] leading-relaxed text-fg-quiet"
+                title={opened}
+              >
+                {meta.join("  ·  ")}
+              </p>
+            ) : null}
+
+            {/* Its own line and its own weight: a branch is a thing you are
+                about to type somewhere, not a fact you are reading. Meaningless
+                on an issue, so it is asked of the kind rather than of the
+                value. */}
+            {row.kind === "pr" && row.branch ? (
+              <p className="mt-1 truncate font-mono text-[11.5px] text-fg-mute">
+                {row.branch}
+              </p>
+            ) : null}
           </div>
 
           {/* At the top of the ticket as well as in the settings, and the same
