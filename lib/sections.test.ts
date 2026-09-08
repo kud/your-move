@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import { INBOX_SOURCES } from "@kud/gh/inbox"
 
-import { COLUMNS, DONE, sectionOf } from "@/components/board"
+import { cellRule, COLUMNS, DONE, sectionOf } from "@/components/board"
 import { heatOf, PRESENTED_SECTIONS, STALE_AFTER } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
@@ -299,5 +299,24 @@ describe("how long a row may sit before the card says so", () => {
     expect(at(band!.hot - 0.01)).toBe("warm")
     expect(at(band!.hot)).toBe("hot")
     expect(at(band!.hot * 10)).toBe("hot")
+  })
+})
+
+/*
+ * The board's right edge belongs to the panel's border, not to a column.
+ *
+ * A seam on the final column has nothing on its far side, and it cannot sit
+ * where the panel's border sits — a border is outside the content box the grid
+ * is laid in. So the two can only ever be adjacent, which reads as one edge
+ * drawn badly rather than as two edges.
+ */
+describe("the board's right edge", () => {
+  it("is not drawn twice", () => {
+    expect(cellRule(COLUMNS.at(-1) ?? "")).toBe("")
+  })
+
+  it("still separates every column that has one beside it", () => {
+    for (const column of COLUMNS.slice(0, -1))
+      expect(cellRule(column), `${column} keeps its seam`).toContain("border-r")
   })
 })
