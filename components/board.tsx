@@ -79,6 +79,15 @@ export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
  *
  * These two must stay in step with `--ym-lane` and `--ym-col` in the scroller's
  * class list, which have to stay literal for Tailwind to see them.
+ *
+ * This is the GRID's width, and the frame around it must be told to add its own
+ * gutters — `max-w-[calc(var(--ym-frame) + 3rem)]`, not `max-w-[var(--ym-frame)]`.
+ * The reason is `box-sizing: border-box`, which Preflight sets on everything: a
+ * `max-width` of 2250 on an element with `px-6` leaves a 2202 content box, so
+ * the frame capped the board 48px BELOW its natural width and clipped 16% off
+ * the last column — no right-hand seam, card titles sliced mid-word. Which is
+ * the very thing the paragraph above says a cap must never do; the intent was
+ * right and the arithmetic was one term short.
  */
 const LANE_W = 150
 const COL_W = 300
