@@ -1122,3 +1122,66 @@ html:has([popover]:popover-open) main {
     transform: translateX(-50%);
   }
 }
+
+/*
+ * How long this has sat here, drawn as heat.
+ *
+ * "A fire effect, neat but subtle" was the ask, and a flame at card scale is a
+ * sticker — seven columns of them would be a novelty the second time you opened
+ * the board. What the flame was standing in for is the feeling that something
+ * has been left, so this is an ember under the card rather than a picture of a
+ * fire: a bar on the BOTTOM edge, faded out at both ends so it reads as glow and
+ * not as a rule or a progress bar.
+ *
+ * The bottom edge because it is the only edge left. The leading edge carries the
+ * bar that says the move is yours, the border belongs to `ym-arrived`, and the
+ * background answers hover — a heat treatment on any of those would be a second
+ * thing speaking where something already speaks.
+ *
+ * `brass` and no new hue. It is already the board's warm one, and its two
+ * existing weights mean "broken" and "in flight" — both of which are "this wants
+ * you", which is what an old row is saying too. A fifth colour would have had to
+ * earn a meaning of its own; this inherits one it already agrees with.
+ *
+ * Cheap on purpose: a background gradient and an opacity, no filter and no blur,
+ * because a board draws a great many cards at once and the note above about
+ * backdrop blur applies with more force to something that could be on all of
+ * them at once.
+ */
+.ym-heat {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brass) 28%,
+    var(--color-brass) 72%,
+    transparent
+  );
+  /* The resting strength, declared OUTSIDE the animation — same reason the
+     shimmer declares its own dimness up at the top of this file. Reduced motion
+     zeroes every duration here, so anything that says its piece only while
+     moving says nothing at all to the reader who turned motion off. What the
+     animation does is dip BELOW this and come back; killing it leaves the ember
+     lit rather than dark. */
+  opacity: 0.32;
+}
+
+.ym-heat-hot {
+  opacity: 0.8;
+  animation: ym-ember 4.5s ease-in-out infinite;
+}
+
+/*
+ * Slow enough not to be a blink, shallow enough not to be a pulse. `ym-arrived`
+ * is the board's one deliberate ATTENTION animation and it lasts 1.6s; this has
+ * to read as ambient beside it, or the board acquires a second thing that moves
+ * to be looked at.
+ */
+@keyframes ym-ember {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

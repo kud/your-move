@@ -136,3 +136,63 @@ export const SOURCE_TITLES: Record<InboxSource, string> = {
 
 export const sourceTitle = (source: string) =>
   SOURCE_TITLES[source as InboxSource] ?? source
+
+/*
+ * How long a row may sit in a column before the card says so.
+ *
+ * Per column, because "too long" is a fact about the column and not about the
+ * row: a review request at four days is someone waiting on you, and the same
+ * four days in `done` is simply history. A single global age would mark the
+ * wrong things, and mostly it would mark the archive.
+ *
+ * `done` is deliberately absent, and absence rather than a large number is the
+ * honest way to say it — there is no age at which a finished thing becomes a
+ * problem, so there is no threshold to tune. The bands are days, and they widen
+ * as the column's business gets less urgent: something addressed to you ages
+ * fast, something you filed yourself ages slowly.
+ */
+export const STALE_AFTER: Record<string, { warm: number; hot: number }> = {
+  /* Somebody cannot land their work until you look. */
+  review: { warm: 2, hot: 5 },
+  incoming: { warm: 3, hot: 7 },
+  /* Your own PR: past a week it has usually stopped being in flight. */
+  open: { warm: 3, hot: 7 },
+  /* You have done your part; this is how long they have not done theirs. */
+  reviewed: { warm: 3, hot: 10 },
+  assigned: { warm: 7, hot: 21 },
+  issues: { warm: 14, hot: 45 },
+}
+
+export type Heat = "warm" | "hot"
+
+const DAY = 86_400_000
+
+/*
+ * Measured from the row's own recency stamp against the moment of the READ, not
+ * against the clock.
+ *
+ * Two reasons, and the second is the one that would have bitten. The board's
+ * whole posture is "here is the answer, and here is how old it is", so heat
+ * derived from the same instant as the rest of the answer is consistent with it.
+ * And a heat computed from `Date.now()` in render would be computed twice — once
+ * on the server, once on the client — which for any row sitting within a
+ * hairsbreadth of a threshold means the two disagree and React reports a
+ * hydration mismatch on a card that is merely a day old.
+ *
+ * `ts` is the same stamp the board sorts by, so the cards that go hot are the
+ * ones already sinking to the bottom of their column. It is 0 rather than
+ * undefined when the item had no date to sort on — which is 1970, and would set
+ * every one of them alight.
+ */
+export const heatOf = (
+  column: string,
+  ts: number,
+  now?: number,
+): Heat | undefined => {
+  const band = STALE_AFTER[column]
+  if (!band || !now || !ts) return undefined
+  const days = (now - ts) / DAY
+  if (days >= band.hot) return "hot"
+  if (days >= band.warm) return "warm"
+  return undefined
+}

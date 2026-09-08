@@ -1060,6 +1060,7 @@ export const Inbox = ({
                     arrived={arrived}
                     inApp={openMode !== "github"}
                     viewer={inbox?.login}
+                    now={inbox?.fetchedAt}
                   />
                 </div>
               </>
