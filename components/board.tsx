@@ -303,6 +303,7 @@ const CardBody = ({
   onOpen,
   arrived,
   inApp,
+  viewer,
 }: {
   row: Row
   onChanged: OnLabelChange
@@ -312,9 +313,33 @@ const CardBody = ({
   /* False when the setting says a row opens on GitHub, in which case this is
      an ordinary link and the app gets out of the way. */
   inApp: boolean
+  viewer?: string
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
+
+  /*
+   * Whose work this is — shown only when it is not yours.
+   *
+   * Three of the seven columns are your own work by definition, so an author
+   * there would read `@you` on every card in the column: a fifth thing on a
+   * dense card, in the one place it can never differentiate two rows. The
+   * columns where it earns its place are the ones holding other people's work,
+   * and there it answers the question the board is otherwise silent on — you can
+   * see that something wants you and not who is on the other end of it.
+   *
+   * Undefined rather than blank when a `minimal` fetch omitted the field, which
+   * is the same nothing an author who happens to be you renders as. The line
+   * below has to tolerate absence either way, so making the common case absent
+   * costs nothing it was not already paying.
+   *
+   * A login and not an avatar: an avatar is a request per author on a board that
+   * draws a great many cards at once, it is identity carried by colour alone,
+   * and its URL is not in the payload — so it would cost a wider query to say
+   * less.
+   */
+  const byOther =
+    row.author && row.author !== viewer ? row.author : undefined
 
   return (
     <article className={`ym-card group relative rounded-[9px] border border-line bg-panel-2 p-2.5 hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
@@ -398,7 +423,18 @@ const CardBody = ({
           {REASON_TONE[reason] === "alarm" ? <span aria-hidden>! </span> : null}
           {reason}
         </span>
-        <span className="ml-auto shrink-0 font-mono text-[12px] tabular-nums text-fg-quiet">
+        {byOther ? (
+          /* Between the chip and the age, at the age's weight: this is
+             metadata about the row, not a second claim about its state. */
+          <span
+            className="min-w-0 truncate font-mono text-[12px] text-fg-quiet"
+            title={byOther}
+          >
+            {byOther}
+          </span>
+        ) : null}
+
+        <span className="ml-auto shrink-0 pl-1 font-mono text-[12px] tabular-nums text-fg-quiet">
           {row.activityAge ?? row.age}
         </span>
       </div>
@@ -556,6 +592,7 @@ const Cell = ({
   onOpen,
   arrived,
   inApp,
+  viewer,
 }: {
   rows: Row[]
   cap: number
@@ -563,6 +600,7 @@ const Cell = ({
   onOpen: (row: Row) => void
   arrived: Set<string>
   inApp: boolean
+  viewer?: string
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -577,6 +615,7 @@ const Cell = ({
             onOpen={onOpen}
             arrived={arrived.has(row.url)}
             inApp={inApp}
+            viewer={viewer}
           />
       ))}
       {rows.length > cap && !all ? (
@@ -886,6 +925,7 @@ export const Swimlanes = ({
   onFoldCol,
   arrived,
   inApp,
+  viewer,
 }: {
   lanes: Lane[]
   columns: string[]
@@ -902,6 +942,8 @@ export const Swimlanes = ({
   arrived: Set<string>
   /* Whether a card opens the panel or simply follows its link. */
   inApp: boolean
+  /* The signed-in login, so a card can tell whose work it is showing. */
+  viewer?: string
 }) => {
   /*
    * Every column the same width, including the empty ones.
@@ -1292,6 +1334,7 @@ export const Swimlanes = ({
                             onOpen={onOpen}
                             arrived={arrived}
                             inApp={inApp}
+                            viewer={viewer}
                           />
                         </div>
                       ) : null}
