@@ -840,13 +840,17 @@ html:has([popover]:popover-open) main {
 /*
  * The runway past the board's right edge — not board, and not content.
  *
- * This track exists so `Recently done` can reach the left snap line. It holds
- * nothing and never will. On the panel's own ground, inside the panel's own
- * border, it read as board that had failed to fill — which is why a thousand
- * pixels of it felt like a fault rather than an edge. A flat wash drawn from
- * the grid's own hairline value puts it a step BEHIND the surface that holds
- * cards, so it reads as the inside of the frame rather than as an empty region
- * of the board.
+ * NARROW ONLY now: `--ym-tail` is `0px` at `md`, so on a wide screen the board
+ * ends at the last column's seam and this rule paints nothing. It survives for
+ * the phone, where snapping is mandatory and the last column needs a few dozen
+ * pixels to reach the start line.
+ *
+ * The wash is what keeps those pixels from reading as board. On the panel's own
+ * ground, inside the panel's own border, an empty track read as a board that had
+ * failed to fill. Drawn from the grid's own hairline value it sits a step BEHIND
+ * the surface holding cards, so it reads as the inside of the frame instead.
+ * That was the fix while the wide runway was seventeen hundred pixels; the wide
+ * runway is now zero, which is the fix that was actually wanted.
  *
  * Flat, deliberately. Hatching is spoken for: there it means "content, folded
  * away", and the runway is the opposite fact — nothing is in it, nothing was,
