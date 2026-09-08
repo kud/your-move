@@ -89,3 +89,48 @@ export const SectionMark = ({
     {MARKS[id] ?? FALLBACK}
   </svg>
 )
+
+/*
+ * Not a member of `MARKS`, deliberately. That map is keyed by column id and is
+ * the section alphabet; a key in it that names no column corrupts the set.
+ * It lives in this file anyway, because the geometry rules above are what it
+ * has to obey and an edit made anywhere else would not know they exist.
+ *
+ * A bar with a triangle pressed up under it — held against the ceiling. Not a
+ * pushpin: at 12px a pushpin needs perspective and a shadow to read as one, and
+ * this family has neither.
+ */
+export const PinMark = ({ className = "size-3" }: { className?: string }) => (
+  <svg
+    viewBox="0 0 12 12"
+    aria-hidden
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1.9 2.2H10.1" />
+    <path d="M6 3.9 10.1 9.3H1.9Z" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+/* Drawn here for the same reason as `PinMark`: the 12 viewBox, the 1.25 stroke
+   and the round joins are what keep it sitting with the fold chevron instead of
+   importing a third drawing style into the app. */
+export const CopyMark = ({ className = "size-3" }: { className?: string }) => (
+  <svg
+    viewBox="0 0 12 12"
+    aria-hidden
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="4.1" y="4.1" width="6" height="6" rx="1.4" />
+    <path d="M7.9 1.9H3.3a1.4 1.4 0 0 0-1.4 1.4v4.6" />
+  </svg>
+)

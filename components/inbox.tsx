@@ -19,7 +19,6 @@ import {
   FRAME,
   reasonFor,
   sectionOf,
-  shortName,
   Swimlanes,
   type Lane,
 } from "@/components/board"
@@ -45,7 +44,7 @@ import { WritableRepos } from "@/components/use-writable"
 import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
-import { byCellOrder } from "@/lib/order"
+import { byCellOrder, byLaneOrder, shortName } from "@/lib/order"
 import {
   presentationFor,
   sourceTitle,
@@ -159,6 +158,11 @@ export const Inbox = ({
   const [picks, setPicks] = useState<Picks>(() => initialPicks ?? emptyPicks())
   const [active, setActive] = useState<string>()
   const [folded, setFolded] = useState<Set<string>>(new Set())
+  /* Pinned PROJECTS, the promoting twin of `folded`. Folding compresses what
+     you do not care about; a pin lifts what you do, which is the same want
+     approached from the other end and the only one of the two that works on a
+     day the project is quiet. Same per-device rationale, same shape, own key. */
+  const [pinned, setPinned] = useState<Set<string>>(new Set())
   /* Folded COLUMNS, the horizontal twin of `folded`. Same per-device rationale
      as the comment below, same shape, its own key. */
   const [cols, setCols] = useState<Set<string>>(new Set())
@@ -180,6 +184,8 @@ export const Inbox = ({
       if (saved) setFolded(new Set(JSON.parse(saved) as string[]))
       const savedCols = localStorage.getItem("ym:cols")
       if (savedCols) setCols(new Set(JSON.parse(savedCols) as string[]))
+      const savedPins = localStorage.getItem("ym:pinned")
+      if (savedPins) setPinned(new Set(JSON.parse(savedPins) as string[]))
     } catch {
       /* A private window, cleared site data, or storage refused outright — an
          unfolded board is the correct fallback and needs no explanation. */
@@ -214,6 +220,32 @@ export const Inbox = ({
       else next.add(repo)
       try {
         localStorage.setItem("ym:folded", JSON.stringify([...next]))
+      } catch {}
+      return next
+    })
+  }, [])
+
+  /*
+   * A pin is a name, and a name is all it is — deliberately the weak form.
+   *
+   * `lib/views.ts` sets out why enumerating repository names is the wrong shape
+   * for a FILTER: the set is a copy of your repository list as of the moment you
+   * ticked it, and "it goes wrong by omission the moment a repository is added —
+   * silently". Read that comment before reopening this. It condemns the shape
+   * there and acquits it here, because for a pin the identical omission is the
+   * correct behaviour: a repository you have just acquired is simply not pinned
+   * yet. `ym:folded` has relied on exactly this since it shipped.
+   *
+   * Unbounded on purpose. A cap would only earn itself if "pinned" stopped
+   * meaning anything past five or six, and nothing here can know that number.
+   */
+  const pin = useCallback((repo: string) => {
+    setPinned((was) => {
+      const next = new Set(was)
+      if (next.has(repo)) next.delete(repo)
+      else next.add(repo)
+      try {
+        localStorage.setItem("ym:pinned", JSON.stringify([...next]))
       } catch {}
       return next
     })
@@ -367,31 +399,11 @@ export const Inbox = ({
             yours: rows.filter((r) => r.move === "you").length,
           }
         })
-        /*
-         * Urgency by default, and that is the app's name rather than an arbitrary
-         * choice: Your Move puts the thing that wants you at position one. Sorted
-         * by name it would be a repository list, and there are a great many
-         * repository lists.
-         *
-         * The alternative exists for the opposite want — a project always being
-         * in the same place, for when you arrive looking for one by name rather
-         * than reading down what is in front of you. By the name you can SEE,
-         * not `owner/repo`, since the owner is not on screen.
-         *
-         * Two states only. A third dynamic order — "recently active" — would
-         * deliver none of the stability that motivates the second one, and would
-         * need "active by whom, on what" answered first: a data decision wearing
-         * a sort's costume. Theo's call.
-         */
-        .sort((a, b) =>
-          order === "name"
-            ? shortName(a.repo).localeCompare(shortName(b.repo))
-            : Number(b.yours > 0) - Number(a.yours > 0) ||
-              b.yours - a.yours ||
-              b.total - a.total,
-        )
+        /* Pins first, then urgency or name. The rule and the reasoning behind
+           all three keys live in `lib/order.ts`. */
+        .sort(byLaneOrder(order, pinned))
     )
-  }, [shown, order])
+  }, [shown, order, pinned])
 
   /* Tapping a card leaves the app entirely on a phone; this is what brings you
      back to the same place rather than to the first column. */
@@ -1184,6 +1196,8 @@ export const Inbox = ({
                     scroller={scroller}
                     folded={folded}
                     onFold={fold}
+                    pinned={pinned}
+                    onPin={pin}
                     cols={cols}
                     onFoldCol={foldCol}
                     arrived={arrived}
