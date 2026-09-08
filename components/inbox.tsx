@@ -77,9 +77,13 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
 export const Inbox = ({
   initial,
   picks: initialPicks,
+  offline = false,
 }: {
   initial?: InboxData
   picks?: Picks
+  /* Set only by `/offline`, which hands in a board read back from this device
+     and needs every path to GitHub to leave rather than fail. See `useInbox`. */
+  offline?: boolean
 }) => {
   /* Declared before the hook that consumes it. */
   const [doneDays, setDoneDays] = useState<7 | 14 | 30>(7)
@@ -134,6 +138,7 @@ export const Inbox = ({
   const { inbox, liveness, refresh, applyLabel, age } = useInbox(
     initial,
     doneDays,
+    offline,
   )
   /*
    * The server already read the URL — see `app/page.tsx` — so this starts
@@ -664,7 +669,7 @@ export const Inbox = ({
     <>
       <Sky />
 
-      <WritableRepos repos={repos.map((r) => r.name)}>
+      <WritableRepos repos={repos.map((r) => r.name)} offline={offline}>
         <main
           style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
           className={FRAME}
@@ -765,7 +770,15 @@ export const Inbox = ({
                 {...tip("Find anything  ⌘K")}
                 className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-fg-mute transition-colors hover:border-accent hover:text-fg"
               >
-                <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden
+                  className="size-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                >
                   <circle cx="7" cy="7" r="4.25" />
                   <path d="M10.2 10.2 L13.5 13.5" />
                 </svg>
@@ -802,6 +815,30 @@ export const Inbox = ({
           </header>
 
           <Launcher rows={all} commands={commands} onOpen={openRow} />
+
+          {/*
+            In the frame, not in the header.
+
+            The header already carries `○ Offline ·` and it is not enough, for a
+            reason particular to that line: it sits beside the age, and an age
+            beside a title reads as "recently refreshed" at a glance — the exact
+            opposite of what this has to say. A stale board is only better than
+            no board while the label cannot be missed, so the label takes
+            layout, pushes the board down, and stays there.
+
+            Glyph, word and age together — `○` is "open/absent" in the same
+            lexicon the liveness dot uses, and none of the three is doing the
+            work alone. It carries no action of its own: the header's own
+            refresh is already the way back, and offline it navigates home
+            rather than refetching.
+          */}
+          {liveness === "offline" && inbox ? (
+            <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
+              <span aria-hidden>○ </span>
+              <strong>Offline.</strong> This is the last board this device saw,{" "}
+              {freshness}. Nothing on it will change until you are back.
+            </p>
+          ) : null}
 
           {liveness === "expired" ? (
             <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
@@ -897,9 +934,7 @@ export const Inbox = ({
               ) : null}
               <button
                 type="button"
-                onClick={() =>
-                  setPicks(emptyPicks())
-                }
+                onClick={() => setPicks(emptyPicks())}
                 /* A rule rather than `ml-auto`: with the banner at content
                    width there is no free space to push into, and the divider
                    is what keeps an ACTION from reading as one more segment. */
