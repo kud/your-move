@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import type { Inbox } from "@/lib/github"
+import { readKept, writeKept } from "@/lib/kept"
 
 /*
  * Polling, not a stream.
@@ -55,41 +56,19 @@ const REFETCH_IF_OLDER_MS = 2 * 60 * 1000
 const BUDGET_FLOOR = 500
 
 /*
- * The last good board, kept in this browser.
+ * The last good board is kept in the browser rather than leant on from the
+ * server cache, and `lib/kept.ts` owns the whole of that policy — the schema
+ * stamp, the age ceiling, and what may be believed after a round trip.
  *
- * There is a cache on the server too, and for this — the case it was built for —
- * it is nearly useless: it lives in a serverless instance's memory, so a cold
- * start has nothing, and it only ever remembers a COMPLETE answer. Spend the
- * hourly budget and every subsequent fetch fails, so there is often nothing to
- * fall back to precisely when a fallback is wanted.
- *
- * The browser has none of those problems. It is the same device that saw the
- * good answer, it survives instances and deploys, and it costs no
- * infrastructure. It also stays honest by construction: the stored board keeps
- * its original `fetchedAt`, so the page says "as of 40 minutes ago" rather than
- * pretending to be current. A board that is an hour old and says so beats an
- * empty one that says nothing could be read.
+ * Why the browser at all: the server cache lives in a serverless instance's
+ * memory, so a cold start has nothing, and it only ever remembers a COMPLETE
+ * answer. Spend the hourly budget and every subsequent fetch fails, so there is
+ * often nothing to fall back to precisely when a fallback is wanted. The browser
+ * has none of those problems — same device, survives deploys, costs no
+ * infrastructure — and it stays honest by construction, because the stored board
+ * keeps its original `fetchedAt` and the page says "as of 40 minutes ago" rather
+ * than pretending to be current.
  */
-const KEPT = "ym:last"
-
-const keep = (inbox: Inbox) => {
-  if (inbox.failed.length) return
-  try {
-    localStorage.setItem(KEPT, JSON.stringify(inbox))
-  } catch {
-    /* Quota, a private window, or storage refused outright. Losing the fallback
-       is not worth a failed render. */
-  }
-}
-
-const kept = (): Inbox | undefined => {
-  try {
-    const saved = localStorage.getItem(KEPT)
-    return saved ? (JSON.parse(saved) as Inbox) : undefined
-  } catch {
-    return undefined
-  }
-}
 
 export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
   const [inbox, setInbox] = useState<Inbox | undefined>(initial)
@@ -136,20 +115,20 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
          the quiet staleness this design exists to avoid. */
       if (response.status === 401) return setLiveness("expired")
       if (!response.ok) {
-        setInbox((was) => was ?? kept())
+        setInbox((was) => was ?? readKept())
         return setLiveness("stale")
       }
 
       const next = (await response.json()) as Inbox
       setInbox(next)
-      keep(next)
+      writeKept(next)
       lastFetched.current = next.fetchedAt
       budget.current = next.budget?.remaining
       setLiveness("live")
     } catch {
       /* fetch throws on network failure, which is the offline case rather than
          a bad answer from a reachable server. */
-      setInbox((was) => was ?? kept())
+      setInbox((was) => was ?? readKept())
       setLiveness("offline")
     } finally {
       inFlight.current = false
@@ -158,7 +137,7 @@ export const useInbox = (initial?: Inbox, doneDays: 7 | 14 | 30 = 7) => {
 
   useEffect(() => {
     if (!initial) {
-      const last = kept()
+      const last = readKept()
       if (last) {
         setInbox(last)
         setLiveness("stale")
