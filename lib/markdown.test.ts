@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { clamped, safeHref } from "./markdown.js"
+import { clamped, Markdown, safeHref } from "./markdown.js"
 
 /*
  * The one property in the renderer whose failure is not cosmetic.
@@ -87,4 +87,99 @@ describe("clamped", () => {
     const body = `${"a".repeat(600)}\n${"b".repeat(600)}`
     expect(clamped(body)).toBe(body)
   })
+})
+
+/*
+ * The parser must always consume a line — the one failure here that is not a
+ * wrong render but a dead tab.
+ *
+ * Every field the detail fetch supplied went missing from the panel while the
+ * header, fed from the row, stayed perfect, and the console carried no
+ * exception at all — only `Uncaught out of memory`. With nothing thrown it read
+ * as a component choosing its empty branch, which is the one thing it was not
+ * doing: it never finished rendering.
+ *
+ * The mechanism is two patterns disagreeing about one line. GitHub returns
+ * plenty of bodies with CRLF endings, `split("\n")` leaves the `\r` on the end
+ * of every line, and then the heading branch `/^(#{1,6})\s+(.*)$/` does NOT
+ * match `"## A\r"` — `.` cannot cross a `\r` and `$` wants end-of-input — while
+ * the paragraph guard, a bare prefix with no `$`, matches it happily. No branch
+ * consumes the line, `i` never advances, and an empty <p> is appended for ever.
+ *
+ * Headings are only the first door: both list matchers end in the same `(.*)$`,
+ * so a CRLF body containing a LIST reaches the same non-termination by another
+ * branch. That is why the fix normalises line endings at the split rather than
+ * patching the single pattern that happened to be caught, and why the loop also
+ * advances unconditionally when the paragraph collector takes nothing.
+ *
+ * These fail by TIMING OUT against the unfixed parser rather than by asserting
+ * false, which is the honest shape for non-termination: there is no wrong value
+ * to compare against, only an answer that never arrives. Run against the parser
+ * as it was, they took the vitest worker down with an out-of-memory kill.
+ */
+
+/* The crashing payload's SHAPE, never its contents: CRLF breaks, `##` headings,
+   inline backticks and a fenced block, which is how a real description tends to
+   arrive. */
+const CRLF_BODY = [
+  "Restores the previous behaviour after the reversal path was corrected.",
+  "",
+  "## What happened",
+  "",
+  "The queue event was written once, up front, before the batch loop ran.",
+  "The worker then handles one batch at a time and writes its rows on success.",
+  "",
+  "`items` carries `CONSTRAINT uidx UNIQUE (event_id, item_id)`, so one item",
+  "can hold only a single row per event.",
+  "",
+  "### Why it matters",
+  "",
+  "```sql",
+  "SELECT item_id, SUM(amount) FROM items GROUP BY item_id;",
+  "```",
+  "",
+  "Only three event names ever carry these rows.",
+].join("\r\n")
+
+const CRLF_LIST = ["Intro line.", "", "- first", "- second", "- third"].join(
+  "\r\n",
+)
+
+const blocksOf = (source: string) =>
+  (Markdown({ source }) as { props: { children: unknown[] } }).props.children
+
+describe("a body with CRLF line endings", () => {
+  it(
+    "terminates, and renders a bounded number of blocks",
+    { timeout: 5000 },
+    () => {
+      const blocks = blocksOf(CRLF_BODY)
+
+      /* The unfixed parser never reaches this line. If one ever does again, the
+       count is the tell — it appended one empty paragraph per spin. */
+      expect(blocks.length).toBeGreaterThan(0)
+      expect(blocks.length).toBeLessThan(40)
+    },
+  )
+
+  it(
+    "terminates when the undecidable line is a list item",
+    { timeout: 5000 },
+    () => {
+      expect(blocksOf(CRLF_LIST).length).toBeLessThan(40)
+    },
+  )
+
+  /* Not merely "it did not hang": the heading has to arrive as a heading, or
+     the fix would be satisfied by dropping the line on the floor. */
+  it(
+    "reads a CRLF heading as a heading, and keeps no carriage return",
+    { timeout: 5000 },
+    () => {
+      const text = JSON.stringify(blocksOf(CRLF_BODY))
+
+      expect(text).toContain("What happened")
+      expect(text).not.toContain("\\r")
+    },
+  )
 })

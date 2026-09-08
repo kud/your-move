@@ -184,7 +184,31 @@ export const Markdown = ({ source }: { source: string }) => {
    * nothing, so leaving them visible was not "showing more", it was showing
    * the scaffolding of the form somebody filled in.
    */
-  const lines = source.replace(/<!--[\s\S]*?-->/g, "").split("\n")
+  /*
+   * CRLF is normalised BEFORE the split, and it is a correctness fix rather
+   * than tidiness.
+   *
+   * GitHub returns plenty of bodies with `\r\n` endings, and `split("\n")` then
+   * leaves a `\r` sitting on the end of every line. Every anchored pattern in
+   * this file ends `(.*)$` — the heading, both list forms — and neither half of
+   * that can cross a `\r`: `.` excludes it as a line terminator and `$` wants
+   * the end of the input. So `"## Why\r"` fails the heading branch, while the
+   * paragraph guard below it is a bare PREFIX with no `$` and matches happily.
+   *
+   * Two patterns disagreeing about one line is not a cosmetic defect here. No
+   * branch consumes it, `i` never advances, and the paragraph push at the foot
+   * of the loop appends an empty <p> for ever: the panel died with `Uncaught
+   * out of memory` and every field the detail fetch had supplied went missing,
+   * with no exception anywhere to say why.
+   *
+   * Normalising here rather than fixing the heading regex is the point. The
+   * list matchers carry the identical `(.*)$`, so patching the one pattern that
+   * was caught would have left the same trap behind two other doors.
+   */
+  const lines = source
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
   const blocks: ReactNode[] = []
   let i = 0
 
@@ -366,6 +390,36 @@ export const Markdown = ({ source }: { source: string }) => {
       !/^\s*(```|#{1,6}\s|>|[-*+]\s|\d+[.)]\s)/.test(lines[i])
     )
       body.push(lines[i++])
+
+    /*
+     * EVERY PASS OF THIS LOOP MUST EAT AT LEAST ONE LINE.
+     *
+     * The paragraph collector is the last branch, so it is the one that has to
+     * make progress when no earlier branch claimed the line. It can collect
+     * nothing: its guard is a PREFIX test while the branches above it are
+     * ANCHORED matches, and any line the guard rejects but no branch accepts
+     * falls through here having advanced nothing. `i` is unchanged, an empty
+     * <p> is appended, and the next pass reads the same line again — for ever,
+     * until the tab runs out of memory.
+     *
+     * That is not hypothetical: a `\r`-terminated heading did exactly this, and
+     * the normalisation at the top of this function is what stops that
+     * particular line from being undecidable. This is the other half, and it is
+     * the half that does not need to know which line it was. The guard and the
+     * branches are hand-reconciled — six alternatives in one regex, matched
+     * against four separate patterns elsewhere in the loop — so the next
+     * disagreement between them is a question of when, not whether. Skipping
+     * the line renders it as nothing, which is wrong; spinning renders the
+     * whole panel as nothing, which is fatal. Prefer the wrong one.
+     *
+     * Same instinct as the edge vocabulary's rule (a) in `app/globals.css`:
+     * where two pieces of code could both decide one thing, the failure is
+     * always that they hold different opinions and neither yields.
+     */
+    if (!body.length) {
+      i++
+      continue
+    }
 
     /*
      * A single newline is a line break, not a space.
