@@ -1122,6 +1122,24 @@ export const Swimlanes = ({
        * on what happens to be folded today. Dividing by the constant means a fold
        * spends its width into the space after the last column instead, exactly as
        * it already did when the columns were fixed. Columns never move.
+       *
+       * UNVERIFIED, and written down because nothing will ever prompt anyone to
+       * look: `scrollbar-gutter: stable` on a scroller that scrolls BOTH axes
+       * is suspected of reserving the horizontal gutter as well as the vertical
+       * one. For the overlay scrollbars almost everyone has, the reserve is
+       * zero and there is nothing to see. For anyone running macOS with "Show
+       * scroll bars: Always" — or on a mouse rather than a trackpad, which
+       * turns that setting on by default — a permanent classic scrollbar could
+       * leave a spurious horizontal bar along the foot of the board even where
+       * the content fits.
+       *
+       * It has never been observed, only reasoned about, and it cannot be
+       * observed from Erwann's machine because his scrollbars are the overlay
+       * kind. The property earns its place regardless: without it the board
+       * jumps sideways by a scrollbar's width the moment a column grows long
+       * enough to scroll. So this is a note for whoever hits the symptom, not a
+       * defect to pre-emptively fix — `stable both-edges` and dropping to a
+       * single-axis scroller are the two things to try, in that order.
        */
       className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-4px-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
