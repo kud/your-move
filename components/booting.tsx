@@ -21,23 +21,30 @@ import { Mark } from "@/components/mark"
  *
  * The GRID does not reflow at hand-off, and that much is by construction rather
  * than by care: `BoardSkeleton` mounts the board's own `BoardHead`, and the two
- * track lists resolve to the same 2250px. What is NOT yet true is the frame
- * around it. A filtered board renders a chip row that this shell has no
- * counterpart for, so at hand-off a whole row appears and shoves the board
- * down; and the loaded board is a scroll container where this shell is
- * `overflow-hidden`, so where the OS draws classic scrollbars one side reserves
- * a gutter the other does not.
+ * track lists resolve to the same 2250px.
  *
- * Both are being fixed. Until they are, do not let this comment say the
- * hand-off is still — it was written as an intention and read as a fact, which
- * is how it survived a screen recording that plainly showed otherwise. The one thing
- * a header cannot honestly say yet is a count, so it says `–` rather than `0`.
+ * The chip row is the one that had to be handed in. A filtered board carries a
+ * row this shell had no counterpart for, so at hand-off a whole row appeared and
+ * shoved the board down — and the row's presence is not something the shell can
+ * work out for itself, because it is a fact about the URL rather than about the
+ * data. `app/page.tsx` reads it once and tells both halves; `filtered` is that
+ * answer. It reserves the box and nothing else: how MANY facets, and what they
+ * are called, are still unknown here, and a shell that guessed at them would be
+ * inventing the one thing it exists to avoid inventing.
+ *
+ * Still true, and still not fixed: the loaded board is a scroll container where
+ * this shell is `overflow-hidden`, so where the OS draws classic scrollbars one
+ * side reserves a gutter the other does not. Do not let this comment say the
+ * hand-off is entirely still — that sentence was once written as an intention
+ * and read as a fact, which is how it survived a screen recording that plainly
+ * showed otherwise. The one thing a header cannot honestly say yet is a count,
+ * so it says `–` rather than `0`.
  *
  * It used to be one shimmering rectangle where the board goes, which is exactly
  * the grey bar this comment claimed it was not.
  */
 
-export const Booting = () => (
+export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
   <main
     style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
     className="relative z-10 mx-auto flex h-safe max-w-[var(--ym-frame)] flex-col px-3 pb-3 pt-4 md:px-6 md:pb-6 md:pt-8"
@@ -73,6 +80,27 @@ export const Booting = () => (
         <div className="shimmer size-8 rounded-full border border-line bg-panel-2" />
       </div>
     </header>
+
+    {/*
+      The chip row's BOX, at the size the real one will be.
+
+      Every class here that affects height is copied from the row in
+      `inbox.tsx` — `mb-2`, `py-1.5`, the border, and the `12.5px` text that
+      sets the line box. The ones that affect WIDTH are deliberately not: the
+      real row is `w-fit`, so its width is a fact about the sentence inside it,
+      and this shell does not know the sentence. Width costs nothing here
+      anyway — nothing to the right of it moves, and nothing below it cares.
+
+      "Filtered to" is drawn for real because it is true: the URL said so. The
+      part that shimmers is the part that is genuinely unknown, which is the
+      same line this shell draws everywhere else.
+    */}
+    {filtered ? (
+      <div className="mb-2 flex w-fit max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-accent/50 bg-accent-dim px-2.5 py-1.5 text-[12.5px] text-fg-mute">
+        <span className="shrink-0">Filtered to</span>
+        <span className="shimmer h-[13px] w-28 rounded bg-panel-2" />
+      </div>
+    ) : null}
 
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-[0_1px_0_rgba(255,255,255,.04)_inset,0_30px_80px_-40px_rgba(0,0,0,.9)]">
       <BoardSkeleton />
