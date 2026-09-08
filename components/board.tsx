@@ -852,12 +852,31 @@ export const BoardHead = ({
  */
 const foldable = () => matchMedia("(min-width: 768px)").matches
 
-/* One place that knows a seam's weight, so the shell's cells and the board's
-   cannot disagree about where a lifecycle ends. */
+/*
+ * One place that knows a seam's weight, so the shell's cells and the board's
+ * cannot disagree about where a lifecycle ends.
+ *
+ * The LAST column draws no right rule at all, and that is not an omission.
+ *
+ * Every other seam separates two things; this one would have nothing on its far
+ * side, because the panel's own `border-line` is already the board's right edge.
+ * The two can never coincide either — a border sits OUTSIDE the content box the
+ * grid is laid in — so the best they could ever manage is adjacent, which is a
+ * 2px rule, a gap, and a 1px rule reading as one botched edge.
+ *
+ * It looked right for as long as it was invisible. The frame used to cap the
+ * board 48px below its own width, so the final seam was simply clipped off the
+ * end and nobody saw it; the day the frame started fitting its grid, the seam
+ * arrived — and the 2px of rounding slack the column formula holds put a gap
+ * either side of it. Three changes, none of them wrong, and the thing they
+ * uncovered was a rule that had never had a reason to exist.
+ */
 export const cellRule = (id: string) =>
-  SEAM_END.has(id)
-    ? "border-r-2 border-r-line"
-    : "border-r border-r-line-soft"
+  id === COLUMNS.at(-1)
+    ? ""
+    : SEAM_END.has(id)
+      ? "border-r-2 border-r-line"
+      : "border-r border-r-line-soft"
 
 /*
  * Three lanes, and deliberately fewer than a real board.
