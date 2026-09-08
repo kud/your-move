@@ -33,6 +33,7 @@ the app ships: `public/icons/` and `assets/` are rendered from `svg/` below.
 | App icon, favicon, anything square  | [`svg/icon.svg`](svg/icon.svg)                   | `png/icon-{16,32,180,192,512,1024}.png`                  |
 | App icon on a light ground          | [`svg/icon-light.svg`](svg/icon-light.svg)       | [`png/icon-light-512.png`](png/icon-light-512.png)       |
 | Android home screen, adaptive icons | [`svg/icon-maskable.svg`](svg/icon-maskable.svg) | [`png/icon-maskable-512.png`](png/icon-maskable-512.png) |
+| Link preview — OpenGraph, X         | — composed, see below                            | [`png/og-1200x630.png`](png/og-1200x630.png)             |
 
 `mark*` and `logo*` have transparent backgrounds; the mono variants are ivory,
 so recolour their path fills for other single-ink uses. The `icon*` variants are
@@ -97,6 +98,22 @@ for name in icon-light icon-maskable; do
     --export-width=512 --export-filename="brand/png/$name-512.png"
 done
 ```
+
+The link preview is the one asset with no SVG of its own, on purpose: it is the
+dark lockup on the app's own ground and nothing else, so a source file would be
+a second copy of geometry that already exists. It is composed from the export
+above rather than rendered, which also means it needs no rasteriser installed.
+
+```sh
+magick -size 1200x630 xc:'#0b0c0e' \( brand/png/logo-2880.png -filter Lanczos -resize 560x \) -gravity center -composite -strip brand/png/og-1200x630.png
+```
+
+Then copy it to `app/opengraph-image.png`, where Next's file convention picks it
+up and writes the tags. 1200 × 630 is the OpenGraph aspect and every platform
+respects it; the lockup is held at 560px so that it still clears the edges if
+one centre-crops the card to a square. It carries **no words** — the unfurl
+draws the title and the description beside it, and a board screenshot would be
+somebody's repository list.
 
 Keep the emblem geometry consistent across the variants, and preserve the empty
 channel between the two forms in mono — it is the only thing separating them
