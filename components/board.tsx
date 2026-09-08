@@ -12,7 +12,7 @@ import {
 
 import { RowLabels } from "@/components/row-labels"
 import { SectionMark } from "@/components/section-mark"
-import { presentationFor } from "@/lib/sections"
+import { heatOf, presentationFor, type Heat } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
 /*
@@ -304,6 +304,7 @@ const CardBody = ({
   arrived,
   inApp,
   viewer,
+  heat,
 }: {
   row: Row
   onChanged: OnLabelChange
@@ -314,6 +315,8 @@ const CardBody = ({
      an ordinary link and the app gets out of the way. */
   inApp: boolean
   viewer?: string
+  /* How long this has sat in its column, or nothing. */
+  heat?: Heat
 }) => {
   const reason = reasonFor(row)
   const yours = row.move === "you"
@@ -343,6 +346,21 @@ const CardBody = ({
 
   return (
     <article className={`ym-card group relative rounded-[9px] border border-line bg-panel-2 p-2.5 hover:bg-raise has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-fg ${arrived ? "ym-arrived" : ""}`}>
+      {/*
+        The ember, on the edge nothing else claims.
+
+        Present or absent is the first step and it is a SHAPE, so the fact
+        survives a reader who cannot separate brass from the panel behind it.
+        Warm and hot are then told apart by the age below changing weight as
+        well as colour, so neither step rests on hue alone.
+      */}
+      {heat ? (
+        <span
+          aria-hidden
+          className={`ym-heat absolute inset-x-2.5 bottom-0 h-[2px] rounded-full ${heat === "hot" ? "ym-heat-hot" : ""}`}
+        />
+      ) : null}
+
       {/* Position and shape, not hue alone: a bar on the leading edge. */}
       {yours ? (
         <span
@@ -434,7 +452,14 @@ const CardBody = ({
           </span>
         ) : null}
 
-        <span className="ml-auto shrink-0 pl-1 font-mono text-[12px] tabular-nums text-fg-quiet">
+        {/* The age IS the staleness, so it is what changes rather than some
+            new badge beside it — and it gains weight as well as warmth, which
+            is the second channel the hot step needs. */}
+        <span
+          className={`ml-auto shrink-0 pl-1 font-mono text-[12px] tabular-nums ${
+            heat === "hot" ? "font-medium text-brass" : "text-fg-quiet"
+          }`}
+        >
           {row.activityAge ?? row.age}
         </span>
       </div>
@@ -593,6 +618,8 @@ const Cell = ({
   arrived,
   inApp,
   viewer,
+  column,
+  now,
 }: {
   rows: Row[]
   cap: number
@@ -601,6 +628,8 @@ const Cell = ({
   arrived: Set<string>
   inApp: boolean
   viewer?: string
+  column: string
+  now?: number
 }) => {
   const [all, setAll] = useState(false)
   const shown = all ? rows : rows.slice(0, cap)
@@ -616,6 +645,7 @@ const Cell = ({
             arrived={arrived.has(row.url)}
             inApp={inApp}
             viewer={viewer}
+            heat={heatOf(column, row.ts, now)}
           />
       ))}
       {rows.length > cap && !all ? (
@@ -926,6 +956,7 @@ export const Swimlanes = ({
   arrived,
   inApp,
   viewer,
+  now,
 }: {
   lanes: Lane[]
   columns: string[]
@@ -944,6 +975,9 @@ export const Swimlanes = ({
   inApp: boolean
   /* The signed-in login, so a card can tell whose work it is showing. */
   viewer?: string
+  /* When this answer was read. Heat is measured against it rather than against
+     the clock — see `heatOf`. */
+  now?: number
 }) => {
   /*
    * Every column the same width, including the empty ones.
@@ -1335,6 +1369,8 @@ export const Swimlanes = ({
                             arrived={arrived}
                             inApp={inApp}
                             viewer={viewer}
+                            column={id}
+                            now={now}
                           />
                         </div>
                       ) : null}

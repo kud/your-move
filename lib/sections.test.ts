@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest"
 
 import { INBOX_SOURCES } from "@kud/gh/inbox"
 
-import { COLUMNS, sectionOf } from "@/components/board"
-import { PRESENTED_SECTIONS } from "@/lib/sections"
+import { COLUMNS, DONE, sectionOf } from "@/components/board"
+import { heatOf, PRESENTED_SECTIONS, STALE_AFTER } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
 /*
@@ -242,5 +242,62 @@ describe("the board against the box that holds it", () => {
       expect(lane + (divisor - 1) * colAt(vw) + rail).toBeLessThanOrEqual(
         scrollerBoxAt(vw),
       )
+  })
+})
+
+/*
+ * Staleness heat is a per-column threshold, so the thing that can go wrong is
+ * not the arithmetic — it is a column quietly having no opinion, or having the
+ * wrong one, on a board where a column is added by editing an array.
+ */
+describe("how long a row may sit before the card says so", () => {
+  it("has an opinion about every column that is still live work", () => {
+    for (const column of COLUMNS.filter((c) => c !== DONE))
+      expect(STALE_AFTER[column], `${column} says when it is stale`).toBeDefined()
+  })
+
+  /* Not an oversight to be filled in later: there is no age at which a finished
+     thing becomes a problem, and a threshold there would set the archive alight. */
+  it("has no opinion about the archive", () => {
+    expect(STALE_AFTER[DONE]).toBeUndefined()
+  })
+
+  it("never puts hot before warm", () => {
+    for (const [column, band] of Object.entries(STALE_AFTER))
+      expect(band.hot, `${column} gets hotter, not cooler`).toBeGreaterThan(
+        band.warm,
+      )
+  })
+
+  it("marks nothing in the archive, however old", () => {
+    const now = Date.UTC(2026, 0, 1)
+    expect(heatOf(DONE, now - 400 * 86_400_000, now)).toBeUndefined()
+  })
+
+  /*
+   * The one that would have shipped. `ts` is 0 — not undefined — when the item
+   * had no date to sort on, and 0 is 1970: without the guard every such card
+   * would be maximally, permanently on fire, and it would look like a real
+   * signal rather than like missing data.
+   */
+  it("does not set an item with no date alight", () => {
+    expect(heatOf("review", 0, Date.UTC(2026, 0, 1))).toBeUndefined()
+  })
+
+  it("says nothing until the read's own timestamp is known", () => {
+    expect(heatOf("review", Date.UTC(2020, 0, 1), undefined)).toBeUndefined()
+  })
+
+  it("steps at its own thresholds and not before", () => {
+    const now = Date.UTC(2026, 0, 1)
+    const band = STALE_AFTER.review
+    expect(band).toBeDefined()
+    const at = (days: number) => heatOf("review", now - days * 86_400_000, now)
+
+    expect(at(band!.warm - 0.01)).toBeUndefined()
+    expect(at(band!.warm)).toBe("warm")
+    expect(at(band!.hot - 0.01)).toBe("warm")
+    expect(at(band!.hot)).toBe("hot")
+    expect(at(band!.hot * 10)).toBe("hot")
   })
 })
