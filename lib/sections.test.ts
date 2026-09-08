@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import { INBOX_SOURCES } from "@kud/gh/inbox"
 
-import { cellRule, COLUMNS, DONE, sectionOf } from "@/components/board"
+import { BOARD_W, cellRule, COLUMNS, DONE, sectionOf } from "@/components/board"
 import { heatOf, PRESENTED_SECTIONS, STALE_AFTER } from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
@@ -88,8 +88,15 @@ describe("the skeleton's hardcoded track count", () => {
    * would hand over to a board of a different width. That is the same reflow the
    * chip row used to cause, on the other axis and harder to spot, because a
    * board 30px wider than its own skeleton looks like nothing until you put the
-   * two frames side by side. Read as text on purpose: importing `board.tsx` here
-   * would pull React in for two numbers.
+   * two frames side by side.
+   *
+   * The CLASS LIST and the CSS are read as text because there is no other way
+   * to reach them — a Tailwind arbitrary value and a stylesheet are not
+   * importable. The constants are a different matter: this file already imports
+   * `board.tsx` at the top, so `BOARD_W` costs nothing and is asserted below.
+   * (A note here used to say the import would pull React in for two numbers.
+   * That stopped being true when `COLUMNS` and `sectionOf` were imported, and
+   * it was the argument keeping the seam untested.)
    */
   it("still matches the board's own track widths", () => {
     const board = source("../components/board.tsx")
@@ -146,7 +153,6 @@ describe("the skeleton's hardcoded track count", () => {
   })
 })
 
-
 /*
  * Whether the board fits the box that holds it — which is the whole of whether a
  * horizontal scrollbar appears.
@@ -178,7 +184,10 @@ describe("the board against the box that holds it", () => {
   const border = Number(board.match(/const PANEL_BORDER_W = (\d+)/)?.[1])
 
   it("declares every number this rests on", () => {
-    expect(col, "the wide --ym-col is in the shape this test reads").not.toBeNull()
+    expect(
+      col,
+      "the wide --ym-col is in the shape this test reads",
+    ).not.toBeNull()
     for (const [name, value] of [
       ["lane", lane],
       ["frame gutters", frameRem],
@@ -187,7 +196,9 @@ describe("the board against the box that holds it", () => {
       expect(Number.isFinite(value), `the board declares ${name}`).toBe(true)
   })
 
-  const [floor, gutterRem, guard, divisor, ceiling] = (col ?? []).slice(1).map(Number)
+  const [floor, gutterRem, guard, divisor, ceiling] = (col ?? [])
+    .slice(1)
+    .map(Number)
   const REM = 16
   const gutters = frameRem * REM
 
@@ -209,15 +220,33 @@ describe("the board against the box that holds it", () => {
     Math.min(vw, widest + gutters) - gutters - border
   const gridAt = (vw: number) => lane + divisor * colAt(vw)
 
+  /*
+   * The one comparison that crosses the gap — and for a while it did not.
+   *
+   * This asserted `widest` against the very expression `widest` is defined
+   * from, three lines above: `lane + divisor * ceiling + border` on both sides.
+   * It could not fail. That is worse than an absent test, because it was green
+   * and it was named after the check it was not performing, and the name is
+   * what stops anyone looking twice.
+   *
+   * `widest` is parsed out of the scroller's TAILWIND CLASS LIST; `BOARD_W` is
+   * computed from the TYPESCRIPT CONSTANTS. Those are the two sources with no
+   * way to see each other, so this is the seam the rest of the file exists to
+   * pin. Without it, moving `LANE_W` to 200 while leaving `md:[--ym-lane:180px]`
+   * alone left every test passing and the frame running 20px past its own grid.
+   */
   it("matches the frame cap the component actually exports", () => {
-    expect(widest).toBe(lane + divisor * ceiling + border)
+    expect(widest).toBe(BOARD_W)
   })
 
   it("never overflows while the columns are still stretching", () => {
     const over: number[] = []
     for (let vw = 768; vw <= 4000; vw++)
       if (colAt(vw) > floor && gridAt(vw) > scrollerBoxAt(vw)) over.push(vw)
-    expect(over, "viewports where a scrollbar appears with room to spare").toEqual([])
+    expect(
+      over,
+      "viewports where a scrollbar appears with room to spare",
+    ).toEqual([])
   })
 
   it("still overflows below the clamp's floor, so the last column stays reachable", () => {
@@ -253,7 +282,10 @@ describe("the board against the box that holds it", () => {
 describe("how long a row may sit before the card says so", () => {
   it("has an opinion about every column that is still live work", () => {
     for (const column of COLUMNS.filter((c) => c !== DONE))
-      expect(STALE_AFTER[column], `${column} says when it is stale`).toBeDefined()
+      expect(
+        STALE_AFTER[column],
+        `${column} says when it is stale`,
+      ).toBeDefined()
   })
 
   /* Not an oversight to be filled in later: there is no age at which a finished
