@@ -246,17 +246,32 @@ export const shortName = (repo: string) => repo.split("/").pop() ?? repo
 const PER_CELL = 4
 const DONE_PER_CELL = 2
 
-/** The fold transition, shared by the CSS below and the unmount that follows. */
-/* Long enough for the eye to follow the row down rather than notice it gone.
+/*
+ * The two beats of a fold: the cards leaving, then the box moving.
+ *
+ * These mirror `--dur-pointer` and `--dur-fold` in `app/globals.css`, written
+ * twice because CSS cannot hand a number to a `setTimeout` and TypeScript
+ * cannot reach into a stylesheet. What that USED to mean is that nothing caught
+ * a drift; `lib/fold.test.ts` now reads the stylesheet and asserts both against
+ * these, which is the same move `lib/sections.test.ts` makes for `BOARD_W`.
+ * Change one and the test names the other.
+ *
+ * `--dur-fold` is long enough for the eye to follow the row down rather than
+ * notice it gone. `--dur-pointer` is the fade in front of it, and it is the
+ * same beat in both directions — only its PLACE in the sequence changes.
+ */
+export const LEAD_MS = 150
+export const FOLD_MS = 280
 
-   This is `--dur-fold` in `app/globals.css`, written twice because CSS cannot
-   hand a number to a `setTimeout` and TypeScript cannot reach into a
-   stylesheet. The two are hand-reconciled and there is no mechanism that
-   catches a drift — the timer only exists to unmount the cards afterwards, so
-   finishing EARLY is the failure that shows: the cards leave the tree before
-   the animation they were meant to play has finished. Change one, change the
-   other. */
-const FOLD_MS = 280
+/*
+ * How long the cards stay mounted after a fold is asked for.
+ *
+ * The WHOLE sequence, not just the compress, plus slack. The timer exists only
+ * to unmount them once the fold is over, so finishing EARLY is the one failure
+ * that shows: the cards leave the tree part-way through the animation they were
+ * kept mounted to play.
+ */
+const SETTLE_MS = LEAD_MS + FOLD_MS + 40
 
 export const Slot = ({ id, tone }: { id: string; tone: string }) => (
   <span
@@ -1094,6 +1109,32 @@ export const Swimlanes = ({
   const [settlingCols, setSettlingCols] = useState<Set<string>>(new Set())
   const beforeCols = useRef(cols)
 
+  /*
+   * Which way the column fold is going, derived DURING RENDER rather than in an
+   * effect.
+   *
+   * The delay that sequences the two beats has to sit on the one shared
+   * `grid-template-columns` below, because that single style is what every
+   * column's width comes from. The lane axis needs no equivalent: `shut` is a
+   * prop, so its delay and its `0fr` land in the same commit and are right in
+   * both directions by construction.
+   *
+   * An effect would be a frame late, and a frame late here is not a rough edge
+   * — the track has already started moving under the PREVIOUS fold's delay. An
+   * opening column would sit still for 150ms on nothing; a closing one would
+   * compress straight through the cards it was meant to wait for, which is the
+   * behaviour this whole change exists to remove.
+   *
+   * `cols` is a `useState` set in `Inbox`, so its identity changes only when its
+   * contents do and this cannot loop.
+   */
+  const [seenCols, setSeenCols] = useState(cols)
+  const [colsClosing, setColsClosing] = useState(false)
+  if (seenCols !== cols) {
+    setColsClosing([...cols].some((id) => !seenCols.has(id)))
+    setSeenCols(cols)
+  }
+
   useEffect(() => {
     const changed = [
       ...[...folded].filter((repo) => !before.current.has(repo)),
@@ -1103,7 +1144,7 @@ export const Swimlanes = ({
     if (!changed.length) return
 
     setSettling(new Set(changed))
-    const done = setTimeout(() => setSettling(new Set()), FOLD_MS + 40)
+    const done = setTimeout(() => setSettling(new Set()), SETTLE_MS)
     return () => clearTimeout(done)
   }, [folded])
 
@@ -1116,7 +1157,7 @@ export const Swimlanes = ({
     if (!changed.length) return
 
     setSettlingCols(new Set(changed))
-    const done = setTimeout(() => setSettlingCols(new Set()), FOLD_MS + 40)
+    const done = setTimeout(() => setSettlingCols(new Set()), SETTLE_MS)
     return () => clearTimeout(done)
   }, [cols])
 
@@ -1181,7 +1222,9 @@ export const Swimlanes = ({
       className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-4px-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
-        className="grid min-w-max content-start transition-[grid-template-columns] duration-(--dur-fold) [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
+        className={`grid min-w-max content-start transition-[grid-template-columns] duration-(--dur-fold) [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
+          colsClosing ? "delay-(--dur-pointer)" : "delay-0"
+        }`}
         style={{ gridTemplateColumns: track }}
       >
         {/*
@@ -1393,7 +1436,7 @@ export const Swimlanes = ({
                   {rows.length ? (
                     <span
                       className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-(--dur-enter) ${
-                        shut ? "opacity-100 delay-100" : "opacity-0"
+                        shut ? "opacity-100 delay-(--dur-pointer)" : "opacity-0"
                       }`}
                     >
                       {rows.length}
@@ -1414,8 +1457,17 @@ export const Swimlanes = ({
                       than as smooth. This curve leaves quickly and settles
                       slowly, with no overshoot, so nothing bounces at the end.
                     */
+                    /*
+                      The delay is what sequences the fold, and it is directional
+                      by construction: `shut` carries both the target track and
+                      the wait, so closing compresses AFTER the cards have gone
+                      and opening starts at once. See the two-beat block in
+                      `globals.css`.
+                    */
                     className={`grid transition-[grid-template-rows] duration-(--dur-fold) [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
-                      shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+                      shut
+                        ? "grid-rows-[0fr] delay-(--dur-pointer)"
+                        : "grid-rows-[1fr] delay-0"
                     }`}
                   >
                     {/*
@@ -1469,9 +1521,22 @@ export const Swimlanes = ({
                           stutter is what turns a slide into a squash.
                         */
                         <div
+                          /*
+                            The cards' own beat. Out on either axis closing, in
+                            on either axis opening — and NOTHING at rest, which
+                            is the case that is easy to miss: `ym-fold-in` holds
+                            its subject at zero through a 280ms delay, so left
+                            on permanently it would blank every card on first
+                            paint and fight the column stagger the cell above
+                            already runs.
+                          */
                           className={`flex flex-col gap-3 ${
-                            colShut || colMoving ? "w-[var(--ym-col)]" : ""
-                          }`}
+                            shut || colShut
+                              ? "ym-fold-out"
+                              : moving || colMoving
+                                ? "ym-fold-in"
+                                : ""
+                          } ${colShut || colMoving ? "w-[var(--ym-col)]" : ""}`}
                         >
                           <Cell
                             rows={rows}
