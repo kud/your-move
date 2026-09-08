@@ -47,7 +47,6 @@ import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
 import {
-  hiddenRows,
   presentationFor,
   sourceTitle,
   truncations,
@@ -907,30 +906,65 @@ export const Inbox = ({
             changes there carry no news. Nothing reads this yet — the notice is
             the honest floor, not the fix.
 
-            Tone, glyph and placement are Iris's to settle: this is the plainest
-            true version, deliberately, so the design decision is hers and not
-            an accident of whoever plumbed the number.
+            Tone, glyph and placement were left plain on purpose, for the design
+            decision to be taken rather than inherited from whoever plumbed the
+            number. Settled now, and each of the four is a rule this board
+            already holds elsewhere:
+
+            THE LEAD SENTENCE SAYS THE CONSEQUENCE, NOT THE MECHANISM. It read
+            "GitHub matched more than this board asked for, so a count below is
+            what came back, not what exists", which is true and makes the reader
+            derive what it means for them. What they need is the thing they were
+            about to get wrong: a column's count is not its total. This board is
+            read at a glance to answer one question, so a notice that needs
+            parsing costs more than the truncation it reports.
+
+            "SAMPLE" IS GONE, and it was wrong as well as clumsy. A sample
+            claims to be representative; these are the rows one capped request
+            came back with, which is a different and weaker claim. "Capped" is
+            what actually happened and promises nothing it cannot keep.
+
+            NO GLYPH. `○` here would be a THIRD ring meaning — after `◌` for not
+            current and the header's liveness dot — and the two are near
+            indistinguishable at 12px, which is colour-only differentiation
+            wearing a shape's clothes. That is the rule this file breaks nowhere
+            else. The box, the tone step and the words already separate this
+            from the brass failure notice above it, so the ring was carrying no
+            load. Same answer as the offline banner: let the words do it.
+
+            THE NUMBERS ARE THE BRIGHT HALF. The caveat was bold over a quiet
+            list, which is emphasis pointing at the wrong thing — you have come
+            for `20 of 99`, not for the sentence explaining why it is there. So
+            the caveat sits in `fg-quiet` and the counts in `fg-mute` above it.
+
+            The disclosure went with it. It hid one line behind a triangle and
+            said nearly the same thing twice — "79 rows not shown", then
+            "showing 20 of 99" — so it split one fact across a click. Flat is
+            shorter than the affordance that concealed it. If this ever lists
+            enough sources to want folding again, that is the moment to argue
+            for it, not now.
+
+            PLACEMENT STANDS, and it is worth saying so rather than leaving it
+            unexamined. It sits under the failed-source notice and above the
+            filter banner, which reads worst-first: a source missing entirely,
+            then a source partly missing, then a set you narrowed yourself. That
+            is general to specific and severe to mild at once. A fourth notice
+            in this region would be the point at which the stack needs a rethink
+            — three is where it still reads as a column of facts about what you
+            are looking at.
           */}
           {sampled.length ? (
             <div className="mb-2 rounded-lg border border-line bg-panel-2 p-2.5 text-[12px]">
-              <p className="text-fg-mute">
-                <span aria-hidden>○ </span>
-                <strong>Some columns show a sample.</strong> GitHub matched more
-                than this board asked for, so a count below is what came back,
-                not what exists.
+              <ul className="text-fg-mute">
+                {sampled.map((t) => (
+                  <li key={t.source}>
+                    {t.title} — showing {t.shown} of {t.total}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-fg-quiet">
+                A column&rsquo;s count is capped, not its total.
               </p>
-              <details className="mt-1">
-                <summary className="cursor-pointer text-fg-quiet">
-                  {hiddenRows(sampled)} rows not shown
-                </summary>
-                <ul className="mt-1 text-fg-quiet">
-                  {sampled.map((t) => (
-                    <li key={t.source}>
-                      {t.title} — showing {t.shown} of {t.total}
-                    </li>
-                  ))}
-                </ul>
-              </details>
             </div>
           ) : null}
 
