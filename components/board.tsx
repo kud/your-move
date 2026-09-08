@@ -248,8 +248,14 @@ const DONE_PER_CELL = 2
 
 /** The fold transition, shared by the CSS below and the unmount that follows. */
 /* Long enough for the eye to follow the row down rather than notice it gone.
-   Kept in step with the CSS below by hand — the timer only exists to unmount
-   the cards afterwards, so finishing early is the one failure that shows. */
+
+   This is `--dur-fold` in `app/globals.css`, written twice because CSS cannot
+   hand a number to a `setTimeout` and TypeScript cannot reach into a
+   stylesheet. The two are hand-reconciled and there is no mechanism that
+   catches a drift — the timer only exists to unmount the cards afterwards, so
+   finishing EARLY is the failure that shows: the cards leave the tree before
+   the animation they were meant to play has finished. Change one, change the
+   other. */
 const FOLD_MS = 280
 
 export const Slot = ({ id, tone }: { id: string; tone: string }) => (
@@ -1175,7 +1181,7 @@ export const Swimlanes = ({
       className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-4px-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
-        className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
+        className="grid min-w-max content-start transition-[grid-template-columns] duration-(--dur-fold) [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
         style={{ gridTemplateColumns: track }}
       >
         {/*
@@ -1252,7 +1258,7 @@ export const Swimlanes = ({
                    * Two rounded strokes are the same everywhere and sit at the
                    * weight of the text they belong to.
                    */
-                  className="grid size-4 shrink-0 place-items-center rounded text-fg-quiet transition-[transform,color] duration-200 ease-out hover:text-fg"
+                  className="grid size-4 shrink-0 place-items-center rounded text-fg-quiet transition-[transform,color] duration-(--dur-enter) ease-out hover:text-fg"
                   style={{
                     transform: folded.has(lane.repo)
                       ? "rotate(-90deg)"
@@ -1386,7 +1392,7 @@ export const Swimlanes = ({
                       than replace them and make the row jump. */}
                   {rows.length ? (
                     <span
-                      className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-200 ${
+                      className={`pointer-events-none absolute left-2 top-2 font-mono text-[12px] tabular-nums leading-none text-fg-quiet transition-opacity duration-(--dur-enter) ${
                         shut ? "opacity-100 delay-100" : "opacity-0"
                       }`}
                     >
@@ -1408,7 +1414,7 @@ export const Swimlanes = ({
                       than as smooth. This curve leaves quickly and settles
                       slowly, with no overshoot, so nothing bounces at the end.
                     */
-                    className={`grid transition-[grid-template-rows] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
+                    className={`grid transition-[grid-template-rows] duration-(--dur-fold) [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
                       shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
                     }`}
                   >

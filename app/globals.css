@@ -37,6 +37,56 @@
   --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
   --ease-flip: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /*
+   * ═══ HOW LONG ═══
+   *
+   * Six durations, and the ladder between them is one rule: THE FURTHER IT
+   * MOVES, THE LONGER IT TAKES. A fade has no distance to cover and reads as
+   * sluggish at a travel's duration; a sheet crossing the screen at a fade's
+   * duration reads as a cut. Everything here that moves should be identifiable
+   * as exactly one of these, and a sixth number is a decision to argue for.
+   *
+   *   pointer  150ms  answers the hand — colour, border, shadow, a tooltip
+   *   fade     180ms  an entrance with no travel
+   *   enter    200ms  an entrance that also moves a little
+   *   settle   220ms  an entrance that travels
+   *   fold     280ms  a box changing size — a column, a lane
+   *   sheet    320ms  a sheet, travelling and scaling
+   *
+   * `--dur-pointer` is Tailwind's default transition duration too, set just
+   * below, so the sixteen bare `transition-colors` / `transition-opacity`
+   * utilities in the components move on this token rather than on a number
+   * Tailwind picked. That is most of the point: the hand-typed sites were the
+   * ones that drifted.
+   *
+   * `--dur-fold` has a twin in TypeScript: `FOLD_MS` in `components/board.tsx`
+   * times the unmount that follows the collapse, and the two must agree or the
+   * cards leave the tree before the animation has finished playing. Change one
+   * and change the other.
+
+   * `--dur-settle` is load-bearing beyond its own animation — `ym-in-settle`
+   * is budgeted against the 35ms column stagger further down this file, and
+   * the property that comment claims (the last column starts before the first
+   * has finished) is arithmetic on this number. Rounding it to 200 breaks a
+   * stated fact, not a taste.
+   *
+   * AMBIENT IS DELIBERATELY ABSENT. The five loops on this board — 1.1s,
+   * 1.25s, 1.6s, 2.2s, 4.5s — are each tuned against their own subject, and
+   * two are tuned against EACH OTHER: `ym-ember` at 4.5s has to read as
+   * ambient beside `ym-arrived` at 1.6s, the board's one attention animation.
+   * A single `--dur-ambient` would let one edit change five unrelated
+   * behaviours at once, which is the opposite of what a token is for. They
+   * stay literal, beside the comments that argue them.
+   */
+  --dur-pointer: 150ms;
+  --dur-fade: 180ms;
+  --dur-enter: 200ms;
+  --dur-settle: 220ms;
+  --dur-fold: 280ms;
+  --dur-sheet: 320ms;
+
+  --default-transition-duration: var(--dur-pointer);
 }
 
 /*
@@ -548,10 +598,10 @@ h4 {
   opacity: 0;
   transform: translateY(12px) scale(0.94);
   transition:
-    opacity 200ms ease,
-    transform 320ms cubic-bezier(0.16, 1.02, 0.3, 1),
-    overlay 320ms allow-discrete,
-    display 320ms allow-discrete;
+    opacity var(--dur-enter) ease,
+    transform var(--dur-sheet) cubic-bezier(0.16, 1.02, 0.3, 1),
+    overlay var(--dur-sheet) allow-discrete,
+    display var(--dur-sheet) allow-discrete;
 }
 
 [popover]:popover-open {
@@ -600,15 +650,15 @@ h4 {
 }
 
 .ym-in-side {
-  animation: ym-in-side 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ym-in-side var(--dur-settle) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .ym-in-modal {
-  animation: ym-in-modal 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ym-in-modal var(--dur-enter) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .ym-in-fade {
-  animation: ym-in-fade 180ms ease-out both;
+  animation: ym-in-fade var(--dur-fade) ease-out both;
 }
 
 /*
@@ -662,10 +712,10 @@ html:has([popover]:popover-open) main {
   opacity: 0;
   backdrop-filter: blur(0px);
   transition:
-    opacity 220ms ease,
-    backdrop-filter 320ms ease,
-    overlay 320ms allow-discrete,
-    display 320ms allow-discrete;
+    opacity var(--dur-settle) ease,
+    backdrop-filter var(--dur-sheet) ease,
+    overlay var(--dur-sheet) allow-discrete,
+    display var(--dur-sheet) allow-discrete;
 }
 
 [popover]:popover-open::backdrop {
@@ -1106,9 +1156,9 @@ html:has([popover]:popover-open) main {
  */
 .ym-card {
   transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    box-shadow 150ms ease;
+    background-color var(--dur-pointer) ease,
+    border-color var(--dur-pointer) ease,
+    box-shadow var(--dur-pointer) ease;
 }
 
 /* `(hover: hover)` is load-bearing rather than tidiness: on a touch screen
@@ -1188,7 +1238,7 @@ html:has([popover]:popover-open) main {
 }
 
 .ym-in-settle {
-  animation: ym-in-settle 220ms ease-out both;
+  animation: ym-in-settle var(--dur-settle) ease-out both;
   animation-delay: calc(var(--ym-i, 0) * 35ms);
 }
 
@@ -1202,7 +1252,7 @@ html:has([popover]:popover-open) main {
  */
 .ym-tip {
   transform: none;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-pointer) ease;
 }
 
 /*
@@ -1226,10 +1276,10 @@ html:has([popover]:popover-open) main {
 .ym-cmd {
   transform: translateY(-6px);
   transition:
-    opacity 120ms ease,
-    transform 140ms cubic-bezier(0.16, 1.02, 0.3, 1),
-    overlay 140ms allow-discrete,
-    display 140ms allow-discrete;
+    opacity var(--dur-pointer) ease,
+    transform var(--dur-pointer) cubic-bezier(0.16, 1.02, 0.3, 1),
+    overlay var(--dur-pointer) allow-discrete,
+    display var(--dur-pointer) allow-discrete;
 }
 
 .ym-cmd:popover-open {
