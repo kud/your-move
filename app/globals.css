@@ -118,6 +118,29 @@
  * says "a different lifecycle starts here". The frame is a third thing again:
  * it is the only line on the board that means "there is nothing beyond this".
  *
+ * WHERE A VERTICAL RULE BEGINS is the other half of this, and the file was
+ * silent on it until the two weights had already come apart inside the one
+ * strip it never named. EVERY VERTICAL RULE BEGINS AT THE COLUMN HEADER. The
+ * group band above the headers carries none: it is a caption over the board
+ * rather than a row of it, and a rule up there would be separating two labels,
+ * which is not a boundary anyone needs drawn.
+ *
+ * The lane spine on the far left is the exception, and it is exempt because it
+ * is not doing this job at all — it FRAMES the sticky lane rail rather than
+ * separating two peers, so it runs the full height of what the rail sits
+ * beside, band included. That is rule (c) below rather than a hole in it: a
+ * frame runs the length of the thing it frames, and the rail starts at the top.
+ * Clearing the band does not breach (c) either, for the same reason read the
+ * other way — what a column seam separates is a COLUMN, and a column begins at
+ * its header.
+ *
+ * The silence was load-bearing rather than merely incomplete. A band spans a
+ * whole group as ONE grid item, so a 2px structural seam coincided with a
+ * band's own right edge and was drawn, while a 1px peer seam had no band
+ * segment in which to be drawn at all. Inside those 16px the heavy rules
+ * survived and the light ones did not — two weights that must differ by
+ * MEANING, differing by markup instead.
+ *
  * ── 2. OBJECTS — a card, and the board itself
  *
  * 1px `line` AND a radius. The radius is what separates an object from a
