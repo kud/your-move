@@ -163,11 +163,25 @@ export const FRAME =
  * 1px on its right, an asymmetric bracket that reads as a rule adrift from its
  * column rather than as a divider.
  */
-/* `CLOSED.at(-1)` too: the board's own right edge is a boundary like any other
-   and the most final one on the grid — past it there is no next lifecycle and,
-   on a wide screen, nothing at all. Drawn at the soft weight it made the board
-   appear to trail off rather than to end, and on wide it is now the only thing
-   saying where the board stops. */
+/*
+ * The columns that END a group, which is what earns the 2px weight.
+ *
+ * `CLOSED.at(-1)` is in the set and can never be reached through `cellRule`,
+ * and that is deliberate rather than dead weight. This set answers one question
+ * — "does a group end here?" — and for the last column the honest answer is
+ * yes. What `cellRule` adds is a second, different question that outranks it:
+ * whether this boundary belongs to the grid at all. The board's outer edge does
+ * not; it belongs to the panel, which draws it. Keeping the two questions
+ * separate is what stops the next person deleting a member of this set to fix
+ * a drawing problem and breaking its meaning to do it.
+ *
+ * It used to say the opposite, and argued that the last column should draw the
+ * board's right edge because otherwise the board "appeared to trail off". That
+ * was true of a soft hairline and stopped being true once the panel got its
+ * border: the two cannot coincide — a child's border sits inside the content
+ * box — so the pair drew as a 2px rule, a 2px gap and a 1px line, three rules
+ * where the eye expects one edge.
+ */
 const SEAM_END = new Set([YOURS.at(-1), THEIRS.at(-1), CLOSED.at(-1)])
 
 export const DONE = "done"
@@ -699,27 +713,44 @@ export const BoardHead = ({
 }) => (
   <>
     <div className="sticky left-0 top-0 z-30 hidden h-[16px] border-r-2 border-r-line bg-panel md:block" />
-    {GROUPS.map((group, i) => (
+    {GROUPS.map((group) => (
       <div
         key={group.label}
-        /* Painted by the group to the left, like every other rule here, so
-             the seam runs unbroken from the top edge at one width. */
-        className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${
-          /* The last group draws its seam too, now that the board's own
-               right edge is a seam rather than a hairline. Without it the
-               vertical rule had a 16px notch at the very top, where the band
-               sits — the one row that was still saying the board carried on. */
-          "border-r-2 border-r-line"
-        }`}
+        /*
+         * Painted by the group to the left, like every other rule here, so the
+         * seam runs unbroken from the top edge at one width.
+         *
+         * And painted by `cellRule`, which is the fix rather than the tidying.
+         *
+         * This used to hard-code `border-r-2 border-r-line` for EVERY group,
+         * under a comment reasoning that the last one should draw its seam too
+         * "now that the board's own right edge is a seam rather than a
+         * hairline". That was true when it was written and stopped being true
+         * the moment the last column's seam was removed — at which point the
+         * band was the only row still drawing it. The result was a 2px rule,
+         * exactly 16px tall, hanging off the top-right corner just inside the
+         * panel border and stopping dead where the column headers began. Which
+         * is what "the borders are still weird on closed" was: not a rule in
+         * the wrong place, a rule that ends.
+         *
+         * A band spans its group, so the band's right edge IS the right edge of
+         * the group's last column, and the two must therefore be the same
+         * decision. Asking `cellRule` makes it literally the same decision
+         * instead of a second copy of it — which is what let these drift apart
+         * while each looked correct on its own.
+         */
+        className={`sticky top-0 z-20 hidden h-[16px] items-end bg-panel px-2 pb-px font-mono text-[9.5px] uppercase leading-none tracking-[0.16em] text-fg-mute md:flex ${cellRule(group.ids[group.ids.length - 1])}`}
         style={{ gridColumn: `span ${group.ids.length}` }}
       >
         {group.label}
       </div>
     ))}
-    {/* Runway, in the header row too. The board ends at the 2px seam on the
-          last column; carrying the band and the header bar past it made the
-          bar look cut rather than finished. It keeps `bg-panel` under the
-          wash because it is sticky and the lane tails scroll beneath it. */}
+    {/* Runway, in the header row too. The board ends where the panel's own
+          border is; carrying the band and the header bar past it made the bar
+          look cut rather than finished. It keeps `bg-panel` under the wash
+          because it is sticky and the lane tails scroll beneath it. On wide
+          `--ym-tail` is `0px`, so this paints nothing there and exists for the
+          phone. */}
     <div className="runway sticky top-0 z-20 hidden h-[16px] bg-panel md:block" />
 
     {/* Corner: the one cell belonging to both sticky axes. */}
@@ -1331,13 +1362,25 @@ export const Swimlanes = ({
                     reduce the box's min-content width, so the cell has to be
                     told it may shrink before the title is ever asked to wrap.
                   */
+                  /*
+                   * `cellRule`, not a second copy of its body.
+                   *
+                   * This inlined the ternary — `SEAM_END.has(id)` against the
+                   * same two strings — and so never learned the one thing
+                   * `cellRule` knows: the last column draws no seam, because
+                   * the panel's own border is the board's right edge. The
+                   * header row consulted `cellRule` and stopped drawing it; the
+                   * cells underneath carried on. So the 2px rule vanished for
+                   * 41 pixels and came back for the whole height of the board,
+                   * which is the same "rule that stops partway" the group band
+                   * was doing at the other end of the same edge.
+                   *
+                   * Two pieces of code holding different opinions about one
+                   * line. See the edge vocabulary at the top of `globals.css`.
+                   */
                   className={`relative min-h-[40px] min-w-0 border-b border-b-line-soft p-2 [scroll-snap-align:none_start] ${
                     shut || colShut ? "hatch" : ""
-                  } ${
-                    SEAM_END.has(id)
-                      ? "border-r-2 border-r-line"
-                      : "border-r border-r-line-soft"
-                  }`}
+                  } ${cellRule(id)}`}
                 >
                   {/* Out of flow, so it can cross-fade with the cards rather
                       than replace them and make the row jump. */}
