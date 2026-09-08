@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+
 import { describe, expect, it } from "vitest"
 
 import { INBOX_SOURCES } from "@kud/gh/inbox"
@@ -70,8 +72,43 @@ describe("the section contract with @kud/gh", () => {
  * a shell that quietly hands over to a board of a different shape.
  */
 describe("the skeleton's hardcoded track count", () => {
+  const source = (rel: string) =>
+    readFileSync(new URL(rel, import.meta.url), "utf8")
+
   it("still matches the board's column count", () => {
     expect(COLUMNS).toHaveLength(7)
+  })
+
+  /*
+   * And its track WIDTHS, which is the half the count test did not cover.
+   *
+   * The lane and the column are spelled out in three places that cannot see one
+   * another — `LANE_W`/`COL_W`, the scroller's Tailwind class list, and this
+   * CSS — and the first time one of them moved without the others, the shell
+   * would hand over to a board of a different width. That is the same reflow the
+   * chip row used to cause, on the other axis and harder to spot, because a
+   * board 30px wider than its own skeleton looks like nothing until you put the
+   * two frames side by side. Read as text on purpose: importing `board.tsx` here
+   * would pull React in for two numbers.
+   */
+  it("still matches the board's own track widths", () => {
+    const board = source("../components/board.tsx")
+    const width = (name: string) =>
+      board.match(new RegExp(`md:\\[--ym-${name}:(\\d+)px\\]`))?.[1]
+
+    /* Two blocks declare it — the narrow one, then the `md` override. */
+    const tracks = [
+      ...source("../app/globals.css").matchAll(
+        /\.ym-skeleton-grid\s*\{[\s\S]*?grid-template-columns:\s*([^;]+);/g,
+      ),
+    ].map((m) => m[1].trim())
+
+    expect(width("lane")).toBeDefined()
+    expect(width("col")).toBeDefined()
+    expect(tracks).toHaveLength(2)
+    expect(tracks[1]).toBe(
+      `${width("lane")}px repeat(${COLUMNS.length}, ${width("col")}px) 0px`,
+    )
   })
 })
 

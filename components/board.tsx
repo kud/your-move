@@ -80,6 +80,15 @@ export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
  * These two must stay in step with `--ym-lane` and `--ym-col` in the scroller's
  * class list, which have to stay literal for Tailwind to see them.
  *
+ * The lane is 180 rather than 150 on wide, and that is where the room left
+ * over after the frame stopped clipping went. It is the only axis on the board
+ * where content was actually being squeezed: a column holds a card at its own
+ * measure and the cards were fine, but a repository name is the row's identity —
+ * the thing the eye returns to down the left edge — and at 150px most of them
+ * broke over two lines. 180 clears the long ones with headroom and still leaves
+ * a real margin either side, which is what keeps the panel reading as an object
+ * on the sky rather than as wallpaper. Anything longer still wraps, and should.
+ *
  * This is the GRID's width, and the frame around it must be told to add its own
  * gutters — `max-w-[calc(var(--ym-frame) + 3rem)]`, not `max-w-[var(--ym-frame)]`.
  * The reason is `box-sizing: border-box`, which Preflight sets on everything: a
@@ -89,7 +98,7 @@ export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
  * the very thing the paragraph above says a cap must never do; the intent was
  * right and the arithmetic was one term short.
  */
-const LANE_W = 150
+const LANE_W = 180
 const COL_W = 300
 export const BOARD_W = LANE_W + COLUMNS.length * COL_W
 
@@ -945,7 +954,7 @@ export const Swimlanes = ({
           ? ({ "--ym-last": "var(--ym-rail)" } as CSSProperties)
           : undefined
       }
-      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:150px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
+      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"
