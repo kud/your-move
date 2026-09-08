@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 /*
  * One tooltip for the whole app, in the top layer, positioned by hand.
@@ -31,6 +31,30 @@ import { useEffect, useRef, useState } from "react"
  * tooltip becomes tap-to-show on the device this board is mostly read on.
  */
 
+/*
+ * Positioning runs BEFORE paint, and that is the whole of what this alias is
+ * for.
+ *
+ * `useEffect` runs after the browser has painted. React commits the new text,
+ * the browser draws it at wherever the box was last put, and only then does the
+ * effect move it — so moving between two adjacent anchors shows one frame of
+ * the new label at the old coordinates. It is a single frame and it is real:
+ * the whole gesture is a few pixels of travel, so the ghost lands right where
+ * the eye already is.
+ *
+ * A layout effect closes it by construction rather than by racing it. The
+ * measure-then-place work is unchanged; it simply happens inside the same
+ * synchronous turn as the commit, before anything is drawn.
+ *
+ * `TooltipLayer` mounts in `layout.tsx` and so server-renders, where a layout
+ * effect cannot run and React says so in a warning. The alias is the standard
+ * answer, and `typeof window` rather than a `useSyncExternalStore` dance
+ * because there is nothing to hydrate: the layer renders empty on the server in
+ * every case, since `tip` starts null and only a pointer can set it.
+ */
+const useMeasuredEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect
+
 const GAP = 8
 const IN_MS = 400
 const OUT_MS = 80
@@ -51,7 +75,7 @@ export const TooltipLayer = () => {
     }
   }, [])
 
-  useEffect(() => {
+  useMeasuredEffect(() => {
     const el = box.current
     if (!el) return
 
@@ -62,7 +86,25 @@ export const TooltipLayer = () => {
 
     /* Measured after showing: a popover has no size until it is in the top
        layer, so a rect taken before this is zero and the flip is guesswork. */
-    el.showPopover?.()
+    /*
+     * Only if it is not already up, which matters because the common case is
+     * exactly that. Two adjacent anchors never pass through `null`: leaving the
+     * first schedules a close at 80ms and entering the second CLEARS that same
+     * shared timer, so `tip` goes straight from one anchor to the next with the
+     * popover still open, and this line is reached on a showing popover.
+     *
+     * UNVERIFIED which way that goes, and the guard is here because it does not
+     * need to be settled to be made safe. The HTML spec's check-popover-validity
+     * step reads as an `InvalidStateError` on a popover that is already showing
+     * — which here would strand the box at the PREVIOUS anchor's coordinates
+     * wearing the new text, with the old dismissal listeners already torn off by
+     * this effect's cleanup and the new ones never attached. MDN documents the
+     * exception only for a popover mid-transition and is silent on this case, so
+     * it may equally be a no-op. The guard costs one `matches` call and is
+     * correct under both readings; it was not observed in a browser, and nothing
+     * would ever prompt anyone to come and look.
+     */
+    if (!el.matches(":popover-open")) el.showPopover?.()
     const anchor = tip.el.getBoundingClientRect()
     const self = el.getBoundingClientRect()
 
