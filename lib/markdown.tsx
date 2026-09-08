@@ -77,12 +77,34 @@ const inline = (text: string, key: string): ReactNode[] => {
     const token = match[0]
     const id = `${key}-${i++}`
 
+    /*
+     * The monospace face alone, and the absence of everything else is the
+     * decision rather than an omission.
+     *
+     * It used to carry four differentiators at once: the face, a `panel-2`
+     * background, `px-1` of padding, and `fg` — the panel's BRIGHTEST value —
+     * against prose set in `fg-mute`. One bot summary put six of those chips in
+     * a single line, so the paragraph arrived as six bright islands joined by
+     * dim connective text: the identifiers you skim shouting over the reasoning
+     * you actually read. Emphasis has to follow importance, and that was
+     * importance exactly inverted.
+     *
+     * No colour class at all, rather than a dimmer one. The span then takes the
+     * tone of wherever it sits — `fg` in a heading, `fg-mute` in prose,
+     * `fg-quiet` inside a quote — so it can never fight its own context, and
+     * there is no second value to keep in step when a tone moves.
+     *
+     * The size step stays. A monospace face set at the same em runs wider and
+     * optically heavier than the sans beside it, so 0.92em is what makes the two
+     * read as one line of text; it is a correction, not a de-emphasis.
+     *
+     * A FENCED block is a different element and keeps its box. That is the line:
+     * a region you stop and read may be a panel, a word inside a sentence may
+     * not.
+     */
     if (token.startsWith("`"))
       out.push(
-        <code
-          key={id}
-          className="rounded bg-panel-2 px-1 py-px font-mono text-[0.92em] text-fg"
-        >
+        <code key={id} className="font-mono text-[0.92em]">
           {token.slice(1, -1)}
         </code>,
       )
