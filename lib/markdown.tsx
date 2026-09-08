@@ -225,7 +225,7 @@ export const Markdown = ({ source }: { source: string }) => {
       blocks.push(
         <pre
           key={`c${blocks.length}`}
-          className="my-2 overflow-x-auto rounded-lg border border-line bg-panel-2 p-2.5 font-mono text-[12px] leading-[1.5] text-fg-mute"
+          className="my-3 overflow-x-auto rounded-lg border border-line bg-panel-2 p-2.5 font-mono text-[12px] leading-[1.5] text-fg-mute"
         >
           {body.join("\n")}
         </pre>,
