@@ -69,13 +69,19 @@ export const GROUPS: { label: string; ids: string[] }[] = [
 export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
 
 /*
- * The board's natural width: what the matrix wants when nothing is clipped.
+ * The WIDEST the board can be: the lane plus one fully-stretched column per
+ * status.
  *
- * Derived from the schema — the lane plus one column per status — rather than
- * set to a reading measure. A measure is for prose; a matrix has exactly one
- * honest width, which is the width it needs. Capping it below that made the app
- * decline to draw a whole board on a display with the room for one, while still
- * scrolling sideways inside its own unused margin.
+ * Derived from the schema rather than set to a reading measure. A measure is for
+ * prose; a matrix has exactly one honest width, which is the width it needs.
+ * Capping it below that made the app decline to draw a whole board on a display
+ * with the room for one, while still scrolling sideways inside its own unused
+ * margin.
+ *
+ * It is the clamp's CEILING that this is built from, and that is what stops the
+ * two disagreeing: the frame stops growing at precisely the viewport where the
+ * columns stop growing, so there is never a width at which the board has room it
+ * cannot spend, nor one at which it wants room the frame will not give.
  *
  * These two must stay in step with `--ym-lane` and `--ym-col` in the scroller's
  * class list, which have to stay literal for Tailwind to see them.
@@ -100,7 +106,35 @@ export const COLUMNS = [...YOURS, ...THEIRS, ...CLOSED]
  */
 const LANE_W = 180
 const COL_W = 300
-export const BOARD_W = LANE_W + COLUMNS.length * COL_W
+/*
+ * The widest a column may get, and the reason there is a ceiling at all.
+ *
+ * The columns stretch now — the board fills the screen rather than sitting in a
+ * margin it was not using. But a card is still a card: 300 is the measure a PR
+ * title was set at, and past roughly 20% over it a title stops wrapping, the
+ * chip and the age drift apart, and the cards quietly become table rows. So the
+ * stretch is a CLAMP, not an `fr`: 300 at the bottom so nothing on a 1440 screen
+ * moves, 360 at the top so an ultrawide gets margins back instead of a row of
+ * lozenges.
+ */
+const COL_MAX_W = 360
+export const BOARD_W = LANE_W + COLUMNS.length * COL_MAX_W
+
+/*
+ * The frame, as one string, because it was two.
+ *
+ * `inbox.tsx` and `booting.tsx` each carried their own copy, kept in step by
+ * hand — and the two are precisely the pair that must never disagree, since the
+ * whole job of the shell is to be the same shape as the board that replaces it.
+ * A footer saying the same sentence twice is fine; a LAYOUT contract stated twice
+ * is a reflow waiting for the first edit that only reaches one of them.
+ *
+ * The `+ 3rem` is the gutters: `max-width` includes padding under
+ * `box-sizing: border-box`, so a cap of `BOARD_W` alone leaves a content box
+ * 48px narrower than the grid and slices the last column.
+ */
+export const FRAME =
+  "relative z-10 mx-auto flex h-safe max-w-[calc(var(--ym-frame)_+_1.5rem)] flex-col px-3 pb-3 pt-4 md:max-w-[calc(var(--ym-frame)_+_3rem)] md:px-6 md:pb-6 md:pt-8"
 
 /*
  * Where one lifecycle ends and the next begins — and the cell that OWNS the
@@ -954,7 +988,21 @@ export const Swimlanes = ({
           ? ({ "--ym-last": "var(--ym-rail)" } as CSSProperties)
           : undefined
       }
-      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:300px] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
+      /*
+       * The wide `--ym-col` divides by `COLUMNS.length`, and the 7 in it is the
+       * one number here CSS cannot derive — `lib/sections.test.ts` asserts it
+       * against `COLUMNS`, and against the same literal in `.ym-skeleton-grid`.
+       *
+       * It divides by SEVEN and not by the number of unfolded columns, which is
+       * the whole of what makes folding survive a stretching board. Were the
+       * track recomputed from what is showing, folding one column would widen
+       * the other six — geometry moving at a moment the reader did not ask about
+       * those columns, and snap positions that land somewhere different depending
+       * on what happens to be folded today. Dividing by the constant means a fold
+       * spends its width into the space after the last column instead, exactly as
+       * it already did when the columns were fixed. Columns never move.
+       */
+      className="h-full overflow-auto overscroll-x-contain [scrollbar-gutter:stable] scroll-pl-[var(--ym-lane)] scroll-pt-[var(--ym-head)] [--ym-col:64vw] [--ym-head:41px] [--ym-lane:104px] [--ym-last:var(--ym-col)] [--ym-rail:52px] [--ym-tail:max(0px,calc(100dvw-1.5rem-2px-var(--ym-lane)-var(--ym-last)))] [scroll-snap-type:both_mandatory] md:[--ym-col:clamp(300px,calc((100dvw-3rem-var(--ym-lane))/7),360px)] md:[--ym-head:57px] md:[--ym-lane:180px] md:[--ym-tail:0px] md:[scroll-snap-type:both_proximity]"
     >
       <div
         className="grid min-w-max content-start transition-[grid-template-columns] duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]"

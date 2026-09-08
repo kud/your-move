@@ -93,8 +93,10 @@ describe("the skeleton's hardcoded track count", () => {
    */
   it("still matches the board's own track widths", () => {
     const board = source("../components/board.tsx")
-    const width = (name: string) =>
-      board.match(new RegExp(`md:\\[--ym-${name}:(\\d+)px\\]`))?.[1]
+    /* The values are arbitrary-property syntax, so they hold parens and commas
+       but never a `]` — which is what makes this greedy-safe. */
+    const token = (name: string) =>
+      board.match(new RegExp(`md:\\[--ym-${name}:([^\\]]+)\\]`))?.[1]
 
     /* Two blocks declare it — the narrow one, then the `md` override. */
     const tracks = [
@@ -103,12 +105,44 @@ describe("the skeleton's hardcoded track count", () => {
       ),
     ].map((m) => m[1].trim())
 
-    expect(width("lane")).toBeDefined()
-    expect(width("col")).toBeDefined()
+    const lane = token("lane")
+    const col = token("col")
+    const tail = token("tail")
+    for (const [name, value] of [
+      ["lane", lane],
+      ["col", col],
+      ["tail", tail],
+    ] as const)
+      expect(value, `the board declares md --ym-${name}`).toBeDefined()
     expect(tracks).toHaveLength(2)
-    expect(tracks[1]).toBe(
-      `${width("lane")}px repeat(${COLUMNS.length}, ${width("col")}px) 0px`,
+
+    /*
+      The skeleton spells out what the board reaches for through a token, so the
+      two are compared after substituting the one back-reference and dropping
+      whitespace — CSS is free to be formatted, a track list is not free to
+      differ. `COLUMNS.length` appears on both sides because the divisor inside
+      the clamp is the number CSS cannot derive.
+    */
+    const flat = (s: string) => s.replace(/\s+/g, "")
+    expect(flat(tracks[1] ?? "")).toBe(
+      flat(
+        `${lane} repeat(${COLUMNS.length}, ${col?.replaceAll("var(--ym-lane)", lane ?? "")}) ${tail}`,
+      ),
     )
+  })
+
+  /*
+   * The divisor inside the wide `--ym-col` is `COLUMNS.length` written out as a
+   * digit, because a CSS `calc` cannot count an array. Folding survives a
+   * stretching board only while it stays the CONSTANT seven — see the comment on
+   * the scroller — so this is the assertion standing between an eighth column and
+   * six columns that resize every time one of them is folded.
+   */
+  it("divides the wide column by the real column count", () => {
+    const divisor = source("../components/board.tsx").match(
+      /md:\[--ym-col:[^\]]*var\(--ym-lane\)\)\/(\d+)\)/,
+    )?.[1]
+    expect(divisor).toBe(String(COLUMNS.length))
   })
 })
 

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 
-import { BOARD_W, BoardSkeleton } from "@/components/board"
+import { BOARD_W, BoardSkeleton, FRAME } from "@/components/board"
 import { Mark } from "@/components/mark"
 
 /*
@@ -47,7 +47,7 @@ import { Mark } from "@/components/mark"
 export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
   <main
     style={{ "--ym-frame": `${BOARD_W}px` } as CSSProperties}
-    className="relative z-10 mx-auto flex h-safe max-w-[calc(var(--ym-frame)_+_1.5rem)] flex-col px-3 pb-3 pt-4 md:max-w-[calc(var(--ym-frame)_+_3rem)] md:px-6 md:pb-6 md:pt-8"
+    className={FRAME}
   >
     <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
