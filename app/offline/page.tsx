@@ -44,10 +44,17 @@ const Card = () => (
     <div className="w-full max-w-[320px] rounded-xl border border-line bg-panel p-5">
       <h1 className="text-[17px] font-semibold">Your Move</h1>
 
-      {/* Glyph and text, never colour alone — the board's own rule. `○` is
-          "open/absent" in the same lexicon the cockpit's liveness dot uses. */}
+      {/* Glyph and text, never colour alone — the board's own rule.
+
+          `◌` is the mark the board's own liveness dot and its offline banner
+          both draw. This said "`○` … the same lexicon" while drawing a
+          different glyph from the two surfaces it named, which is how a
+          one-glyph drift survives: the comment asserts the consistency instead
+          of the code carrying it. One fact, one mark, on all three screens; the
+          WORDS are what separate "no network at all" from "the board you have
+          is old". */}
       <p className="mt-2 flex items-start gap-1.5 text-[14px] text-fg-mute">
-        <span aria-hidden>○</span>
+        <span aria-hidden>◌</span>
         <span>
           No network, and nothing kept on this device recent enough to show. The
           board lives on GitHub, so there is nothing to show until you are back.
