@@ -52,7 +52,31 @@ body {
   overscroll-behavior: none;
   color: var(--color-fg);
   font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+
+  /*
+   * No `-webkit-font-smoothing: antialiased`, and its absence is the decision.
+   *
+   * It was here, and it is among the most-copied lines in front-end CSS: it
+   * forces macOS to render type with GRAYSCALE antialiasing in place of the
+   * SUBPIXEL antialiasing it would otherwise choose. Subpixel AA addresses the
+   * three coloured stripes inside each physical pixel separately, so it buys
+   * roughly three times the horizontal resolution for stems and curves.
+   * Switching it off makes every glyph thinner and softer.
+   *
+   * On a 2x display that cost is nearly invisible, which is exactly why the
+   * line spreads unexamined — almost everyone who adds it is looking at a
+   * Retina panel. Erwann is not: his display is 1x, where there is no spare
+   * resolution to give away and the thinning is plainly visible. He reported it
+   * before knowing the property was here.
+   *
+   * The usual argument for keeping it is colour fringing on light-on-dark type,
+   * and that is a real effect. At 1x it is the smaller of the two costs, and
+   * this app now ships a light theme as well, where the property has nothing to
+   * offer at all.
+   *
+   * Removing it changes nothing on a 2x screen and gives 1x its resolution
+   * back. It does NOT reach type on a composited layer — see `.ym-backdrop`.
+   */
 
   /* Installed to a home screen the page runs full-bleed (`viewportFit: "cover"`
      in `app/layout.tsx`), which is the only way a dark app avoids a white band
@@ -851,8 +875,35 @@ html:has([popover]:popover-open) main {
   animation: ym-crawl 1.1s ease-in-out infinite;
 }
 
-/* The ground behind the row panel. Its own class rather than a utility, so the
-   reduced-motion escape below has something to name. */
+/*
+ * The ground behind the row panel. Its own class rather than a utility, so the
+ * reduced-motion escape below has something to name.
+ *
+ * It also costs the detail panel its subpixel antialiasing, and that is worth
+ * knowing before anyone touches either line.
+ *
+ * A `backdrop-filter` forces its element onto its own compositing layer, and
+ * anything painted ABOVE a composited layer has to be promoted too or paint
+ * order breaks. The panel is a sibling at `z-50`, not a child of this — but it
+ * overlaps this, so it is promoted all the same. macOS cannot do subpixel AA on
+ * a composited layer, because the layer has no fixed relationship to the
+ * physical stripes it would need to address. So type inside the open row panel
+ * renders with grayscale AA no matter what `body` asks for.
+ *
+ * That is the whole of "some fonts look worse than others": the board is not
+ * composited and the panel is, so removing the `font-smoothing` line up top
+ * fixes the board and leaves the panel where it was. On a 1x display the
+ * difference between the two is visible side by side.
+ *
+ * The blur STAYS, and deliberately. It is what makes the panel read as being in
+ * front of the board rather than drawn on it, and on a phone — where the panel
+ * is the whole screen — a sharp board showing at the edges reads as a rendering
+ * fault. Trading that for sharper type on one surface is a real trade with a
+ * loser, so it is Erwann's to make rather than one to slip in. If it is ever
+ * made, the narrow case is the one to keep: drop the blur on desk, where the
+ * board behind a side panel is MEANT to stay readable, and the effect is
+ * arguing against its own reason for existing.
+ */
 .ym-backdrop {
   backdrop-filter: blur(4px);
 }
@@ -956,7 +1007,12 @@ html:has([popover]:popover-open) main {
 
 @media (min-width: 768px) {
   .ym-skeleton-grid {
-    grid-template-columns: 180px repeat(7, clamp(300px, calc((100dvw - 3rem - 4px - 180px) / 7), 360px)) 0px;
+    grid-template-columns:
+      180px repeat(
+        7,
+        clamp(300px, calc((100dvw - 3rem - 4px - 180px) / 7), 360px)
+      )
+      0px;
   }
 }
 
