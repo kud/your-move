@@ -46,7 +46,12 @@ import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder } from "@/lib/order"
-import { presentationFor, sourceTitle } from "@/lib/sections"
+import {
+  hiddenRows,
+  presentationFor,
+  sourceTitle,
+  truncations,
+} from "@/lib/sections"
 import {
   decodeShare,
   emptyPicks,
@@ -663,6 +668,7 @@ export const Inbox = ({
   const allFailed = Boolean(
     inbox && inbox.failed.length > 0 && all.length === 0,
   )
+  const sampled = truncations(inbox?.coverage)
   const healthy = liveness === "live" || liveness === "refreshing"
 
   return (
@@ -880,6 +886,50 @@ export const Inbox = ({
                     {inbox.reasons.join(" · ")}
                   </p>
                 ) : null}
+              </details>
+            </div>
+          ) : null}
+
+          {/*
+            A column showing a subset says so, or it is lying by arithmetic.
+
+            Not a failure, which is why it is not the brass notice above: every
+            source answered, and each answered completely for the window it was
+            allowed. What it cannot say on its own is that the window is smaller
+            than the world — `reviewRequests` asks GitHub for 20, and on this
+            account 99 match, so a column headed `20` was reporting its own cap
+            and reading as a total. The board's whole posture is that a partial
+            answer is fine and an answer pretending to be whole is not.
+
+            It also governs what a DIFF may claim. `use-notifier` marks arrivals
+            by comparing one fetch with the next; on a truncated source a row
+            leaving the WINDOW is not a row leaving the WORLD, so presence
+            changes there carry no news. Nothing reads this yet — the notice is
+            the honest floor, not the fix.
+
+            Tone, glyph and placement are Iris's to settle: this is the plainest
+            true version, deliberately, so the design decision is hers and not
+            an accident of whoever plumbed the number.
+          */}
+          {sampled.length ? (
+            <div className="mb-2 rounded-lg border border-line bg-panel-2 p-2.5 text-[12px]">
+              <p className="text-fg-mute">
+                <span aria-hidden>○ </span>
+                <strong>Some columns show a sample.</strong> GitHub matched more
+                than this board asked for, so a count below is what came back,
+                not what exists.
+              </p>
+              <details className="mt-1">
+                <summary className="cursor-pointer text-fg-quiet">
+                  {hiddenRows(sampled)} rows not shown
+                </summary>
+                <ul className="mt-1 text-fg-quiet">
+                  {sampled.map((t) => (
+                    <li key={t.source}>
+                      {t.title} — showing {t.shown} of {t.total}
+                    </li>
+                  ))}
+                </ul>
               </details>
             </div>
           ) : null}

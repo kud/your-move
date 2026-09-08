@@ -630,8 +630,25 @@ export const Detail = ({
                         const open = !cut || shown.includes(i)
                         return (
                           <>
+                            {/*
+                              This div is the CLAMP and nothing else. It used to
+                              set the size, the tone and a `1.5` leading as well,
+                              all three of which `Markdown` sets again on the div
+                              directly inside it — so the inner one won and the
+                              outer three governed nothing. Two of them agreed by
+                              coincidence and the leading did not, which is how a
+                              number that renders nowhere still ends up quoted as
+                              fact in a comment further down.
+
+                              One owner per property, the same rule the edge
+                              vocabulary states for borders: where two elements
+                              could both decide a thing, one of them must not.
+                              Type belongs to `lib/markdown.tsx`, here and in the
+                              body above, which is also the only way the two stay
+                              in step.
+                            */}
                             <div
-                              className={`mt-0.5 text-[13.5px] leading-[1.5] text-fg-mute ${
+                              className={`mt-0.5 ${
                                 open
                                   ? ""
                                   : "fade-b max-h-[7.5rem] overflow-hidden"

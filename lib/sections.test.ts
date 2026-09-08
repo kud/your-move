@@ -5,7 +5,13 @@ import { describe, expect, it } from "vitest"
 import { INBOX_SOURCES } from "@kud/gh/inbox"
 
 import { BOARD_W, cellRule, COLUMNS, DONE, sectionOf } from "@/components/board"
-import { heatOf, PRESENTED_SECTIONS, STALE_AFTER } from "@/lib/sections"
+import {
+  heatOf,
+  hiddenRows,
+  PRESENTED_SECTIONS,
+  STALE_AFTER,
+  truncations,
+} from "@/lib/sections"
 import type { Row } from "@/lib/github"
 
 /*
@@ -350,5 +356,70 @@ describe("the board's right edge", () => {
   it("still separates every column that has one beside it", () => {
     for (const column of COLUMNS.slice(0, -1))
       expect(cellRule(column), `${column} keeps its seam`).toContain("border-r")
+  })
+})
+
+/*
+ * A column showing a subset must be able to say so.
+ *
+ * The bug this pins was not a crash and did not look like one: `reviewRequests`
+ * asks GitHub for 20 and the account had 99, so a column headed `20` was
+ * reporting its own cap and reading as a total. Nothing was broken; the board
+ * was simply confident about a number that meant something else. That is the
+ * shape of wrongness the never-mirror rule exists to catch, one layer in.
+ *
+ * The library decides truncation; these assert the surface reads it, keeps the
+ * board's own ordering, and stays quiet when it genuinely does not know.
+ */
+describe("truncated sources", () => {
+  it("names each source that returned a sample, with both numbers", () => {
+    const rows = truncations({
+      reviewRequests: { total: 99, shown: 20, truncated: true },
+      assigned: { total: 44, shown: 30, truncated: true },
+    })
+
+    expect(rows.map((r) => r.source)).toEqual(["reviewRequests", "assigned"])
+    expect(rows.map((r) => r.title)).toEqual([
+      "Review requested",
+      "Assigned to you",
+    ])
+    expect(rows.map((r) => [r.total, r.shown])).toEqual([
+      [99, 20],
+      [44, 30],
+    ])
+  })
+
+  /* Board order, not object order — otherwise the notice reshuffles itself
+     between two fetches that said the same thing. */
+  it("reads in the board's own source order", () => {
+    const rows = truncations({
+      recentlyDone: { total: 9, shown: 5, truncated: true },
+      myPRs: { total: 40, shown: 30, truncated: true },
+    })
+
+    expect(rows.map((r) => r.source)).toEqual(["myPRs", "recentlyDone"])
+  })
+
+  it("says nothing about a source that returned everything", () => {
+    expect(
+      truncations({ reviewed: { total: 4, shown: 4, truncated: false } }),
+    ).toEqual([])
+  })
+
+  /* A cache written before coverage existed. "We do not know" must never render
+     as "nothing is truncated" — nor invent a truncation it cannot see. */
+  it("stays quiet when there is no coverage at all", () => {
+    expect(truncations(undefined)).toEqual([])
+  })
+
+  it("counts what the whole board is not showing", () => {
+    expect(
+      hiddenRows(
+        truncations({
+          reviewRequests: { total: 99, shown: 20, truncated: true },
+          authoredIssues: { total: 101, shown: 100, truncated: true },
+        }),
+      ),
+    ).toBe(80)
   })
 })
