@@ -674,7 +674,7 @@ h4 {
  * popover in the app — the filter, the menu, the section notes, the lane panel
  * — including any added later, with nothing to remember.
  */
-html:has([popover]:popover-open) body {
+html:has([popover]:popover-open:not(.ym-tip)) body {
   user-select: none;
 }
 
@@ -692,7 +692,7 @@ html:has([popover]:popover-open) body {
  * listening. Dismissal is untouched — the pointerdown still lands outside the
  * popover, which is all the browser needs.
  */
-html:has([popover]:popover-open) main {
+html:has([popover]:popover-open:not(.ym-tip)) main {
   pointer-events: none;
 }
 
@@ -1254,6 +1254,37 @@ html:has([popover]:popover-open) main {
   transform: none;
   transition: opacity var(--dur-pointer) ease;
 }
+
+/*
+ * And it opts out of everything else a popover brings with it, because it is
+ * not a sheet — it is a hover affordance, and treating it as a sheet is what
+ * made every tooltip on this board flicker.
+ *
+ * The loop, which took a screen recording to see: `main` goes
+ * `pointer-events: none` while any popover is open. The header is inside
+ * `main`. So the moment a tooltip opened, the very control the pointer was
+ * resting on stopped hit-testing, the browser dispatched `pointerleave` on it,
+ * and 80ms later the tooltip closed itself — at which point `main` came back,
+ * `pointerenter` fired, and 400ms later it did the whole thing again. Period
+ * 480ms, visible for about one frame of it. It is not a positioning bug and
+ * never was; the tooltip was killing itself with its own side effects.
+ *
+ * A sheet SHOULD make the page inert — you opened it, and a stray click behind
+ * it is a click you did not mean. A tooltip you did not open, cannot dismiss,
+ * and did not ask for has no business doing either, and the same goes for
+ * freezing text selection across the whole body.
+ *
+ * The backdrop is the third of them and the one you can see in the recording:
+ * a 3px blur over the entire viewport, transitioning for 320ms, fired on every
+ * hover. The header visibly washes out behind the tooltip. `.ym-tip` already
+ * overrides `[popover]`'s own transition, but nothing reached its `::backdrop`
+ * — a pseudo-element every top-layer element gets, whether or not it wants one.
+ */
+.ym-tip::backdrop {
+  backdrop-filter: none;
+  transition: none;
+}
+
 
 /*
  * The launcher arrives quickly, and from above.
