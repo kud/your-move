@@ -662,6 +662,72 @@ h4 {
 }
 
 /*
+ * The mark reacts, and it is the only thing on this board that moves purely for
+ * pleasure.
+ *
+ * A one-shot HOP rather than a hover pose, and that distinction is the whole
+ * design rather than a taste. The edge vocabulary at the top of this file
+ * reserves hover for facts about the READER, and every hover state in this app
+ * sits on something you can open. The mark is `aria-hidden` decoration beside
+ * the `h1` — parking it two pixels higher while the pointer is over it would
+ * draw precisely the affordance the rest of the board uses to mean "this leads
+ * somewhere", and promise a click that does not exist. An animation that plays
+ * and returns to rest promises nothing: it is a reaction, not a state.
+ *
+ * Squash and stretch, in that order, because a rise with neither is a lift and
+ * not a hop. `transform-origin` is the mark's own feet, so the landing
+ * compresses downward the way a landing does. The distances are PERCENTAGES of
+ * the mark rather than pixels: it is 24px on a phone and 30px on a desktop, and
+ * a hop measured in pixels would be a different hop on each.
+ *
+ * 420ms is literal, for the same reason the ambient loops further down this
+ * file are. The duration ladder in `@theme` measures TRAVEL between two states,
+ * and this travels nowhere — it leaves rest and comes back to it. Four beats
+ * need room to read as a bounce rather than as a twitch, and there is no second
+ * animation for this number to stay in step with. Tuned against its own
+ * subject; leave it here beside the argument rather than promoting it to a
+ * seventh token.
+ *
+ * Mouse only. `:hover` sticks after a tap on iOS, and this board is mostly read
+ * on a phone — where the flourish would fire once, on the tap that opened
+ * something else, and then sit there having meant nothing.
+ *
+ * It carries no meaning at all, which is what makes `data-motion="reduce"`
+ * erasing it entirely the correct degradation rather than a loss. Nothing is
+ * unreadable without it because there was nothing to read.
+ */
+@keyframes ym-hop {
+  0% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+  }
+  28% {
+    transform: translateY(-15%) scale(0.97, 1.05);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
+  }
+  52% {
+    transform: translateY(0) scale(1.06, 0.94);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1);
+  }
+  76% {
+    transform: translateY(-5%) scale(0.99, 1.01);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.ym-hop {
+  transform-origin: 50% 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ym-hop:hover {
+    animation: ym-hop 420ms;
+  }
+}
+
+/*
  * Nothing behind an open popover is selectable.
  *
  * A native popover is in the top layer but it does NOT make the rest of the
