@@ -822,22 +822,29 @@ export const Inbox = ({
           {/*
             In the frame, not in the header.
 
-            The header already carries `○ Offline ·` and it is not enough, for a
+            The header already carries `◌ Offline ·` and it is not enough, for a
             reason particular to that line: it sits beside the age, and an age
             beside a title reads as "recently refreshed" at a glance — the exact
             opposite of what this has to say. A stale board is only better than
             no board while the label cannot be missed, so the label takes
             layout, pushes the board down, and stays there.
 
-            Glyph, word and age together — `○` is "open/absent" in the same
-            lexicon the liveness dot uses, and none of the three is doing the
+            Glyph, word and age together, and none of the three is doing the
             work alone. It carries no action of its own: the header's own
             refresh is already the way back, and offline it navigates home
             rather than refetching.
+
+            `◌` is the SAME glyph the liveness dot in the header is showing at
+            this moment, and that is the point rather than a coincidence. This
+            comment used to claim as much while drawing `○` — one glyph apart,
+            which is the distance at which two marks read as two different
+            states. The header and the banner are one fact reported twice, so
+            they show one mark; what separates offline from merely stale is the
+            WORD, in both places, which is the rule the whole board runs on.
           */}
           {liveness === "offline" && inbox ? (
             <p className="mb-2 rounded-lg border border-brass p-3 text-[13px]">
-              <span aria-hidden>○ </span>
+              <span aria-hidden>◌ </span>
               <strong>Offline.</strong> This is the last board this device saw,{" "}
               {freshness}. Nothing on it will change until you are back.
             </p>
