@@ -1,13 +1,7 @@
 "use client"
 
 import { tip } from "@/components/tooltip"
-import {
-  Fragment,
-  memo,
-  useEffect,
-  useState,
-  type CSSProperties,
-} from "react"
+import { Fragment, memo, useEffect, useState, type CSSProperties } from "react"
 
 import { RowLabels } from "@/components/row-labels"
 import { PinMark, SectionMark } from "@/components/section-mark"
@@ -258,7 +252,6 @@ export const reasonFor = (row: Row): string => {
   if (row.move === "unknown") return "No verdict"
   return row.kind === "issue" ? "Issue" : "Open"
 }
-
 
 /** A cell shows this many, then says how many it is holding back. */
 const PER_CELL = 4
@@ -616,9 +609,7 @@ const LaneName = ({
         is a fact about the WORK; a pin is a fact about you. Neutral is the
         statement, not a compromise.
       */}
-      {pinned ? (
-        <PinMark className="size-3 shrink-0 text-fg-mute" />
-      ) : null}
+      {pinned ? <PinMark className="size-3 shrink-0 text-fg-mute" /> : null}
 
       <button
         type="button"
@@ -637,6 +628,22 @@ const LaneName = ({
       <div
         id={id}
         popover="auto"
+        /*
+         * The top layer is a PAINTING trick, not a DOM one.
+         *
+         * An open popover is drawn above everything and looks detached from the
+         * page, but it stays exactly where it was declared in the tree — inside
+         * the lane cell, whose whole area folds the lane on click. So every
+         * press in here bubbled into that handler and the lane collapsed behind
+         * the panel: pinning a repo folded it, and so did following any of the
+         * three links out.
+         *
+         * On the container rather than on each control, because the defect
+         * belongs to the panel's POSITION and not to any one button — the
+         * trigger above already guards itself, and a third control added here
+         * would otherwise inherit the bug by default.
+         */
+        onClick={(e) => e.stopPropagation()}
         className="m-auto w-[min(92vw,320px)] rounded-xl border border-line bg-panel p-3 text-fg shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
       >
         <p className="break-all font-mono text-[13px] text-fg">{repo}</p>
