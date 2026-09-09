@@ -117,8 +117,9 @@ export type Picks = {
   owners: string[]
   status: string[]
   labels: string[]
-  /* "you" and "them" — the board's own question, so it is a facet like any
-     other rather than a mode. */
+  /* "you", "them" and "unknown" — the board's own question, so it is a facet
+     like any other rather than a mode. The third value is not a third urgency:
+     it says the row is present and we declined to judge it. */
   move: string[]
 }
 
@@ -147,7 +148,13 @@ export const summarise = (picks: Picks, short: (repo: string) => string) => {
     parts.push({
       key: "move",
       text: picks.move
-        .map((m) => (m === "you" ? "your move" : "their move"))
+        .map((m) =>
+          m === "you"
+            ? "your move"
+            : m === "them"
+              ? "their move"
+              : "unclassified",
+        )
         .join(" or "),
       full: "",
     })
@@ -720,6 +727,10 @@ export const Filters = ({
           {(
             [
               { id: "you", label: "Your move" },
+              /* Between the two, and not phrased as a third possessive: a
+                 "someone's move" reads as a third OWNER, which is the exact
+                 misreading this state exists to prevent. */
+              { id: "unknown", label: "Unclassified" },
               { id: "them", label: "Their move" },
             ] as const
           ).map((side) => {

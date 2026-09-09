@@ -72,7 +72,9 @@ const asPicks = (value: unknown): Picks => {
     owners: strings(raw.owners),
     status: strings(raw.status),
     labels: strings(raw.labels),
-    move: strings(raw.move).filter((m) => m === "you" || m === "them"),
+    move: strings(raw.move).filter(
+      (m) => m === "you" || m === "them" || m === "unknown",
+    ),
   }
 }
 

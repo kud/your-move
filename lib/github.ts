@@ -1,12 +1,20 @@
 import {
   buildInboxQueries,
+  buildInboxQuery,
   mergeInboxData,
   sourceCoverage,
+  truncatedSources,
   INBOX_SOURCES,
   type InboxSource,
   type SourceCoverage,
 } from "@kud/gh/inbox"
-import { sortItems, toGHItem, whoseMove, type GHItem } from "@kud/gh-workflow"
+import {
+  sortItems,
+  toGHItem,
+  whoseMove,
+  type GHItem,
+  type Move,
+} from "@kud/gh-workflow"
 
 /*
  * The whole data path, and it is deliberately short.
@@ -44,7 +52,7 @@ const STANDING_OF: Record<InboxSource, string> = {
 
 export type Row = GHItem & {
   source: InboxSource
-  move: "you" | "them"
+  move: Move
 }
 
 export type Inbox = {
@@ -216,6 +224,36 @@ const dedupe = (rows: Row[]): Row[] => {
  * deleted `?repo=` over. Both are library-side problems, and neither is a thing
  * to route around from here.
  */
+/*
+ * Coverage has to describe the BOARD, not the first request.
+ *
+ * `sourceCoverage` reads the tier it is handed, so left alone it would go on
+ * reporting "showing 20 of 99" for a source the overflow tier has since filled
+ * in — the banner contradicting the rows underneath it, which is the lying by
+ * arithmetic the notice exists to prevent. `total` is GitHub's own `issueCount`
+ * and stays whatever it was; only what we managed to SHOW has changed.
+ *
+ * It reports what the second tier actually returned rather than assuming it
+ * returned everything: a hundred is a cap too, and an account with more than
+ * that is still truncated and must still say so.
+ */
+const coverageWith = (data: any, overflow: any) => {
+  const base = sourceCoverage(data)
+  if (!overflow) return base
+
+  const merged = { ...base }
+  for (const [source, seen] of Object.entries(sourceCoverage(overflow))) {
+    const was = merged[source as InboxSource]
+    if (!was || !seen) continue
+    merged[source as InboxSource] = {
+      total: was.total,
+      shown: Math.max(was.shown, seen.shown),
+      truncated: was.total > Math.max(was.shown, seen.shown),
+    }
+  }
+  return merged
+}
+
 export const fetchInbox = async (
   token: string,
   options: { repo?: string; doneWithinDays?: number } = {},
@@ -270,6 +308,41 @@ export const fetchInbox = async (
   ]
 
   const data = mergeInboxData(parts)
+
+  /*
+   * The second tier, and it only exists because the first one has a ceiling it
+   * cannot be argued out of.
+   *
+   * `reviewRequests` truncates at 20 of 99 on a heavy account and the cap will
+   * not lift: the full fragment costs 11 points at `first: 20`, 28 at 50, and
+   * 502s twice at 100 after about eleven seconds. That 502 is the search timing
+   * out at GitHub's proxy rather than a node-count refusal — cutting the review
+   * thread window by 65% still 502s — so no full-fragment window reaches 99.
+   * The minimal fragment at `first: 100` costs ONE point and answers in 2.1s.
+   *
+   * Sequential rather than fired alongside the first batch, and that is the
+   * trade taken deliberately: guarding on `truncatedSources` costs one extra
+   * round trip to the accounts that actually truncate, and costs nothing at all
+   * to everyone else. Firing it always would flatten the latency but would
+   * fetch a hundred rows on every load for the majority who have nine.
+   *
+   * Merged AFTER the full rows so `dedupe` keeps the full one on a URL
+   * collision — the overflow row is the same PR with less known about it, and
+   * the earlier occurrence is the one carrying a verdict.
+   */
+  const truncated = truncatedSources(data)
+  const overflow = truncated.includes("reviewRequests")
+    ? await ask(
+        token,
+        buildInboxQuery({
+          ...options,
+          sources: ["reviewRequests"],
+          shape: "minimal",
+          limits: { reviewRequests: 100 },
+        }),
+      ).catch(() => undefined)
+    : undefined
+
   const login: string | undefined = data?.viewer?.login
 
   const answered = new Set(
@@ -277,7 +350,12 @@ export const fetchInbox = async (
   )
 
   return {
-    rows: sortItems(dedupe(rowsFrom(data, login)) as GHItem[]) as Row[],
+    rows: sortItems(
+      dedupe([
+        ...rowsFrom(data, login),
+        ...(overflow ? rowsFrom(overflow, login) : []),
+      ]) as GHItem[],
+    ) as Row[],
     login,
     fetchedAt: Date.now(),
     failed: INBOX_SOURCES.filter((source) => !answered.has(source)),
@@ -285,7 +363,7 @@ export const fetchInbox = async (
       ? { remaining: data.rateLimit.remaining, resetAt: data.rateLimit.resetAt }
       : undefined,
     reasons,
-    coverage: sourceCoverage(data),
+    coverage: coverageWith(data, overflow),
   }
 }
 
