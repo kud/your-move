@@ -387,10 +387,13 @@ export const Inbox = ({
             const key = sectionOf(r)
             cells.set(key, [...(cells.get(key) ?? []), r])
           }
-          /* Yours first, drafts last within their band, then recency. The rule
-           and the reasoning behind the middle key live in `lib/order.ts`. */
+          /* Yours first, drafts last within their band, then heat, then
+           recency. The rule and the reasoning behind the middle keys live in
+           `lib/order.ts`. The comparator is parameterised by the cell's own
+           column and by the moment of the read, because the heat key is: a
+           cell is one lane in one column, so both are constant here. */
           for (const [key, rs] of cells)
-            cells.set(key, [...rs].sort(byCellOrder))
+            cells.set(key, [...rs].sort(byCellOrder(key, inbox?.fetchedAt)))
 
           return {
             repo,
@@ -403,7 +406,7 @@ export const Inbox = ({
            all three keys live in `lib/order.ts`. */
         .sort(byLaneOrder(order, pinned))
     )
-  }, [shown, order, pinned])
+  }, [shown, order, pinned, inbox?.fetchedAt])
 
   /* Tapping a card leaves the app entirely on a phone; this is what brings you
      back to the same place rather than to the first column. */

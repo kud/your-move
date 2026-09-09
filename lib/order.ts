@@ -1,6 +1,7 @@
 import type { Move } from "@kud/gh-workflow"
 
 import type { Row } from "@/lib/github"
+import { type Heat, heatOf } from "@/lib/sections"
 
 /*
  * How rows are ordered inside one cell of the board.
@@ -13,7 +14,7 @@ import type { Row } from "@/lib/github"
  * ago simply sat above a PR that had been conflicting for a week. A rewrite of
  * this comparator would lose it again exactly the same way.
  *
- * Three keys, and the middle one is the whole decision:
+ * Four keys, and the middle two are the whole decision:
  *
  *   1. Yours before theirs. The board exists to answer whose move it is.
  *   2. Within a band, drafts last. This is a NARROWING of the library's rule,
@@ -21,7 +22,8 @@ import type { Row } from "@/lib/github"
  *      unfinished work below a stranger's — and a cell shows four rows and
  *      hides the rest, so below is gone. Your draft still outranks everything
  *      that is not yours, and yields to the work of yours that is asking.
- *   3. Most recently moved.
+ *   3. Hot before warm before neither.
+ *   4. Most recently moved.
  */
 
 type Ordered = Pick<Row, "move" | "health" | "ts">
@@ -41,10 +43,61 @@ type Ordered = Pick<Row, "move" | "health" | "ts">
  */
 const RANK: Record<Move, number> = { you: 0, unknown: 1, them: 2 }
 
-export const byCellOrder = (a: Ordered, b: Ordered): number =>
-  RANK[a.move] - RANK[b.move] ||
-  Number(a.health === "draft") - Number(b.health === "draft") ||
-  b.ts - a.ts
+/*
+ * Age, ranked rather than merely drawn — and it is a REGRESSION FIX, not a
+ * feature, which is why it earns a key rather than a badge.
+ *
+ * Before the third health tier, most of the review column answered `unknown`
+ * and the first key did real work inside it. Filling those verdicts in made
+ * key one CONSTANT across that column: everything resolves to `you`, drafts are
+ * rare there, and what is left deciding the cell is recency alone. A cell draws
+ * four. So a review request sitting nine days could be pushed under `+18 more`
+ * by four things touched this morning, and the fold said nothing about having
+ * swallowed the oldest thing on the board.
+ *
+ * The differentiator already existed and was already tuned per column —
+ * `STALE_AFTER` in `lib/sections.ts`, drawn on the row as the ember. It just
+ * did not rank. Reusing it costs no new concept and no new constant, and it
+ * satisfies the house rule that a ranking's reason must be legible on the row:
+ * the row that climbed is the row wearing the mark.
+ *
+ * IT SITS BELOW `draft`, DELIBERATELY. Above it, a nine-day-old draft of yours
+ * would climb over a two-day-old review request — and a draft is not asking,
+ * which is the one thing key two exists to say. So the guarantee is "a hot row
+ * cannot fall behind the cap among the rows that are asking", not "no hot row
+ * can ever be folded". A hot draft still sinks, and that is the correct answer
+ * rather than a gap in this one.
+ *
+ * It is NOT `oldest first`. Within a heat band the order is still most-recent
+ * first, so the key promotes the stale band and does not invert the column.
+ */
+const HEAT_RANK: Record<Heat | "none", number> = { hot: 0, warm: 1, none: 2 }
+
+/*
+ * Curried on `(column, now)` for the reason `byLaneOrder` is curried on its
+ * mode: both are facts about the READ, not about the row, and both are constant
+ * across the sort they parameterise — a cell is one lane in one column.
+ *
+ * Putting `heat` on the `Row` instead was the other candidate and is the worse
+ * one. `Row` is fetched, cached and restored; heat is derived against the
+ * moment of the read (`fetchedAt`, never `Date.now()` — see `heatOf`), so a row
+ * carrying its own heat would carry a stale one out of the cache. That is the
+ * mirror-versus-cache distinction this app is built on, arriving one field at a
+ * time.
+ *
+ * `now` stays optional and an absent one collapses the key to zero, which is
+ * exactly today's ordering. A board restored before `fetchedAt` existed, or
+ * rendered on the server before the clock is meaningful, degrades to the old
+ * comparator rather than to a guess.
+ */
+export const byCellOrder =
+  (column: string, now?: number) =>
+  (a: Ordered, b: Ordered): number =>
+    RANK[a.move] - RANK[b.move] ||
+    Number(a.health === "draft") - Number(b.health === "draft") ||
+    HEAT_RANK[heatOf(column, a.ts, now) ?? "none"] -
+      HEAT_RANK[heatOf(column, b.ts, now) ?? "none"] ||
+    b.ts - a.ts
 
 /*
  * A repository as it is shown: the board draws the name, never `owner/repo`,

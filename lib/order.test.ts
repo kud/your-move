@@ -4,7 +4,7 @@ import { byCellOrder, byLaneOrder } from "./order.js"
 import type { Row } from "./github.js"
 
 /*
- * The ordering rule is three keys deep and every one of its failures is silent:
+ * The ordering rule is four keys deep and every one of its failures is silent:
  * a wrong order is still a plausible order, and a cell that hides everything
  * past the fourth row turns "sorted slightly wrong" into "not there at all".
  * These assert the two extremes the middle rule was chosen against, so a future
@@ -18,8 +18,16 @@ const row = (
   name: string,
 ) => ({ move, health, ts, name })
 
-const order = (rows: ReturnType<typeof row>[]) =>
-  [...rows].sort(byCellOrder).map((r) => r.name)
+/*
+ * No `now` by default, which makes the heat key inert and leaves every
+ * assertion below testing exactly what it tested before heat existed. The heat
+ * block passes one explicitly.
+ */
+const order = (
+  rows: ReturnType<typeof row>[],
+  column = "review",
+  now?: number,
+) => [...rows].sort(byCellOrder(column, now)).map((r) => r.name)
 
 describe("byCellOrder", () => {
   it("puts your rows above theirs, whatever moved most recently", () => {
@@ -197,5 +205,122 @@ describe("byLaneOrder", () => {
     expect(
       lanes("urgency", ["kud/absent"], [lane("kud/present", 0, 1)]),
     ).toEqual(["kud/present"])
+  })
+})
+
+/*
+ * The regression these pin is not a wrong comparator, it is a comparator that
+ * went FLAT. Filling in the third tier's verdicts made key one constant across
+ * the review column, drafts are rare there, and recency alone then decided
+ * which four of a hundred rows a cell drew — so the oldest thing on the board
+ * could be folded under `+N more` by four things touched this morning, with
+ * nothing on screen saying so.
+ *
+ * Anything that reintroduces that flatness passes every test above this line.
+ */
+const DAY = 86_400_000
+const NOW = Date.UTC(2026, 8, 9)
+const daysAgo = (days: number) => NOW - days * DAY
+
+describe("byCellOrder and staleness", () => {
+  it("lifts a stale review request above fresher ones that would fold it away", () => {
+    expect(
+      order(
+        [
+          row("you", "none", daysAgo(0.1), "fresh-1"),
+          row("you", "none", daysAgo(0.2), "fresh-2"),
+          row("you", "none", daysAgo(0.3), "fresh-3"),
+          row("you", "none", daysAgo(0.4), "fresh-4"),
+          row("you", "none", daysAgo(9), "waiting-nine-days"),
+        ],
+        "review",
+        NOW,
+      )[0],
+    ).toBe("waiting-nine-days")
+  })
+
+  it("ranks hot above warm above neither", () => {
+    expect(
+      order(
+        [
+          row("you", "none", daysAgo(0), "cool"),
+          row("you", "none", daysAgo(3), "warm"),
+          row("you", "none", daysAgo(6), "hot"),
+        ],
+        "review",
+        NOW,
+      ),
+    ).toEqual(["hot", "warm", "cool"])
+  })
+
+  it("still orders by recency inside one heat band, rather than by age", () => {
+    expect(
+      order(
+        [
+          row("you", "none", daysAgo(6), "hot-newer"),
+          row("you", "none", daysAgo(30), "hot-older"),
+        ],
+        "review",
+        NOW,
+      ),
+    ).toEqual(["hot-newer", "hot-older"])
+  })
+
+  it("never lets heat carry a row of theirs above one of yours", () => {
+    expect(
+      order(
+        [
+          row("them", "none", daysAgo(60), "theirs-and-ancient"),
+          row("you", "none", daysAgo(0), "yours-and-fresh"),
+        ],
+        "review",
+        NOW,
+      ),
+    ).toEqual(["yours-and-fresh", "theirs-and-ancient"])
+  })
+
+  /*
+   * The deliberate limit of the guarantee. A draft is not asking, which is what
+   * key two exists to say, so heat promotes within the asking rows and does not
+   * overrule them. A hot draft sinking is the correct answer, not a gap.
+   */
+  it("never lets heat carry a draft above work that is actually asking", () => {
+    expect(
+      order(
+        [
+          row("you", "draft", daysAgo(60), "draft-and-ancient"),
+          row("you", "none", daysAgo(0), "asking-and-fresh"),
+        ],
+        "review",
+        NOW,
+      ),
+    ).toEqual(["asking-and-fresh", "draft-and-ancient"])
+  })
+
+  it("leaves the order untouched in a column with no staleness band", () => {
+    expect(
+      order(
+        [
+          row("you", "none", daysAgo(400), "ancient"),
+          row("you", "none", daysAgo(0), "fresh"),
+        ],
+        "done",
+        NOW,
+      ),
+    ).toEqual(["fresh", "ancient"])
+  })
+
+  /*
+   * A board restored from a cache written before `fetchedAt` existed, and the
+   * server pass before the clock means anything. Degrading to the old
+   * comparator is the direction to fail in; degrading to a guessed heat is not.
+   */
+  it("degrades to plain recency when the read has no moment", () => {
+    expect(
+      order([
+        row("you", "none", daysAgo(400), "ancient"),
+        row("you", "none", daysAgo(0), "fresh"),
+      ]),
+    ).toEqual(["fresh", "ancient"])
   })
 })
