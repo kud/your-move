@@ -1,6 +1,9 @@
 import {
+  buildHealthQueries,
   buildInboxQueries,
   buildInboxQuery,
+  healthIdsFrom,
+  mergeHealth,
   mergeInboxData,
   sourceCoverage,
   truncatedSources,
@@ -254,6 +257,54 @@ const coverageWith = (data: any, overflow: any) => {
   return merged
 }
 
+/*
+ * The third tier: the verdict the second one could not afford.
+ *
+ * Tier two buys a hundred review requests for one point by dropping the health
+ * selection whole, which is honest and which leaves those rows `unknown` — the
+ * dashed bar on the board is exactly this, and it says "unassessed", not
+ * "nothing wanted here". On an account with a hundred of them that is most of
+ * the column declining to answer the one question the app exists to answer.
+ *
+ * So the ids come back here, in batches, with the full selections. `@kud/gh`
+ * owns the cost reasoning — see `HEALTH_BATCH_SIZE`, where the batching is
+ * measured and where it is a MECHANISM rather than a tuning knob: one 100-id
+ * request 502s at eleven seconds exactly as the search did, because the wall
+ * clock belongs to expanding the nodes and not to the endpoint. What is left
+ * here is transport, which is this file's whole job.
+ *
+ * Sequential rather than fired with tier two, and that is forced rather than
+ * chosen: this needs the ids only tier two can return. Three round trips on a
+ * truncating account, behind the same ten-minute cache, and not one extra
+ * request for an account that never truncates.
+ *
+ * `allSettled`, so a dead batch is a batch that merges nothing. That is the
+ * whole failure path and it needs no branch: a node that merges nothing keeps
+ * no health keys, `healthOf` reads the absence, `whoseMove` answers `unknown`,
+ * and the row draws the same dashed bar it drew before we tried. Degrading to
+ * fewer verdicts is safe; degrading to a guessed one is the thing every layer
+ * of this chain is built to refuse.
+ *
+ * Scoped to `reviewRequests` for the same reason tier two is: it is the only
+ * source that truncates AND carries health. The issue sources truncate too and
+ * have no health to fetch.
+ */
+const withHealth = async (token: string, data: any): Promise<any> => {
+  const ids = healthIdsFrom(data, ["reviewRequests"])
+  if (ids.length === 0) return data
+
+  const settled = await Promise.allSettled(
+    buildHealthQueries(ids).map((query) => ask(token, query)),
+  )
+
+  return mergeHealth(
+    data,
+    settled
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+      .map((r) => r.value),
+  )
+}
+
 export const fetchInbox = async (
   token: string,
   options: { repo?: string; doneWithinDays?: number } = {},
@@ -343,6 +394,12 @@ export const fetchInbox = async (
       ).catch(() => undefined)
     : undefined
 
+  /* Everything downstream reads the enriched copy, so an overflow row that got
+     its verdict is indistinguishable from a first-tier one — same health, same
+     last actor, same activity age. One that did not is unchanged, which is the
+     state the board already knows how to draw. */
+  const enriched = overflow ? await withHealth(token, overflow) : undefined
+
   const login: string | undefined = data?.viewer?.login
 
   const answered = new Set(
@@ -353,7 +410,7 @@ export const fetchInbox = async (
     rows: sortItems(
       dedupe([
         ...rowsFrom(data, login),
-        ...(overflow ? rowsFrom(overflow, login) : []),
+        ...(enriched ? rowsFrom(enriched, login) : []),
       ]) as GHItem[],
     ) as Row[],
     login,
@@ -363,7 +420,7 @@ export const fetchInbox = async (
       ? { remaining: data.rateLimit.remaining, resetAt: data.rateLimit.resetAt }
       : undefined,
     reasons,
-    coverage: coverageWith(data, overflow),
+    coverage: coverageWith(data, enriched),
   }
 }
 
