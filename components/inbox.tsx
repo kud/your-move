@@ -354,7 +354,7 @@ export const Inbox = ({
         : all.filter(
             (r) =>
               /* Owners and repos are ONE dimension, so they OR. Owner `kud`
-                 AND repo `theorchard/x` yielding nothing is never what anyone
+                 AND repo `acme/x` yielding nothing is never what anyone
                  means by ticking both. */
               ((!picks.repos.length && !picks.owners.length) ||
                 picks.repos.includes(r.repo) ||

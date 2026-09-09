@@ -111,7 +111,7 @@ export const statusCounts = (rows: Row[], reasonFor: (row: Row) => string) =>
 export type Picks = {
   repos: string[]
   /* Not a fifth facet — a second way of writing the repos one. An owner pick
-     is a standing predicate ("everything theorchard has, including what it has
+     is a standing predicate ("everything acme has, including what it has
      next week") where a repo list is a snapshot, so the two OR together within
      one dimension and the header's "AND across facets" rule holds unchanged. */
   owners: string[]
@@ -833,7 +833,7 @@ export const Filters = ({
           {/*
             Results first when there is a query, grouped by which facet they
             came from — the group heading is the only thing saying whether
-            `abacus` matched a repository or a label, and without it the three
+            `billing` matched a repository or a label, and without it the three
             lists become one undifferentiated column.
           */}
           {found
