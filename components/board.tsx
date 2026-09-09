@@ -235,9 +235,34 @@ export const reasonFor = (row: Row): string => {
   if (row.health === "conflict") return "Conflict"
   if (row.health === "changes-req") return "Changes requested"
   if (row.health === "threads") return `${row.unresolved} unresolved`
+  /*
+   * Above the source check, and it is the only health that has to be.
+   *
+   * `computeHealth` already ranks `draft` above every mechanical health, so a
+   * draft's health is never `ci-fail` or `conflict` — the four branches above
+   * are unreachable for one, and this line moves exactly one row: a draft
+   * somebody asked you to review.
+   *
+   * The BAND is what makes the old order wrong rather than merely terse.
+   * `whoseMove` files that row under Their move, `draft` being absent from
+   * `YOURS.queued` — and the chip on the same card then said "Review
+   * requested", which is a claim on you. So the card contradicted itself, and
+   * it did it in the direction that costs most: the row was already sunk, under
+   * a caption that did not say why. No other health contradicts its own band
+   * that way, which is why no other belongs here and `approved` in particular
+   * does not — `queued` lists it, so band and chip agree.
+   *
+   * Replacing rather than combining, because "Review requested" is already
+   * carried structurally: the row is IN that column. Restating it here would
+   * spend the card's one chip line on the fact the column exists to assert —
+   * the same redundancy `byOther` reasons its way out of below.
+   *
+   * Iris's call. `reasonFor` reading a SOURCE at all is the anomaly in an
+   * otherwise health-shaped ladder, and this is where it bit.
+   */
+  if (row.health === "draft") return "Draft"
   if (row.source === "reviewRequests") return "Review requested"
   if (row.health === "approved") return "Approved"
-  if (row.health === "draft") return "Draft"
   if (row.health === "merged") return "Merged"
   if (row.health === "closed") return "Closed"
   if (row.health === "pending") return "Checks running"
