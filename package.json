@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@kud/gh": "0.14.0",
+    "@kud/gh": "0.15.0",
     "@kud/gh-workflow": "0.4.1",
     "next": "16.3.1",
     "react": "19.2.8",

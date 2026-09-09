@@ -6,7 +6,7 @@ import {
   mergeHealth,
   mergeInboxData,
   sourceCoverage,
-  truncatedSources,
+  cappedSources,
   INBOX_SOURCES,
   type InboxSource,
   type SourceCoverage,
@@ -228,31 +228,46 @@ const dedupe = (rows: Row[]): Row[] => {
  * to route around from here.
  */
 /*
+ * The cap the overflow tier asks for, named once.
+ *
+ * It is read twice — by the query, and by the coverage that has to be measured
+ * against the SAME number. Two literals would drift the moment one moved, and
+ * the failure would be silent in the worse direction: coverage measured against
+ * the default 20 would call a filled column capped forever and keep firing an
+ * overflow fetch that had already succeeded.
+ */
+const OVERFLOW_LIMITS = { reviewRequests: 100 } as const
+
+/*
  * Coverage has to describe the BOARD, not the first request.
  *
  * `sourceCoverage` reads the tier it is handed, so left alone it would go on
- * reporting "showing 20 of 99" for a source the overflow tier has since filled
- * in — the banner contradicting the rows underneath it, which is the lying by
- * arithmetic the notice exists to prevent. `total` is GitHub's own `issueCount`
- * and stays whatever it was; only what we managed to SHOW has changed.
+ * reporting "showing the first 20" for a source the overflow tier has since
+ * filled in — the banner contradicting the rows underneath it, which is the
+ * lying by arithmetic the notice exists to prevent.
+ *
+ * Whichever tier SHOWED MORE wins, whole. Not field by field: `capped` is
+ * `shown >= cap` and both halves of that moved between the tiers, so a merge
+ * that took the larger `shown` and left the smaller `cap` beside it would
+ * describe a fetch nobody made. Taking one tier's reading entire keeps the
+ * three numbers a single snapshot, which is the only state that can be
+ * reasoned about.
  *
  * It reports what the second tier actually returned rather than assuming it
  * returned everything: a hundred is a cap too, and an account with more than
- * that is still truncated and must still say so.
+ * that is still capped and must still say so.
  */
 const coverageWith = (data: any, overflow: any) => {
   const base = sourceCoverage(data)
   if (!overflow) return base
 
   const merged = { ...base }
-  for (const [source, seen] of Object.entries(sourceCoverage(overflow))) {
+  for (const [source, seen] of Object.entries(
+    sourceCoverage(overflow, OVERFLOW_LIMITS),
+  )) {
     const was = merged[source as InboxSource]
     if (!was || !seen) continue
-    merged[source as InboxSource] = {
-      total: was.total,
-      shown: Math.max(was.shown, seen.shown),
-      truncated: was.total > Math.max(was.shown, seen.shown),
-    }
+    merged[source as InboxSource] = seen.shown >= was.shown ? seen : was
   }
   return merged
 }
@@ -381,15 +396,15 @@ export const fetchInbox = async (
    * collision — the overflow row is the same PR with less known about it, and
    * the earlier occurrence is the one carrying a verdict.
    */
-  const truncated = truncatedSources(data)
-  const overflow = truncated.includes("reviewRequests")
+  const capped = cappedSources(data)
+  const overflow = capped.includes("reviewRequests")
     ? await ask(
         token,
         buildInboxQuery({
           ...options,
           sources: ["reviewRequests"],
           shape: "minimal",
-          limits: { reviewRequests: 100 },
+          limits: OVERFLOW_LIMITS,
         }),
       ).catch(() => undefined)
     : undefined

@@ -198,49 +198,87 @@ export const heatOf = (
 }
 
 /*
- * Which sources came back as a SAMPLE rather than as the set.
+ * Which sources came back as a SAMPLE rather than as the set, and which came
+ * back SHORT. They are different events and the surface must not merge them.
  *
- * `@kud/gh` decides the fact — `sourceCoverage` compares GitHub's own
- * `issueCount` against what the cap let through — and this only puts a name to
- * it, in the same second-person vocabulary as `SOURCE_TITLES`. Same division as
- * the rest of this file: the library owns the number, the surface owns the word.
+ * `@kud/gh` decides both facts — `sourceCoverage` compares what came back
+ * against the cap we asked for — and this only puts a name to them, in the same
+ * second-person vocabulary as `SOURCE_TITLES`. Same division as the rest of this
+ * file: the library owns the number, the surface owns the word.
+ *
+ * It used to read one boolean derived from GitHub's `issueCount`, and that
+ * number is not a total: measured 2026-09-09 on a live account, one source
+ * answered a count of 8 alongside sixteen nodes. So the board named five capped
+ * sources of which not one was near its cap, under a caveat explaining caps.
+ * The sentence was true and the situation was not, which is why it read as
+ * incomprehensible rather than as wrong — this file has now rendered a wrong
+ * input faithfully twice, the first time being the ten columns that fell
+ * through to FALLBACK for four days. Both silences look like design.
  *
  * In `INBOX_SOURCES` order, so the list reads in the same sequence as the board
  * and cannot reorder itself between two fetches.
  *
  * An absent `coverage` yields nothing, and that is the direction to fail in: a
  * board restored from a cache written before the field existed does not know
- * whether it is truncated, and claiming a truncation it cannot see would be the
+ * whether it is capped, and claiming a truncation it cannot see would be the
  * same invention as hiding one.
  */
 export type Truncation = {
   source: InboxSource
   title: string
-  /** Everything the search matched. */
-  total: number
-  /** What the cap let through. */
+  /** What the cap let through. Exact, and ours. */
   shown: number
+  /**
+   * What GitHub said it matched. AN ESTIMATE, and observed wrong in both
+   * directions — including smaller than `shown`, which is why any sentence
+   * built on it has to guard `estimate > shown` before printing the number.
+   * The guard is not politeness; it is the difference between an approximation
+   * and a visible absurdity.
+   */
+  estimate: number
 }
 
+/**
+ * Sources whose rows are the first N of more.
+ *
+ * A source that returned NOTHING can never appear here, and that is structural
+ * rather than checked: `capped` is `shown >= cap` and the library floors every
+ * cap at one, so zero rows cannot satisfy it. That matters because the copy
+ * this feeds asserts rows are on screen.
+ */
 export const truncations = (
   coverage?: Partial<Record<InboxSource, SourceCoverage>>,
 ): Truncation[] =>
   coverage
     ? INBOX_SOURCES.flatMap((source) => {
         const seen = coverage[source]
-        return seen?.truncated
+        return seen?.capped
           ? [
               {
                 source,
                 title: sourceTitle(source),
-                total: seen.total,
                 shown: seen.shown,
+                estimate: seen.total,
               },
             ]
           : []
       })
     : []
 
-/** How many rows the whole board is not showing. */
-export const hiddenRows = (rows: Truncation[]) =>
-  rows.reduce((n, r) => n + (r.total - r.shown), 0)
+/**
+ * Sources that answered under their cap with rows missing anyway.
+ *
+ * Not a truncation and not quite a failure — the source answered, and answered
+ * short. It joins the failure notice rather than the coverage one because
+ * failed and short are the same kind of event differing in degree, where a cap
+ * is categorically different: nothing went wrong in a capped column.
+ *
+ * Titles rather than ids, because this is read beside `failed`, which is
+ * already translated.
+ */
+export const shortfalls = (
+  coverage?: Partial<Record<InboxSource, SourceCoverage>>,
+): InboxSource[] =>
+  coverage
+    ? INBOX_SOURCES.filter((source) => coverage[source]?.partial)
+    : []
