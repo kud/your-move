@@ -47,6 +47,7 @@ import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder, byLaneOrder, shortName } from "@/lib/order"
 import {
   presentationFor,
+  shortfalls,
   sourceTitle,
   truncations,
 } from "@/lib/sections"
@@ -683,6 +684,12 @@ export const Inbox = ({
     inbox && inbox.failed.length > 0 && all.length === 0,
   )
   const sampled = truncations(inbox?.coverage)
+  /* A source that answered short joins the FAILURE notice, not the coverage
+     one: failed and short are the same kind of event differing in degree, where
+     a cap is categorically different — nothing went wrong in a capped column.
+     It also keeps that region at three notices, which is where it stops reading
+     as a column of facts and starts being a stack. */
+  const short = shortfalls(inbox?.coverage)
   const healthy = liveness === "live" || liveness === "refreshing"
 
   return (
@@ -881,21 +888,50 @@ export const Inbox = ({
             </p>
           ) : null}
 
-          {inbox?.failed.length && !allFailed ? (
+          {/*
+            Two leads, one box. A source that failed and a source that answered
+            short are the same event at different degrees — rows are missing and
+            nothing you did caused it — so they share a tone and a disclosure.
+            Failed first, worst-first, exactly as the stack itself is ordered.
+
+            The lists stay LABELLED apart inside the disclosure. `{n} sections
+            affected` is a correct summary of the union, but an unlabelled list
+            beneath it would claim both halves are the same kind, which is the
+            distinction this whole notice exists to draw.
+          */}
+          {(inbox?.failed.length || short.length) && !allFailed ? (
             <div className="mb-2 rounded-lg border border-brass p-2.5 text-[12px]">
-              <p className="text-brass">
-                <span aria-hidden>! </span>
-                <strong>A source failed.</strong> An empty column below is
-                missing data, not an empty status.
-              </p>
+              {inbox?.failed.length ? (
+                <p className="text-brass">
+                  <span aria-hidden>! </span>
+                  <strong>A source failed.</strong> An empty column below is
+                  missing data, not an empty status.
+                </p>
+              ) : null}
+              {short.length ? (
+                <p
+                  className={`text-brass${inbox?.failed.length ? " mt-1" : ""}`}
+                >
+                  <span aria-hidden>! </span>
+                  <strong>A source answered short.</strong> Rows are missing
+                  from a column below — not filtered out, and not gone.
+                </p>
+              ) : null}
               <details className="mt-1">
                 <summary className="cursor-pointer text-fg-quiet">
-                  {inbox.failed.length} sections affected
+                  {(inbox?.failed.length ?? 0) + short.length} sections affected
                 </summary>
-                <p className="mt-1 text-fg-quiet">
-                  {inbox.failed.map(sourceTitle).join(", ")}
-                </p>
-                {inbox.reasons?.length ? (
+                {inbox?.failed.length ? (
+                  <p className="mt-1 text-fg-quiet">
+                    Failed: {inbox.failed.map(sourceTitle).join(", ")}
+                  </p>
+                ) : null}
+                {short.length ? (
+                  <p className="mt-1 text-fg-quiet">
+                    Short: {short.map(sourceTitle).join(", ")}
+                  </p>
+                ) : null}
+                {inbox?.reasons?.length ? (
                   <p className="mt-1 font-mono text-fg-quiet">
                     {inbox.reasons.join(" · ")}
                   </p>
@@ -911,9 +947,25 @@ export const Inbox = ({
             source answered, and each answered completely for the window it was
             allowed. What it cannot say on its own is that the window is smaller
             than the world — `reviewRequests` asks GitHub for 20, and on this
-            account 99 match, so a column headed `20` was reporting its own cap
-            and reading as a total. The board's whole posture is that a partial
-            answer is fine and an answer pretending to be whole is not.
+            account far more match, so a column headed `20` was reporting its own
+            cap and reading as a total. The board's whole posture is that a
+            partial answer is fine and an answer pretending to be whole is not.
+
+            THE RATIO IS GONE, AND IT CANNOT COME BACK. This read "showing 20 of
+            99" until 2026-09-09, and the 99 was GitHub's `issueCount` — an
+            estimate observed wrong in both directions, including SMALLER than
+            the rows drawn from it. So the line states a floor now, "showing the
+            first 20", which is ours and exact; the estimate is named as
+            GitHub's and only appears when it exceeds what we showed. That guard
+            is load-bearing rather than tidy: without it this prints "showing the
+            first 16 · GitHub estimates 8".
+
+            It fires on `capped` — we asked for N and got N — which is why the
+            caveat below is now precisely true of the event that triggered it.
+            The old condition was `matched > returned`, which fired on sources
+            nowhere near their cap and explained them with a sentence about caps.
+            A true sentence about a false situation is the hardest kind of wrong
+            to read, and it was read as incomprehensible rather than as wrong.
 
             It also governs what a DIFF may claim. `use-notifier` marks arrivals
             by comparing one fetch with the next; on a truncated source a row
@@ -949,12 +1001,15 @@ export const Inbox = ({
 
             THE NUMBERS ARE THE BRIGHT HALF. The caveat was bold over a quiet
             list, which is emphasis pointing at the wrong thing — you have come
-            for `20 of 99`, not for the sentence explaining why it is there. So
+            for the count, not for the sentence explaining why it is there. So
             the caveat sits in `fg-quiet` and the counts in `fg-mute` above it.
+            The emphasis now splits WITHIN the line as well: the exact figure is
+            the bright half and the estimate beside it is quiet, because one of
+            them is a fact and the other is somebody else's guess.
 
             The disclosure went with it. It hid one line behind a triangle and
-            said nearly the same thing twice — "79 rows not shown", then
-            "showing 20 of 99" — so it split one fact across a click. Flat is
+            said nearly the same thing twice — a rows-not-shown count, then the
+            line it was derived from — so it split one fact across a click. Flat is
             shorter than the affordance that concealed it. If this ever lists
             enough sources to want folding again, that is the moment to argue
             for it, not now.
@@ -973,7 +1028,12 @@ export const Inbox = ({
               <ul className="text-fg-mute">
                 {sampled.map((t) => (
                   <li key={t.source}>
-                    {t.title} — showing {t.shown} of {t.total}
+                    {t.title} — showing the first {t.shown}
+                    {t.estimate > t.shown ? (
+                      <span className="text-fg-quiet">
+                        {" · "}GitHub estimates {t.estimate}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

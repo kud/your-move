@@ -7,7 +7,7 @@ import { INBOX_SOURCES } from "@kud/gh/inbox"
 import { BOARD_W, cellRule, COLUMNS, DONE, sectionOf } from "@/components/board"
 import {
   heatOf,
-  hiddenRows,
+  shortfalls,
   PRESENTED_SECTIONS,
   STALE_AFTER,
   truncations,
@@ -371,11 +371,32 @@ describe("the board's right edge", () => {
  * The library decides truncation; these assert the surface reads it, keeps the
  * board's own ordering, and stays quiet when it genuinely does not know.
  */
-describe("truncated sources", () => {
-  it("names each source that returned a sample, with both numbers", () => {
+/*
+ * The library decides both facts; these assert the surface reads them apart.
+ *
+ * `capped` and `partial` are different events and the notice they feed is
+ * different too — one is "here are the first N", the other is "rows went
+ * missing". Merging them is the regression this replaced: a single boolean
+ * derived from GitHub's estimate fired on five sources that were nowhere near
+ * their caps, under a caveat explaining caps.
+ */
+const seen = (
+  shown: number,
+  cap: number,
+  total: number,
+): { total: number; shown: number; cap: number; capped: boolean; partial: boolean } => ({
+  total,
+  shown,
+  cap,
+  capped: shown >= cap,
+  partial: shown < cap && total > shown,
+})
+
+describe("capped sources", () => {
+  it("names each source showing the first N, with the estimate beside it", () => {
     const rows = truncations({
-      reviewRequests: { total: 99, shown: 20, truncated: true },
-      assigned: { total: 44, shown: 30, truncated: true },
+      reviewRequests: seen(20, 20, 99),
+      assigned: seen(100, 100, 144),
     })
 
     expect(rows.map((r) => r.source)).toEqual(["reviewRequests", "assigned"])
@@ -383,9 +404,9 @@ describe("truncated sources", () => {
       "Review requested",
       "Assigned to you",
     ])
-    expect(rows.map((r) => [r.total, r.shown])).toEqual([
-      [99, 20],
-      [44, 30],
+    expect(rows.map((r) => [r.shown, r.estimate])).toEqual([
+      [20, 99],
+      [100, 144],
     ])
   })
 
@@ -393,33 +414,71 @@ describe("truncated sources", () => {
      between two fetches that said the same thing. */
   it("reads in the board's own source order", () => {
     const rows = truncations({
-      recentlyDone: { total: 9, shown: 5, truncated: true },
-      myPRs: { total: 40, shown: 30, truncated: true },
+      recentlyDone: seen(30, 30, 40),
+      myPRs: seen(30, 30, 40),
     })
 
     expect(rows.map((r) => r.source)).toEqual(["myPRs", "recentlyDone"])
   })
 
-  it("says nothing about a source that returned everything", () => {
+  it("says nothing about a source that came in under its cap", () => {
+    // The five phantoms. Every one of these was reported as truncated and
+    // explained with a sentence about caps, and not one had hit a cap.
     expect(
-      truncations({ reviewed: { total: 4, shown: 4, truncated: false } }),
+      truncations({
+        myPRs: seen(14, 30, 16),
+        reviewed: seen(9, 20, 11),
+        assigned: seen(54, 100, 55),
+        repoIssues: seen(94, 100, 111),
+        repoPRs: seen(0, 30, 5),
+      }),
     ).toEqual([])
   })
 
   /* A cache written before coverage existed. "We do not know" must never render
-     as "nothing is truncated" — nor invent a truncation it cannot see. */
+     as "nothing is capped" — nor invent a truncation it cannot see. */
   it("stays quiet when there is no coverage at all", () => {
     expect(truncations(undefined)).toEqual([])
+    expect(shortfalls(undefined)).toEqual([])
   })
 
-  it("counts what the whole board is not showing", () => {
+  /*
+   * The line this feeds prints the estimate only when it exceeds what we
+   * showed, so the surface has to carry both numbers unmangled — including the
+   * reading where GitHub's count came back BELOW the rows drawn from it.
+   * Clamping here would hide the absurdity instead of letting the copy refuse
+   * to print it.
+   */
+  it("carries an estimate through even when it is smaller than what was shown", () => {
+    expect(truncations({ myPRs: seen(30, 30, 8) })[0]).toEqual({
+      source: "myPRs",
+      title: "Your pull requests",
+      shown: 30,
+      estimate: 8,
+    })
+  })
+})
+
+describe("short sources", () => {
+  it("names the sources that answered under their cap with rows missing", () => {
     expect(
-      hiddenRows(
-        truncations({
-          reviewRequests: { total: 99, shown: 20, truncated: true },
-          authoredIssues: { total: 101, shown: 100, truncated: true },
-        }),
-      ),
-    ).toBe(80)
+      shortfalls({
+        repoIssues: seen(94, 100, 111),
+        reviewRequests: seen(20, 20, 99),
+      }),
+    ).toEqual(["repoIssues"])
+  })
+
+  /* `Incoming 0 of 5` on a live board. A source that returned nothing is short
+     at its most extreme, and it must never reach the capped notice, whose copy
+     asserts rows are on screen. */
+  it("counts a source that answered with nothing as short, never as capped", () => {
+    const coverage = { repoPRs: seen(0, 30, 5) }
+    expect(shortfalls(coverage)).toEqual(["repoPRs"])
+    expect(truncations(coverage)).toEqual([])
+  })
+
+  it("says nothing about a source that returned everything it matched", () => {
+    expect(shortfalls({ reviewed: seen(4, 20, 4) })).toEqual([])
   })
 })
