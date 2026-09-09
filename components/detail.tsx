@@ -88,6 +88,7 @@ const REVIEW_WORD: Record<string, string> = {
  */
 const verdictFor = (row: Row, detail?: Detail) => {
   const yours = row.move === "you"
+  const unread = row.move === "unknown"
   const failed = detail?.checks.filter((c) =>
     /FAIL|ERROR|TIMED|CANCEL/i.test(c.state),
   ).length
@@ -115,13 +116,25 @@ const verdictFor = (row: Row, detail?: Detail) => {
                         ? "Open issue"
                         : "Open"
 
+  /*
+   * The panel says the verdict in words, so it is where an invented one does
+   * the most damage — a board chip is glanceable and deniable, a full sentence
+   * is not. It declines here or it lies here.
+   *
+   * An en dash rather than a glyph, because it is the universal "this cell has
+   * no value" and it exists in every font. `◌` would in fact be the better
+   * drawing of provisional, but it is already spent on `them` and changing a
+   * shipped state to free it up is a different change than this one.
+   */
   return {
-    because,
-    move: yours ? "your move" : "their move",
-    tone: yours
-      ? "border-accent bg-accent-dim text-accent"
-      : "border-line bg-panel-2 text-fg-mute",
-    glyph: yours ? "!" : "◌",
+    because: unread ? "Not enough was fetched to say" : because,
+    move: unread ? "no verdict" : yours ? "your move" : "their move",
+    tone: unread
+      ? "border-line border-dashed bg-transparent text-fg-mute"
+      : yours
+        ? "border-accent bg-accent-dim text-accent"
+        : "border-line bg-panel-2 text-fg-mute",
+    glyph: unread ? "–" : yours ? "!" : "◌",
   }
 }
 

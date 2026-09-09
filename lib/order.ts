@@ -1,3 +1,5 @@
+import type { Move } from "@kud/gh-workflow"
+
 import type { Row } from "@/lib/github"
 
 /*
@@ -24,8 +26,23 @@ import type { Row } from "@/lib/github"
 
 type Ordered = Pick<Row, "move" | "health" | "ts">
 
+/*
+ * `you` → `unknown` → `them`, and the middle place is the whole point.
+ *
+ * A two-way key would tie `unknown` with `them`, which is precisely where
+ * `includes(undefined)` already put these rows before the library grew a third
+ * verdict — the same wrong answer with a type on it to make it look deliberate.
+ *
+ * The bands rank CLAIMS ON YOUR ATTENTION, not confidence in the reading, and
+ * `them` is the one band that exists to be skipped. A row we could not rule out
+ * therefore outranks one we ruled out. It also cannot outrank a row we know is
+ * yours, because it might not be. `@kud/gh-workflow` sorts its bands the same
+ * way; a cell that disagreed would contradict the column it sits in.
+ */
+const RANK: Record<Move, number> = { you: 0, unknown: 1, them: 2 }
+
 export const byCellOrder = (a: Ordered, b: Ordered): number =>
-  Number(b.move === "you") - Number(a.move === "you") ||
+  RANK[a.move] - RANK[b.move] ||
   Number(a.health === "draft") - Number(b.health === "draft") ||
   b.ts - a.ts
 

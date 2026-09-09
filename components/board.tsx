@@ -39,6 +39,10 @@ export const TONE: Record<string, string> = {
   brass: "text-brass border-brass/40 bg-brass/10",
   sage: "text-sage border-sage/40 bg-sage/10",
   slate: "text-slate border-line bg-panel-2",
+  /* No fill, and dashed. The other five tones colour a claim about the work;
+     this one marks the absence of a claim, so it spends no hue and borrows the
+     "candidate, not committed" line style `row-labels.tsx` already uses. */
+  none: "text-fg-quiet border-line border-dashed bg-transparent",
 }
 
 /*
@@ -217,6 +221,12 @@ export const REASON_TONE: Record<string, string> = {
   "Checks running": "brass",
   Approved: "sage",
   Merged: "sage",
+  /* The only chip on the board with no ground. Every other one asserts a
+     condition of the WORK and gets a fill; this one reports a condition of our
+     ANSWER, so it declines the fill the way it declines the verdict. Dashed
+     because `row-labels.tsx` already spends that line style on "candidate, not
+     committed", which is the same idea one level along. */
+  "No verdict": "none",
 }
 
 /*
@@ -237,6 +247,15 @@ export const reasonFor = (row: Row): string => {
   if (row.health === "merged") return "Merged"
   if (row.health === "closed") return "Closed"
   if (row.health === "pending") return "Checks running"
+  /*
+   * The tail is the only lie in this ladder, so it is the only branch guarded.
+   *
+   * Everything above reads a fact that survives a `minimal` fetch — the source
+   * that produced the row, or a state readable off `state` and `isDraft`. The
+   * fall-through does not: "Open" on a row whose health was never fetched
+   * asserts the confidence the third verdict exists to withhold.
+   */
+  if (row.move === "unknown") return "No verdict"
   return row.kind === "issue" ? "Issue" : "Open"
 }
 
@@ -406,11 +425,34 @@ const CardBody = ({
         />
       ) : null}
 
-      {/* Position and shape, not hue alone: a bar on the leading edge. */}
+      {/*
+        Position and shape, not hue alone: a bar on the leading edge.
+
+        The third state has to be ADDITIVE, and that is the whole trap. `them`
+        is already drawn as absence — it gets no bar at all — so drawing "no
+        verdict" as absence too, which is the instinctive reading of it, would
+        make an unclassified row pixel-identical to a their-move one. That is
+        the bug reproduced in presentation immediately after being fixed in the
+        resolver. So it draws something where `them` draws nothing: the same
+        2px, the same inset, a dashed line instead of a solid one.
+
+        Dashed is not a stylistic pick. `row-labels.tsx` already spends that
+        line style on a label that is proposed and not yet applied, which is the
+        same "candidate, not committed" idea one level along.
+
+        Nothing here is dimmed, and that is deliberate. Reducing the card's
+        weight would demote these rows visually exactly as they were demoted
+        logically — an unclassified row is not less important, it is unassessed.
+      */}
       {yours ? (
         <span
           aria-hidden
           className="absolute inset-y-2 left-0 w-[2px] rounded-full bg-accent"
+        />
+      ) : row.move === "unknown" ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-2 left-0 border-l-2 border-dashed border-fg-quiet"
         />
       ) : null}
 

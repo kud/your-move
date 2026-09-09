@@ -12,7 +12,7 @@ import type { Row } from "./github.js"
  */
 
 const row = (
-  move: "you" | "them",
+  move: "you" | "them" | "unknown",
   health: Row["health"],
   ts: number,
   name: string,
@@ -90,6 +90,51 @@ const lanes = (
   pins: string[],
   ls: ReturnType<typeof lane>[],
 ) => [...ls].sort(byLaneOrder(how, new Set(pins))).map((l) => l.repo)
+
+/*
+ * The durable principle from the library, asserted again on this side of the
+ * wire. `whoseMove` can be right and the board still wrong: a cell that ranked
+ * `unknown` alongside `them` would put these rows back exactly where
+ * `includes(undefined)` had them, and nothing would look broken.
+ */
+describe("byCellOrder and the third verdict", () => {
+  it("ranks an unclassified row between the two verdicts", () => {
+    expect(
+      order([
+        row("them", "none", 300, "theirs"),
+        row("unknown", undefined, 200, "unclassified"),
+        row("you", "none", 100, "yours"),
+      ]),
+    ).toEqual(["yours", "unclassified", "theirs"])
+  })
+
+  it("never lets a row we declined to judge sink below one we judged not-yours", () => {
+    expect(
+      order([
+        row("them", "approved", 999, "theirs-and-fresh"),
+        row("unknown", undefined, 1, "unclassified-and-stale"),
+      ])[0],
+    ).toBe("unclassified-and-stale")
+  })
+
+  it("still keeps a known-yours row above an unclassified one", () => {
+    expect(
+      order([
+        row("unknown", undefined, 999, "unclassified-and-fresh"),
+        row("you", "none", 1, "yours-and-stale"),
+      ])[0],
+    ).toBe("yours-and-stale")
+  })
+
+  it("orders unclassified rows among themselves by recency", () => {
+    expect(
+      order([
+        row("unknown", undefined, 100, "older"),
+        row("unknown", undefined, 300, "newer"),
+      ]),
+    ).toEqual(["newer", "older"])
+  })
+})
 
 describe("byLaneOrder", () => {
   it("leaves urgency exactly as it was when nothing is pinned", () => {
