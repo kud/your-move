@@ -204,10 +204,17 @@ export const Markdown = ({ source }: { source: string }) => {
    * Normalising here rather than fixing the heading regex is the point. The
    * list matchers carry the identical `(.*)$`, so patching the one pattern that
    * was caught would have left the same trap behind two other doors.
+   *
+   * And it was: `\r` was only the terminator anyone had SEEN. `.` refuses to
+   * cross U+2028 and U+2029 too, and `$` will not pass them, so `- a\u2028b`
+   * reproduced the identical spin through `flushList` — found by the fuzz test
+   * rather than by a bug report, which is the whole reason that test exists.
+   * The set here is every line terminator JavaScript recognises; a new one
+   * cannot be added to the language, so this is closed rather than patched.
    */
   const lines = source
     .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\r\n?/g, "\n")
+    .replace(/\r\n?|[\u2028\u2029]/g, "\n")
     .split("\n")
   const blocks: ReactNode[] = []
   let i = 0
@@ -221,6 +228,22 @@ export const Markdown = ({ source }: { source: string }) => {
       if (!item) break
       items.push(item[1])
       i++
+    }
+    /*
+     * THE SAME RULE AS THE PARAGRAPH COLLECTOR, AND FOR THE SAME REASON.
+     *
+     * The guard that routes a line here is a PREFIX test; the matcher that
+     * collects the items is ANCHORED. Any line the first accepts and the second
+     * rejects arrives having advanced nothing, pushes an empty <ul>, and is read
+     * again on the next pass — the out-of-memory death, one door along from the
+     * heading that caused it the first time.
+     *
+     * Normalising the terminators above fixes today's instance; this closes the
+     * branch. A rewrite that drops it restores the spin, and nothing will throw.
+     */
+    if (!items.length) {
+      i++
+      return
     }
     const List = ordered ? "ol" : "ul"
     blocks.push(
