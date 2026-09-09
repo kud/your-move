@@ -740,9 +740,35 @@ export const Inbox = ({
                     control would have been the wrong fix for that; the line
                     just had to admit what it is.
                   */
-                  className="mt-1 flex max-w-full cursor-pointer items-center gap-1.5 truncate text-left text-[12px] text-fg-quiet transition-colors hover:text-fg-mute md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
+                  /*
+                    Wraps rather than truncates, and each fact is one
+                    unsplittable span carrying its own leading separator.
+
+                    `truncate` was both halves of a bug here. It is
+                    `overflow:hidden` + `ellipsis` + `nowrap`, and on a FLEX
+                    container the ellipsis does not apply to the item children —
+                    while the `nowrap` is inherited by every one of them, so each
+                    segment's min-content is its full text and none can shrink.
+                    The line went rigid and ran past its box, clipping the
+                    freshness mid-word on a phone: the one segment `CLAUDE.md`
+                    says must survive, since saying how old the answer is is what
+                    separates this from a mirror.
+
+                    Wrapping is unconditional on purpose. Healthy content fits on
+                    one row and never triggers it; a degraded state prefixes up
+                    to eighteen characters and takes a second row, which is the
+                    "a degraded state gets MORE space, not less" rule above being
+                    honoured by the layout rather than only asserted. The height
+                    change is itself the signal.
+
+                    The separator binds to the FRONT of the segment it
+                    introduces, so a wrapped row opens `· just now` — a
+                    continuation — never an orphaned dot. The count and its noun
+                    are one phrase set with a literal space, not a 6px flex gap.
+                  */
+                  className="mt-1 flex max-w-full cursor-pointer flex-wrap items-center gap-x-1.5 gap-y-0.5 text-left text-[12px] text-fg-quiet transition-colors hover:text-fg-mute md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
                 >
-                  <span aria-hidden>
+                  <span className="shrink-0" aria-hidden>
                     {liveness === "live"
                       ? "●"
                       : liveness === "refreshing"
@@ -750,39 +776,40 @@ export const Inbox = ({
                         : "◌"}
                   </span>
                   {healthy ? null : (
-                    <span className="text-brass">
+                    <span className="whitespace-nowrap text-brass">
                       {LIVENESS_TEXT[liveness]} ·
                     </span>
                   )}
                   {yoursTotal > 0 ? (
-                    <>
-                      <b className="font-semibold text-accent">{yoursTotal}</b>
-                      <span>need{yoursTotal === 1 ? "s" : ""} you</span>
-                    </>
+                    <span className="whitespace-nowrap">
+                      <b className="font-semibold text-accent">{yoursTotal}</b>{" "}
+                      need{yoursTotal === 1 ? "s" : ""} you
+                    </span>
                   ) : (
-                    <span>nothing needs you</span>
+                    <span className="whitespace-nowrap">nothing needs you</span>
                   )}
+                  {/* Wide only: the lanes below already enumerate every project
+                      with its own `N you` pill and item count, so on the phone
+                      this summarises a list the page is already showing. It is
+                      the only segment with a second home, which is why it is the
+                      one that goes. */}
                   {lanes.length ? (
-                    <>
-                      <span aria-hidden>·</span>
-                      <span className="font-mono tabular-nums">
-                        {lanes.length}{" "}
-                        {lanes.length === 1 ? "project" : "projects"}
-                      </span>
-                    </>
+                    <span className="hidden whitespace-nowrap font-mono tabular-nums md:inline">
+                      <span aria-hidden>·</span> {lanes.length}{" "}
+                      {lanes.length === 1 ? "project" : "projects"}
+                    </span>
                   ) : null}
                   {freshness ? (
-                    <>
-                      <span aria-hidden>·</span>
-                      <span>{freshness}</span>
-                    </>
+                    <span className="whitespace-nowrap">
+                      <span aria-hidden>·</span> {freshness}
+                    </span>
                   ) : null}
                   {inbox?.budget ? (
                     <span
-                      className="hidden font-mono tabular-nums md:inline"
+                      className="hidden whitespace-nowrap font-mono tabular-nums md:inline"
                       title="GitHub GraphQL points left this hour"
                     >
-                      · {inbox.budget.remaining}
+                      <span aria-hidden>·</span> {inbox.budget.remaining}
                     </span>
                   ) : null}
                 </button>
