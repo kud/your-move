@@ -162,6 +162,7 @@ const rowsFrom = (data: any, login?: string): Row[] =>
           undefined,
           Boolean(login && item.lastActor && item.lastActor !== login),
           item.pinned,
+          Boolean(login && item.repo.startsWith(`${login}/`)),
         ),
       }
     })
