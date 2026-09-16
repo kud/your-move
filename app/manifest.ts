@@ -17,29 +17,12 @@ import type { MetadataRoute } from "next"
  */
 const manifest = (): MetadataRoute.Manifest => ({
   /*
-   * A blank `name`, on purpose, and it is the only lever there is.
-   *
-   * Chrome's splash is painted before the page exists — no DOM, no CSS, nothing
-   * of ours running — so its typeface is not ours to choose. What it prints IS
-   * ours: it prints `name`. Blank, the splash is the mark alone, and the
-   * wordmark arrives a moment later in our own serif, on our own shell, which
-   * is the only place it can be set in the right face.
-   *
-   * `short_name` carries the launcher label, so the icon on the home screen is
-   * unaffected. What this does cost is the install prompt's title, which is the
-   * one other place Chrome reads `name` — a screen seen once per device.
-   *
-   * A NON-BREAKING space, and the distinction is the whole attempt. A plain
-   * space is ASCII whitespace, which Chrome trims before deciding whether the
-   * field is empty — so the first try almost certainly fell back to
-   * `short_name` and printed the same word as before. `\u00A0` is not ASCII
-   * whitespace, survives that trim as a non-empty string, and renders as
-   * nothing.
-   *
-   * If this one also prints, the field is not the lever and there is no other:
-   * revert to "Your Move" rather than trying a third character.
+   * Keep both manifest identity fields real. Browsers use `name` for install
+   * UI and splash surfaces and `short_name` where space is constrained. A
+   * whitespace-only `name` may look attractive as a splash-screen trick, but
+   * it makes installability depend on browser-specific normalization rules.
    */
-  name: "\u00A0",
+  name: "Your Move",
   short_name: "Your Move",
   description: "What moved on GitHub, and whose move it is.",
   start_url: "/",
