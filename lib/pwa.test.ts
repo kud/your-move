@@ -15,19 +15,12 @@ describe("manifest", () => {
   it("declares what a browser needs to offer an install", () => {
     const declared = manifest()
 
-    expect(declared.display).toBe("standalone")
-    expect(declared.start_url).toBe("/")
-    /*
-     * `short_name` is the one that has to be real: it is the launcher label.
-     *
-     * `name` is deliberately blank — it is the only text Chrome prints on its
-     * own splash, which is painted before the page exists and therefore in a
-     * face nothing of ours can set. Asserted rather than left as a curiosity,
-     * because a blank name with no explanation is exactly what a later edit
-     * helpfully repairs.
-     */
+    expect(declared.name).toBe("Your Move")
     expect(declared.short_name).toBe("Your Move")
-    expect(declared.name?.trim()).toBe("")
+    expect(declared.id).toBe("/")
+    expect(declared.start_url).toBe("/")
+    expect(declared.scope).toBe("/")
+    expect(declared.display).toBe("standalone")
 
     /* 192 and 512 are the two Chrome actually requires; anything else is
        decoration. Asserted as a set so a resize that drops one fails here. */
