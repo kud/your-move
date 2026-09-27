@@ -617,30 +617,40 @@ export const Inbox = ({
     strip.style.scrollSnapType = "none"
 
     /*
-     * Re-asserting the landing is the half the first fix missed.
+     * The move is horizontal and nothing else, and it is computed rather than
+     * delegated.
      *
-     * Chrome remembers which snap target the strip last rested on and, when
-     * snapping comes back, re-snaps to THAT — not to the nearest point. A swipe
-     * updates the memory as it goes; a move made with snapping off never does.
-     * So the tap reached the column, snapping returned, and the board slid back
-     * to the one it started from (seen on Android Chrome). Scrolling to where it
-     * already is, with snapping on, is what makes the arrival the new target.
+     * `scrollIntoView` on the column header moved BOTH axes: the header is
+     * sticky at the top while `scroll-pt` reserves the head band, so the
+     * browser saw a header outside the padded viewport and scrolled up to reveal
+     * one that can never move — a tap on a chip also threw the board back to
+     * the first lane. Under `both mandatory` that second, unasked-for move gave
+     * the snap two axes to reconcile on landing, and on Android Chrome the chip
+     * still came back to Open issues after the first fix.
+     *
+     * Landing is then re-asserted with snapping on, at the computed spot, so the
+     * arrival is what the snap settles to rather than whatever it rested on
+     * before the move. Which of the two was the cause has not been observed —
+     * only that both are gone.
      */
+    const pad = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0
+    const left =
+      anchor.getBoundingClientRect().left -
+      strip.getBoundingClientRect().left -
+      strip.clientLeft +
+      strip.scrollLeft -
+      pad
+
     const restore = () => {
       strip.removeEventListener("scrollend", restore)
       if (strip.style.scrollSnapType === snap) return
-      const landed = { left: strip.scrollLeft, top: strip.scrollTop }
       strip.style.scrollSnapType = snap
-      strip.scrollTo({ ...landed, behavior: "instant" })
+      strip.scrollTo({ left, top: strip.scrollTop, behavior: "instant" })
     }
     strip.addEventListener("scrollend", restore)
     setTimeout(restore, 1000)
 
-    anchor.scrollIntoView({
-      behavior: still ? "auto" : "smooth",
-      inline: "start",
-      block: "nearest",
-    })
+    strip.scrollTo({ left, behavior: still ? "auto" : "smooth" })
   }
 
   const openRowData = open
