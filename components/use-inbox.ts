@@ -111,7 +111,7 @@ export const useInbox = (
   const lastFetched = useRef<number | undefined>(initial?.fetchedAt)
   const budget = useRef<number | undefined>(initial?.budget?.remaining)
 
-  const refresh = useCallback(async () => {
+  const load = useCallback(async (fresh = false) => {
     /* The refresh control is a link home here, not a request. Anything that
        fetched in place would paint a live board at the wrong URL. */
     if (offlineRef.current) return void location.assign("/")
@@ -132,10 +132,13 @@ export const useInbox = (
        * The board froze until a reload — including after the network came back,
        * which is exactly the moment it was most trusted.
        */
-      const response = await fetch(`/api/inbox?done=${doneDaysRef.current}`, {
-        signal: AbortSignal.timeout(15_000),
-        cache: "no-store",
-      })
+      const response = await fetch(
+        `/api/inbox?done=${doneDaysRef.current}${fresh ? "&fresh=1" : ""}`,
+        {
+          signal: AbortSignal.timeout(15_000),
+          cache: "no-store",
+        },
+      )
 
       /* A revoked token is terminal — retrying cannot fix it, and a board that
          silently keeps showing the last good answer while signed out is exactly
@@ -188,7 +191,7 @@ export const useInbox = (
         setInbox(last)
         setLiveness("stale")
       }
-      void refresh()
+      void load()
     }
 
     const poll = setInterval(() => {
@@ -197,7 +200,7 @@ export const useInbox = (
       if (budget.current !== undefined && budget.current < BUDGET_FLOOR) return
       /* And never on a screen nobody is looking at. */
       if (document.visibilityState !== "visible") return
-      void refresh()
+      void load()
     }, POLL_MS)
 
     /* Coming back to a backgrounded tab is the moment the answer on screen is
@@ -208,7 +211,7 @@ export const useInbox = (
       if (document.visibilityState !== "visible") return
       const at = lastFetched.current
       if (at && Date.now() - at < REFETCH_IF_OLDER_MS) return
-      void refresh()
+      void load()
     }
     document.addEventListener("visibilitychange", onVisible)
     window.addEventListener("online", onVisible)
@@ -219,7 +222,13 @@ export const useInbox = (
       document.removeEventListener("visibilitychange", onVisible)
       window.removeEventListener("online", onVisible)
     }
-  }, [initial, refresh, offline])
+  }, [initial, load, offline])
+
+  /* Every caller outside this hook is a person asking. The server's cache
+     exists to absorb the poll, a second tab and a double page open — serving
+     it to someone who just pressed refresh hands them the board they already
+     had, and the press looks broken. */
+  const refresh = useCallback(() => load(true), [load])
 
   const applyLabel = useCallback(
     (repo: string, number: number, label: string, action: "add" | "remove") =>

@@ -51,7 +51,10 @@ export const GET = async (request: Request) => {
      Every read is now the whole board, so there is no second shape to key. */
   const variant = `${doneWithinDays}`
 
-  const hit = await cached(token, variant)
+  /* A deliberate refresh skips the read, never the write: the answer it fetches
+     is the freshest there is, so the next poll may as well be served it. */
+  const fresh = params.get("fresh") === "1"
+  const hit = fresh ? undefined : await cached(token, variant)
   if (hit) return NextResponse.json(hit)
 
   try {
