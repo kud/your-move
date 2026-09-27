@@ -39,6 +39,14 @@ A column is a device for peripheral vision: its worth is seeing the third column
 - Single-column-with-snapping is rejected on purpose: it keeps the horizontal axis and then hides the counts behind a gesture.
 - Never let colour be the only thing separating two states — give each a glyph or a word too.
 
+## Freshness
+
+A full read costs ~74 points, so the board does not poll it every minute. It **pulses** instead: `/api/pulse` asks `@kud/gh`'s `buildPulseQuery` for one point whether anything the board shows has moved, and a changed fingerprint buys a full read. The rules are in `lib/pulse.ts`, and three of them must hold:
+
+- **The pulse is a cursor, not a mirror.** Its fingerprint lives in one ref, is compared for equality and nothing else, and is never rendered or stored server-side. Empty it and the cost is one pulse re-recording a baseline, never a wrong board.
+- **Staleness keys on confirmation; age keys on the read.** `May be out of date` follows `confirmedAt` (the latest successful pulse or full read); the age label always follows `fetchedAt`, because that is how old the rows are. A pulse earns only the words `no change in` in front of it.
+- **Pulses are silent.** No ◐, no banner, no toast; a failure other than a 401 says nothing and the eight-minute rule catches it. A pulse-caused change lands in place, and `use-notifier` is the only thing that announces it. Only a full read shows ◐, and only a pressed refresh speaks (`Updated` / `Up to date`, once, politely).
+
 ## Auth
 
 An **OAuth App**, not a GitHub App: a GitHub App's user access token is intersected with the App's installations, which is the wrong shape for a repo scope that changes weekly.
