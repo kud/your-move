@@ -74,6 +74,8 @@ export type Inbox = {
    * refreshing. Every query already returns this; not reading it was the bug.
    */
   budget?: { remaining: number; resetAt: string }
+  /** The pulse fingerprint as of `fetchedAt` — see `fetchInbox`. */
+  fingerprint?: string
   /*
    * Why they failed, deduplicated. Without this an empty board and a broken one
    * are the same picture: the first version of this swallowed every reason into
@@ -322,7 +324,7 @@ const withHealth = async (token: string, data: any): Promise<any> => {
   )
 }
 
-export const fetchInbox = async (
+const readInbox = async (
   token: string,
   options: { repo?: string; doneWithinDays?: number } = {},
 ): Promise<Inbox> => {
@@ -461,6 +463,32 @@ export const fetchPulse = async (
         ? { remaining: data.rateLimit.remaining }
         : undefined,
   }
+}
+
+/*
+ * The read carries the pulse fingerprint of the moment it was taken.
+ *
+ * Without it the client took its baseline from the first pulse AFTER the read —
+ * fine for a live read, wrong for a cached one. A board served from the five-
+ * minute cache is as of when it was cached, so anything that moved since was
+ * folded into that baseline and not read until the backstop, twenty minutes on.
+ * Stamped here, the fingerprint travels with the answer into the cache, and the
+ * first pulse compares against the world the board actually shows.
+ *
+ * Asked alongside the read rather than after it: a fingerprint from the start
+ * of the read can only err towards one redundant read, never a missed change.
+ * A failed pulse costs the read nothing — the client falls back to taking its
+ * baseline from the next pulse, as it did before.
+ */
+export const fetchInbox = async (
+  token: string,
+  options: { repo?: string; doneWithinDays?: number } = {},
+): Promise<Inbox> => {
+  const [inbox, pulse] = await Promise.all([
+    readInbox(token, options),
+    fetchPulse(token).catch(() => undefined),
+  ])
+  return pulse ? { ...inbox, fingerprint: pulse.fingerprint } : inbox
 }
 
 export { GitHubError }

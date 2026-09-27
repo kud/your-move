@@ -147,7 +147,7 @@ export const useInbox = (
    * world before the read, and recording it as the baseline would make the
    * next pulse call the read's own changes news.
    */
-  const baseline = useRef<string | undefined>(undefined)
+  const baseline = useRef<string | undefined>(initial?.fingerprint)
   const lastPulseRead = useRef<number | undefined>(undefined)
   const reads = useRef(0)
   const pulsing = useRef(false)
@@ -198,7 +198,7 @@ export const useInbox = (
         /* The read's own timestamp, not the moment it landed: a cached answer is
          only as confirmed as when GitHub last gave it. */
         setConfirmedAt((was) => Math.max(was ?? 0, next.fetchedAt))
-        baseline.current = undefined
+        baseline.current = next.fingerprint
         reads.current += 1
         setLiveness("live")
         return next
@@ -387,17 +387,17 @@ export const useInbox = (
   }, [load])
 
   /*
-   * The baseline pulse goes straight after each read rather than waiting for
-   * the next beat. The first pulse after a read only records — so anything
-   * that moved between the read and that pulse would be folded into the
-   * baseline and never read, until the backstop twenty minutes on. Asking at
-   * once shrinks that blind spot from up to a minute to the length of a round
-   * trip, for one point per read.
+   * A pulse goes straight after each read rather than waiting for the next
+   * beat. A read normally arrives carrying its own fingerprint, so this pulse
+   * COMPARES — and a board served from the server cache is caught up at once
+   * rather than at the backstop. A read without one (its pulse failed, or a
+   * board kept on this device) leaves the baseline empty, so this pulse only
+   * records, and asking at once shrinks that blind spot to a round trip.
    */
   const fetchedAt = inbox?.fetchedAt
   useEffect(() => {
     if (offline || fetchedAt === undefined) return
-    if (baseline.current === undefined) void pulse()
+    void pulse()
   }, [fetchedAt, offline, pulse])
 
   useEffect(() => {
