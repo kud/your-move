@@ -595,17 +595,24 @@ export const Inbox = ({
   }, [])
 
   /*
-   * Tapping a chip moves the board — and it did not, because the snap fought it.
+   * Tapping a chip moves the board — sideways, to the column's own snap line,
+   * with snapping left ON.
    *
-   * Under `scroll-snap-type: both mandatory` the browser re-snaps DURING a
-   * smooth programmatic scroll, and the nearest snap point mid-animation is the
-   * column you were already on. So a tap on a distant chip animated a little way
-   * and came straight back, which reads as a dead button rather than as a fight.
-   * Exactly the failure the scroll memory hit, in the other direction.
+   * Three versions got here. The first scrolled with `scrollIntoView` under
+   * `both mandatory` and bounced back mid-flight. The second turned snapping
+   * off for the move and back on when it landed — and on Android Chrome the
+   * return of snapping is exactly what pulled the board back to Open issues:
+   * it reached Assigned, then slid home (reported 2026-09-27, from rest; a tap
+   * while the board was already moving did land). The third re-asserted the
+   * landing and still slid home.
    *
-   * Snapping comes off for the length of the move and back on when it lands.
-   * `scrollend` is the honest signal for "it landed"; the timeout is for the
-   * browsers that do not send it, and is longer than any scroll this can start.
+   * What stayed constant across all of them was the toggle, so it is gone. The
+   * other ingredient of the original bounce was `scrollIntoView` moving BOTH
+   * axes — the header is sticky at the top while `scroll-pt` reserves the head
+   * band, so it also scrolled up to "reveal" a header that can never move.
+   * A plain horizontal `scrollTo` aimed at the column's snap position gives
+   * the snap nothing to reconcile: the destination already is a snap point, so
+   * the browser settles there and remembers it as the one it rests on.
    */
   const goTo = (id: string) => {
     const anchor = anchors.current.get(id)
@@ -613,26 +620,6 @@ export const Inbox = ({
     if (!anchor || !strip) return
 
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches
-    const snap = strip.style.scrollSnapType
-    strip.style.scrollSnapType = "none"
-
-    /*
-     * The move is horizontal and nothing else, and it is computed rather than
-     * delegated.
-     *
-     * `scrollIntoView` on the column header moved BOTH axes: the header is
-     * sticky at the top while `scroll-pt` reserves the head band, so the
-     * browser saw a header outside the padded viewport and scrolled up to reveal
-     * one that can never move — a tap on a chip also threw the board back to
-     * the first lane. Under `both mandatory` that second, unasked-for move gave
-     * the snap two axes to reconcile on landing, and on Android Chrome the chip
-     * still came back to Open issues after the first fix.
-     *
-     * Landing is then re-asserted with snapping on, at the computed spot, so the
-     * arrival is what the snap settles to rather than whatever it rested on
-     * before the move. Which of the two was the cause has not been observed —
-     * only that both are gone.
-     */
     const pad = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0
     const left =
       anchor.getBoundingClientRect().left -
@@ -640,15 +627,6 @@ export const Inbox = ({
       strip.clientLeft +
       strip.scrollLeft -
       pad
-
-    const restore = () => {
-      strip.removeEventListener("scrollend", restore)
-      if (strip.style.scrollSnapType === snap) return
-      strip.style.scrollSnapType = snap
-      strip.scrollTo({ left, top: strip.scrollTop, behavior: "instant" })
-    }
-    strip.addEventListener("scrollend", restore)
-    setTimeout(restore, 1000)
 
     strip.scrollTo({ left, behavior: still ? "auto" : "smooth" })
   }
