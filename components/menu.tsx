@@ -658,8 +658,8 @@ export const Menu = ({
 
           {/* The provenance line, in the place someone actually looks for it. */}
           <p className="px-2 pb-1 pt-3 text-[11.5px] leading-[1.5] text-fg-quiet">
-            Read live from GitHub, cached for five minutes. Nothing is stored;
-            labels are the only thing this app writes back.
+            Read live from GitHub and checked for changes every minute. Nothing
+            is stored; labels are the only thing this app writes back.
           </p>
 
           {/*

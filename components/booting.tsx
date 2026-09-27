@@ -121,8 +121,8 @@ export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
     */}
     <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
       <span>
-        Read live from GitHub, cached for five minutes. Nothing is stored;
-        labels are the only thing written back.
+        Read live from GitHub and checked for changes every minute. Nothing is
+        stored; labels are the only thing written back.
       </span>
 
       {[

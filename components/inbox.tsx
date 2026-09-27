@@ -45,6 +45,7 @@ import { useScrollMemory } from "@/components/use-scroll-memory"
 import { unlockChime } from "@/lib/chime"
 import { useInbox, type Liveness } from "@/components/use-inbox"
 import { byCellOrder, byLaneOrder, shortName } from "@/lib/order"
+import { freshnessText, refreshName } from "@/lib/pulse"
 import {
   presentationFor,
   shortfalls,
@@ -139,11 +140,16 @@ export const Inbox = ({
       if (how === "name" || how === "urgency") setOrder(how)
     } catch {}
   }, [])
-  const { inbox, liveness, refresh, applyLabel, age } = useInbox(
-    initial,
-    doneDays,
-    offline,
-  )
+  const {
+    inbox,
+    liveness,
+    refresh,
+    applyLabel,
+    now,
+    checkedAt,
+    pressed,
+    announcement,
+  } = useInbox(initial, doneDays, offline)
   /*
    * The server already read the URL — see `app/page.tsx` — so this starts
    * filtered rather than starting empty and being corrected on mount.
@@ -671,14 +677,26 @@ export const Inbox = ({
    * something — when all it is saying is "this is current". Minutes are the
    * smallest unit worth a redraw here, and under a minute there is no number
    * worth showing at all.
+   *
+   * Always the age of the READ, even when a pulse has confirmed it since: the
+   * rows on screen are that old, and a pulse only earns the wording `no change
+   * in` in front of it. See `freshnessText` for when it may say so.
    */
-  const freshness = !inbox
-    ? undefined
-    : age < 60_000
-      ? "just now"
-      : age < 3_600_000
-        ? `${Math.round(age / 60_000)} min ago`
-        : `${Math.round(age / 3_600_000)} hr ago`
+  const healthy = liveness === "live" || liveness === "refreshing"
+  const freshness = inbox
+    ? freshnessText({
+        fetchedAt: inbox.fetchedAt,
+        checkedAt,
+        now,
+        live: healthy,
+      })
+    : undefined
+  const refreshLabel = refreshName({
+    fetchedAt: inbox?.fetchedAt,
+    checkedAt,
+    now,
+    busy: pressed,
+  })
   const rateLimited = (inbox?.reasons ?? []).some((r) => /rate limit/i.test(r))
   const allFailed = Boolean(
     inbox && inbox.failed.length > 0 && all.length === 0,
@@ -690,7 +708,6 @@ export const Inbox = ({
      It also keeps that region at three notices, which is where it stops reading
      as a column of facts and starts being a stack. */
   const short = shortfalls(inbox?.coverage)
-  const healthy = liveness === "live" || liveness === "refreshing"
 
   return (
     <>
@@ -731,8 +748,9 @@ export const Inbox = ({
                 <button
                   type="button"
                   onClick={() => void refresh()}
-                  aria-label="Refresh"
-                  {...tip("Refresh")}
+                  aria-label={refreshLabel}
+                  aria-busy={pressed || undefined}
+                  {...tip(refreshLabel)}
                   /*
                     This has always been the refresh — the glyph in front of it
                     is already its state — but nothing said so: no cursor, no
@@ -769,10 +787,10 @@ export const Inbox = ({
                   className="mt-1 flex max-w-full cursor-pointer flex-wrap items-center gap-x-1.5 gap-y-0.5 text-left text-[12px] text-fg-quiet transition-colors hover:text-fg-mute md:font-mono md:text-[9.5px] md:uppercase md:tracking-[0.16em]"
                 >
                   <span className="shrink-0" aria-hidden>
-                    {liveness === "live"
-                      ? "●"
-                      : liveness === "refreshing"
-                        ? "◐"
+                    {pressed || liveness === "refreshing"
+                      ? "◐"
+                      : liveness === "live"
+                        ? "●"
                         : "◌"}
                   </span>
                   {healthy ? null : (
@@ -813,6 +831,18 @@ export const Inbox = ({
                     </span>
                   ) : null}
                 </button>
+                {/*
+                  The only thing a press says out loud, and it says it once.
+                  The board does not dim, skeleton or reflow while the read is in
+                  flight — the ◐ and the button's own name carry that — so a
+                  screen reader would otherwise hear nothing at all about the
+                  outcome. Pulse-caused reads never write here: they are not
+                  answering anyone, and `use-notifier` already speaks for what
+                  moved.
+                */}
+                <span className="sr-only" aria-live="polite">
+                  {announcement}
+                </span>
               </div>
             </div>
 
@@ -1308,8 +1338,8 @@ export const Inbox = ({
         */}
           <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
             <span>
-              Read live from GitHub, cached for five minutes. Nothing is stored;
-              labels are the only thing written back.
+              Read live from GitHub and checked for changes every minute.
+              Nothing is stored; labels are the only thing written back.
             </span>
 
             {[

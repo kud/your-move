@@ -11,6 +11,7 @@ import {
   type InboxSource,
   type SourceCoverage,
 } from "@kud/gh/inbox"
+import { buildPulseQuery, pulseFingerprint } from "@kud/gh/pulse"
 import {
   sortItems,
   toGHItem,
@@ -437,6 +438,28 @@ export const fetchInbox = async (
       : undefined,
     reasons,
     coverage: coverageWith(data, enriched),
+  }
+}
+
+/*
+ * The pulse: one point to ask whether anything the board shows has moved. See
+ * `lib/pulse.ts` for what the board does with the answer, and `@kud/gh`'s
+ * `buildPulseQuery` for why it watches what it watches.
+ *
+ * Only the fingerprint and the budget leave here. The fingerprint is a cursor
+ * the client compares for equality, so nothing about the rows it summarises is
+ * sent, kept, or rendered — a store for it would be a mirror by another name.
+ */
+export const fetchPulse = async (
+  token: string,
+): Promise<{ fingerprint: string; budget?: { remaining: number } }> => {
+  const data = await ask(token, buildPulseQuery())
+  return {
+    fingerprint: pulseFingerprint(data),
+    budget:
+      typeof data?.rateLimit?.remaining === "number"
+        ? { remaining: data.rateLimit.remaining }
+        : undefined,
   }
 }
 
