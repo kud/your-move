@@ -616,9 +616,22 @@ export const Inbox = ({
     const snap = strip.style.scrollSnapType
     strip.style.scrollSnapType = "none"
 
+    /*
+     * Re-asserting the landing is the half the first fix missed.
+     *
+     * Chrome remembers which snap target the strip last rested on and, when
+     * snapping comes back, re-snaps to THAT — not to the nearest point. A swipe
+     * updates the memory as it goes; a move made with snapping off never does.
+     * So the tap reached the column, snapping returned, and the board slid back
+     * to the one it started from (seen on Android Chrome). Scrolling to where it
+     * already is, with snapping on, is what makes the arrival the new target.
+     */
     const restore = () => {
-      strip.style.scrollSnapType = snap
       strip.removeEventListener("scrollend", restore)
+      if (strip.style.scrollSnapType === snap) return
+      const landed = { left: strip.scrollLeft, top: strip.scrollTop }
+      strip.style.scrollSnapType = snap
+      strip.scrollTo({ ...landed, behavior: "instant" })
     }
     strip.addEventListener("scrollend", restore)
     setTimeout(restore, 1000)
