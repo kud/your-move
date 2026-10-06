@@ -42,17 +42,17 @@ Default to the dark palette. On a light ground use the `-light` files so the com
 | --- | --- | --- |
 | Motion / active form | `#3B82F6` | `#2563EB` |
 | Companion / wordmark | `#F8FAFC` | `#0B0C0E` |
-| Ground | `#0B0C0E` | `#F8FAFC` |
+| Ground | `#08112A` | `#F8FAFC` |
 | Secondary neutral | `#9CA3AF` | `#9CA3AF` |
 
 The palette is intentionally colder and more energetic than the previous rose / ivory treatment:
 
 - **Electric blue** is the movement colour. It feels active rather than soft, and gives the handoff a more technical, immediate character.
 - **Ice white** keeps the receiving half bright without the cream/pastel cast that made the old mark feel detached from the interface.
-- **Void** is exactly the app's near-black ground, so the identity belongs to the product even though the brand accent is now blue.
+- **Void** is exactly the app's deep navy ground, so the identity belongs to the product even though the brand accent is now blue.
 - **Slate** is the neutral supporting tone for captions and secondary brand material; it is not used to encode workflow state.
 
-The blue has about **5.3:1** contrast against the dark ground, while the ice white is about **18.7:1**. The light-background blue is darkened to `#2563EB` to preserve roughly **4.9:1** against ice white.
+The blue has about **5.1:1** contrast against the dark ground, while the ice white is about **17.9:1**. The light-background blue is darkened to `#2563EB` to preserve roughly **4.9:1** against ice white.
 
 The blue is a **brand colour, not a workflow-state colour**. The application's existing rose accent can therefore continue to mean “your move” inside the board without the logo competing with that semantic signal.
 
@@ -69,8 +69,8 @@ node -e "require('sharp')('brand/svg/logo.svg').resize({ width: 2880 }).png().to
 
 Marks export at width 1200 and icons at their listed sizes following the same pattern.
 
-The link preview is composed from the dark lockup and written to both `png/og-1200x630.png` and `app/opengraph-image.png`: a 1200x630 `#0B0C0E` canvas with `logo.svg` rendered at width 560, centred horizontally (left 320) and vertically (top `Math.round((630 - logoHeight) / 2)`).
+The link preview is composed from the dark lockup and written to both `png/og-1200x630.png` and `app/opengraph-image.png`: a 1200x630 `#08112A` canvas with `logo.svg` rendered at width 560, centred horizontally (left 320) and vertically (top `Math.round((630 - logoHeight) / 2)`).
 
-`preview.png` is composed the same way: a 1600x900 `#0B0C0E` canvas, a 1600x340 `#F8FAFC` band at top 560, `logo.svg` at width 1120 (left 240, top 120), `mark-light.svg` at width 420 (left 260, top 585) and `icon.svg` at width 250 (left 1080, top 605). Each element's box is centred in its area, so with centred artwork the composition lands centred too.
+`preview.png` is composed the same way: a 1600x900 `#08112A` canvas, a 1600x340 `#F8FAFC` band at top 560, `logo.svg` at width 1120 (left 240, top 120), `mark-light.svg` at width 420 (left 260, top 585) and `icon.svg` at width 250 (left 1080, top 605). Each element's box is centred in its area, so with centred artwork the composition lands centred too.
 
 Keep the emblem geometry consistent across every variant, and preserve the negative-space handoff channel in mono — it is what separates the two halves when the colour is gone.

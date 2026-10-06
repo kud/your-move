@@ -18,7 +18,7 @@ export const THEME = "ym:theme"
 
 /*
  * The status bar has to follow the theme, or the "native" illusion breaks at
- * exactly the seam it was hardest to fix: an OS bar painted near-black above a
+ * exactly the seam it was hardest to fix: an OS bar painted navy above a
  * light page. `theme-color` is a meta rather than a stylesheet value, so it is
  * the one token that has to be set imperatively — which is precisely why these
  * two values must exist once. They are already spelled out in `layout.tsx`'s
@@ -27,7 +27,7 @@ export const THEME = "ym:theme"
  * frame, which is the failure the whole pre-paint dance exists to prevent.
  */
 export const GROUND: Record<"light" | "dark", string> = {
-  dark: "#0b0c0e",
+  dark: "#08112a",
   light: "#f4f2f0",
 }
 

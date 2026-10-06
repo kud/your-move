@@ -50,8 +50,8 @@ const manifest = (): MetadataRoute.Manifest => ({
    * it and repeat the name without the mark. If one is ever wanted again, the
    * thing to change is these three fields, not a component.
    */
-  background_color: "#0b0c0e",
-  theme_color: "#0b0c0e",
+  background_color: "#08112a",
+  theme_color: "#08112a",
   icons: [
     { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

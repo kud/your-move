@@ -82,8 +82,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   /* Matches the manifest and `--color-void`: this tints the status bar and the
-     address bar, and a default there frames a near-black page in white. */
-  themeColor: "#0b0c0e",
+     address bar, and a default there frames a navy page in white. */
+  themeColor: "#08112a",
   /* Full-bleed under the notch, which is only safe because `globals.css` pays
      the safe-area insets back where content would otherwise sit under it. */
   viewportFit: "cover",
@@ -102,7 +102,7 @@ export const viewport: Viewport = {
 const RootLayout = ({ children }: { children: ReactNode }) => (
   /* The inline background is the same argument one step further: it needs no
      stylesheet at all, so there is no frame in which it is not applied. */
-  <html lang="en" style={{ background: "#0b0c0e" }} suppressHydrationWarning>
+  <html lang="en" style={{ background: "#08112a" }} suppressHydrationWarning>
     <head>
       {/*
         Before the first paint, and deliberately not in React.
@@ -115,7 +115,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#0b0c0e";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
+          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#08112a";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
         }}
       />
     </head>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Committed dark. Not an omission — the look is glow-over-near-black, and a
+ * Committed dark. Not an omission — the look is glow over deep navy, and a
  * light variant would be a different design rather than a recolour. Every
  * colour is painted explicitly so the page never borrows a host ground.
  *
@@ -9,22 +9,21 @@
  * glyph, and the tints below only reinforce a shape that already reads.
  */
 @theme {
-  --color-void: #0b0c0e;
-  --color-panel: #131519;
-  --color-panel-2: #191c21;
-  --color-raise: #20242a;
-  --color-line: #262b32;
-  --color-line-soft: #1c2026;
+  --color-void: #08112a;
+  --color-panel: #0e1a38;
+  --color-panel-2: #142243;
+  --color-raise: #1b2c52;
+  --color-line: #243763;
+  --color-line-soft: #182647;
 
   --color-fg: #e9ebee;
   --color-fg-mute: #a2aab5;
-  /* Raised from #6b7280, which read about 3.7:1 on panel — under the bar, and
-     carrying every timestamp, count and legend on the board. The app should not
-     need an opt-in to be readable. */
-  --color-fg-quiet: #7f8792;
+  /* Lifted again for the navy ground (#7f8792 before it, #6b7280 before that):
+     6.8:1 on panel, 5.4:1 on raise. */
+  --color-fg-quiet: #96a3bc;
 
-  --color-accent: #e0707c;
-  --color-accent-dim: #3a1c21;
+  --color-accent: #ee8e99;
+  --color-accent-dim: #362a40;
   --color-brand: #3b82f6;
   --color-brass: #e0a84e;
   --color-sage: #7fc08f;
@@ -1023,7 +1022,7 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
  *
  * Three things had to be re-derived rather than inverted:
  *
- *   - the accent. `#e0707c` is a rose calibrated against near-black, where it
+ *   - the accent. `#ee8e99` is a rose calibrated against deep navy, where it
  *     reads about 7:1. On white it falls under 3:1, which fails precisely where
  *     colour carries meaning — the reason chips and the accent stripe. Light
  *     gets its own, darker, same hue family.
@@ -1626,7 +1625,6 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
   opacity: 0.8;
   animation: ym-ember 4.5s ease-in-out infinite;
 }
-
 /*
  * Slow enough not to be a blink, shallow enough not to be a pulse. `ym-arrived`
  * is the board's one deliberate ATTENTION animation and it lasts 1.6s; this has
