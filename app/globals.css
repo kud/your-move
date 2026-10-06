@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Committed dark. Not an omission — the look is glow over deep navy, and a
+ * Committed dark. Not an omission — the look is glow-over-near-black, and a
  * light variant would be a different design rather than a recolour. Every
  * colour is painted explicitly so the page never borrows a host ground.
  *
@@ -9,21 +9,22 @@
  * glyph, and the tints below only reinforce a shape that already reads.
  */
 @theme {
-  --color-void: #08112a;
-  --color-panel: #0e1a38;
-  --color-panel-2: #142243;
-  --color-raise: #1b2c52;
-  --color-line: #243763;
-  --color-line-soft: #182647;
+  --color-void: #070c15;
+  --color-panel: #10151f;
+  --color-panel-2: #161c26;
+  --color-raise: #1e242f;
+  --color-line: #252b36;
+  --color-line-soft: #1a202a;
 
   --color-fg: #e9ebee;
   --color-fg-mute: #a2aab5;
-  /* Lifted again for the navy ground (#7f8792 before it, #6b7280 before that):
-     6.8:1 on panel, 5.4:1 on raise. */
-  --color-fg-quiet: #96a3bc;
+  /* Raised from #6b7280, which read about 3.7:1 on panel — under the bar, and
+     carrying every timestamp, count and legend on the board. The app should not
+     need an opt-in to be readable. */
+  --color-fg-quiet: #7f8792;
 
-  --color-accent: #ee8e99;
-  --color-accent-dim: #362a40;
+  --color-accent: #e0707c;
+  --color-accent-dim: #3a1c21;
   --color-brand: #3b82f6;
   --color-brass: #e0a84e;
   --color-sage: #7fc08f;
@@ -1515,7 +1516,7 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
  *
  * Three things had to be re-derived rather than inverted:
  *
- *   - the accent. `#ee8e99` is a rose calibrated against deep navy, where it
+ *   - the accent. `#e0707c` is a rose calibrated against near-black, where it
  *     reads about 7:1. On white it falls under 3:1, which fails precisely where
  *     colour carries meaning — the reason chips and the accent stripe. Light
  *     gets its own, darker, same hue family.

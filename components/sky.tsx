@@ -20,7 +20,7 @@ import { useEffect, useRef } from "react"
  */
 const BLOBS = [
   {
-    rgb: [37, 70, 150],
+    rgb: [96, 62, 74],
     radius: 0.62,
     sx: 0.00007,
     sy: 0.000041,
@@ -29,22 +29,22 @@ const BLOBS = [
     alpha: 0.4,
   },
   {
-    rgb: [45, 95, 210],
+    rgb: [70, 74, 104],
     radius: 0.7,
     sx: 0.000052,
     sy: 0.000063,
     px: 0.78,
     py: 0.3,
-    alpha: 0.28,
+    alpha: 0.34,
   },
   {
-    rgb: [60, 52, 150],
+    rgb: [104, 86, 56],
     radius: 0.52,
     sx: 0.000039,
     sy: 0.000029,
     px: 0.5,
     py: 0.86,
-    alpha: 0.22,
+    alpha: 0.26,
   },
 ]
 
@@ -169,7 +169,7 @@ export const Sky = () => {
 
         The stops are an eased ramp rather than the two-stop one this started
         with, and that is a banding fix rather than a taste one. Going from
-        #08112a to transparent over about eighty pixels, above a sky that
+        #070c15 to transparent over about eighty pixels, above a sky that
         differs from it by a handful of RGB steps, gives each step twenty pixels
         of width — which stops reading as a fade and starts reading as a line.
         An OLED panel at low luminance is exactly where that shows.
@@ -177,7 +177,7 @@ export const Sky = () => {
         And the flat part is measured in `env()`, not in a percentage of the
         overlay. At 30% of a 120px overlay it ended at 36px, while a Pixel's
         status bar is about 48 — so the boundary between the system's flat
-        `#08112a` and our page landed INSIDE the ramp, where the sky has already
+        `#070c15` and our page landed INSIDE the ramp, where the sky has already
         begun to show. The two were painting the same colour and still did not
         match, because only one of them was painting it flat.
 

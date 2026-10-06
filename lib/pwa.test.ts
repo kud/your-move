@@ -41,8 +41,8 @@ describe("manifest", () => {
   })
 
   it("paints its own ground rather than borrowing the host's", () => {
-    expect(manifest().background_color).toBe("#08112a")
-    expect(manifest().theme_color).toBe("#08112a")
+    expect(manifest().background_color).toBe("#070c15")
+    expect(manifest().theme_color).toBe("#070c15")
   })
 })
 

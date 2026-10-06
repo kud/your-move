@@ -34,8 +34,8 @@ magick -background none assets/icon-maskable.svg -resize 512x512 -depth 8 -strip
 
 iOS reads this one rather than the manifest, and it must be opaque — a
 transparent home-screen icon is composited onto white. The mark carries its own
-`#08112a` ground, so `-flatten` is belt and braces rather than load-bearing:
+`#0b0c0e` ground, so `-flatten` is belt and braces rather than load-bearing:
 
 ```sh
-magick -background '#08112a' assets/icon.svg -flatten -resize 180x180 -depth 8 -strip public/icons/apple-touch-icon.png
+magick -background '#0b0c0e' assets/icon.svg -flatten -resize 180x180 -depth 8 -strip public/icons/apple-touch-icon.png
 ```
