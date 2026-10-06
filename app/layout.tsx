@@ -16,11 +16,11 @@ import "./globals.css"
  * to build one, and with none set it infers `localhost` off Vercel and warns at
  * build — a warning whose symptom is a preview that works for nobody.
  *
- * The README calls `move.beansontoast.app` the REFERENCE deployment rather than the only
+ * The README calls `your-move.beansontoast.app` the REFERENCE deployment rather than the only
  * one, so it is the fallback and not the answer: a self-host that sets this
  * gets its own card, and one that does not still gets a working one.
  */
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://move.beansontoast.app"
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-move.beansontoast.app"
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
@@ -115,7 +115,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";if(location.pathname==="/"&&!sessionStorage.getItem("ym:intro")){sessionStorage.setItem("ym:intro","1");d.dataset.intro="cold"}var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#070c15";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
+          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";if(location.pathname==="/")d.dataset.intro="cold";var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#070c15";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
         }}
       />
     </head>

@@ -885,10 +885,10 @@ h4 {
 /*
  * ═══ THE INTRO ═══
  *
- * A cold open only: `data-intro` on the root is set before first paint by the
- * script in `app/layout.tsx`, once per browsing session and only on `/`. Without
- * it this whole overlay is `display: none`, which is every refresh, every pulse
- * and every navigation.
+ * On every load of `/`: `data-intro` on the root is set before first paint by
+ * the script in `app/layout.tsx`, refreshes and new tabs included. Without
+ * it this whole overlay is `display: none`, which is every other route, every
+ * pulse and every navigation.
  *
  * The SSR markup is always rendered and these animations start at first paint,
  * BEFORE hydration. A slow bundle therefore never leaves the mark sitting

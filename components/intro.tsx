@@ -11,7 +11,7 @@
  * The CSS animations start at first paint, before this hydrates, so a slow
  * bundle never leaves the mark sitting still. The overlay is always in the SSR
  * output and `:root[data-intro]` is what shows it; hydrating without that
- * attribute (every refresh) renders nothing at all.
+ * attribute (any route but `/`) renders nothing at all.
  *
  * Never delays the read: Booting renders underneath as the Suspense fallback and
  * the board streams in exactly as it did. This is a sibling BEFORE the
