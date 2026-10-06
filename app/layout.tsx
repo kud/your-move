@@ -16,11 +16,11 @@ import "./globals.css"
  * to build one, and with none set it infers `localhost` off Vercel and warns at
  * build — a warning whose symptom is a preview that works for nobody.
  *
- * The README calls `move.kud.io` the REFERENCE deployment rather than the only
+ * The README calls `move.beansontoast.app` the REFERENCE deployment rather than the only
  * one, so it is the fallback and not the answer: a self-host that sets this
  * gets its own card, and one that does not still gets a working one.
  */
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://move.kud.io"
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://move.beansontoast.app"
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),

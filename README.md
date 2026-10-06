@@ -85,7 +85,7 @@ When creating the OAuth App, set its **Authorization callback URL** to `<your-de
 
 Deliberately an **OAuth App**, not a GitHub App: a GitHub App's user access token is intersected with the App's installations, so it only ever sees repos the App happens to be installed on — the wrong shape for a scope that changes weekly. An OAuth App carries no such restriction.
 
-The reference deployment runs at `move.kud.io`. To run your own:
+The reference deployment runs at `move.beansontoast.app`. To run your own:
 
 ```sh
 npm run build
