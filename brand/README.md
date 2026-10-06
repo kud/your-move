@@ -32,6 +32,8 @@ It is drawn as filled Bézier paths, and the lettering is converted to outlines,
 
 `mark*` and `logo*` have transparent backgrounds; the mono variants are ice white. The `icon*` variants are opaque and square and leave launcher rounding to the operating system. The maskable variant keeps the whole mark inside Android's safe area.
 
+The lockup frame sits tight to the artwork: the three `logo*` variants share an identical `0 0 1202 352` viewBox with equal padding left and right (about 33px, matching the mark's framing) and equal padding top and bottom. Only the fills differ between variants, so every export centres without per-variant offsets.
+
 Default to the dark palette. On a light ground use the `-light` files so the companion half remains visible.
 
 ## Colours
@@ -59,36 +61,16 @@ The blue is a **brand colour, not a workflow-state colour**. The application's e
 
 ## Regenerate the PNGs
 
-Never edit a PNG. From the repository root, with Inkscape installed:
+Never edit a PNG. Exports are produced with `sharp`, already in `node_modules` — Inkscape is not required. The recipe throughout is `sharp(src).resize({ width }).png().toFile(out)`:
 
 ```sh
-for name in mark mark-light mark-mono; do
-  inkscape "brand/svg/$name.svg" --export-type=png \
-    --export-width=1200 --export-filename="brand/png/$name-1200.png"
-done
+node -e "require('sharp')('brand/svg/logo.svg').resize({ width: 2880 }).png().toFile('brand/png/logo-2880.png')"
 ```
 
-```sh
-for name in logo logo-light logo-mono; do
-  inkscape "brand/svg/$name.svg" --export-type=png \
-    --export-width=2880 --export-filename="brand/png/$name-2880.png"
-done
-```
+Marks export at width 1200 and icons at their listed sizes following the same pattern.
 
-```sh
-for size in 16 32 180 192 512 1024; do
-  inkscape brand/svg/icon.svg --export-type=png \
-    --export-width="$size" --export-filename="brand/png/icon-$size.png"
-done
-```
+The link preview is composed from the dark lockup and written to both `png/og-1200x630.png` and `app/opengraph-image.png`: a 1200x630 `#0B0C0E` canvas with `logo.svg` rendered at width 560, centred horizontally (left 320) and vertically (top `Math.round((630 - logoHeight) / 2)`).
 
-```sh
-for name in icon-light icon-maskable; do
-  inkscape "brand/svg/$name.svg" --export-type=png \
-    --export-width=512 --export-filename="brand/png/$name-512.png"
-done
-```
-
-The link preview is composed from the dark lockup and copied to `app/opengraph-image.png`.
+`preview.png` is composed the same way: a 1600x900 `#0B0C0E` canvas, a 1600x340 `#F8FAFC` band at top 560, `logo.svg` at width 1120 (left 240, top 120), `mark-light.svg` at width 420 (left 260, top 585) and `icon.svg` at width 250 (left 1080, top 605). Each element's box is centred in its area, so with centred artwork the composition lands centred too.
 
 Keep the emblem geometry consistent across every variant, and preserve the negative-space handoff channel in mono — it is what separates the two halves when the colour is gone.
