@@ -25,6 +25,7 @@
 
   --color-accent: #e0707c;
   --color-accent-dim: #3a1c21;
+  --color-brand: #3b82f6;
   --color-brass: #e0a84e;
   --color-sage: #7fc08f;
   --color-slate: #8fa3be;
@@ -529,7 +530,7 @@ select:not(:disabled),
  * default now differ only in whether the thumb is there.
  *
  * The thumb is `fg-quiet` at full strength, and it was measured rather than
- * chosen: 5.0:1 on dark, 5.0:1 on light, 7.0 and 8.0 in the two high-contrast
+ * chosen: 5.0:1 on dark, 5.1:1 on light, 7.0 and 8.0 in the two high-contrast
  * palettes. `--color-line` was the obvious candidate — it is what the runway
  * spends, and it is what the grid's hairlines are — and it is unusable here at
  * 1.1:1. A rule can be that quiet because it has length to be seen by; a thumb
@@ -780,13 +781,33 @@ h4 {
  * the mark rather than pixels: it is 24px on a phone and 30px on a desktop, and
  * a hop measured in pixels would be a different hop on each.
  *
- * 420ms is literal, for the same reason the ambient loops further down this
+ * 640ms is literal, for the same reason the ambient loops further down this
  * file are. The duration ladder in `@theme` measures TRAVEL between two states,
- * and this travels nowhere — it leaves rest and comes back to it. Four beats
- * need room to read as a bounce rather than as a twitch, and there is no second
- * animation for this number to stay in step with. Tuned against its own
- * subject; leave it here beside the argument rather than promoting it to a
- * seventh token.
+ * and this travels nowhere — it leaves rest and comes back to it. Six beats
+ * need room to read as a bounce with a turn in the middle rather than as a
+ * twitch, and there is no second animation for this number to stay in step
+ * with. Tuned against its own subject; leave it here beside the argument
+ * rather than promoting it to a seventh token.
+ *
+ * The turn is a full 360° in the screen plane, clockwise, wrapped around the
+ * rise: `translateY(-50%) rotate(R) translateY(50%)` pivots about the mark's
+ * centre while `transform-origin` keeps the squashes compressing onto the
+ * feet. Every keyframe carries the same list of transform functions, or the
+ * browser falls back to matrix interpolation and the turn shears. It runs
+ * from take-off (24%) to just before touchdown (72%), sharing the rise's
+ * easing, with the apex at 35% of the mark's height.
+ *
+ * The 100% keyframe holds `rotate(360deg)` rather than `none`, and that is a
+ * trap rather than tidiness: `none` would give the last beat a different
+ * function list and collapse the whole turn into matrix interpolation.
+ *
+ * Latched, not hovered. A `:hover` animation stops the moment the pointer
+ * leaves, which mid-salto reads as the mark glitching rather than playing.
+ * `Mark` adds `ym-hop-play` on pointerenter and drops it on animationend, so
+ * the turn always plays through — and never starts it under
+ * `data-motion="reduce"`, where the global kill below would freeze it
+ * mid-frame instead. Re-hovering mid-hop does nothing; the latch is already
+ * held.
  *
  * Mouse only. `:hover` sticks after a tap on iOS, and this board is mostly read
  * on a phone — where the flourish would fire once, on the tap that opened
@@ -798,32 +819,55 @@ h4 {
  */
 @keyframes ym-hop {
   0% {
-    transform: none;
+    transform: translateY(0) translateY(-50%) rotate(0deg) translateY(50%)
+      scale(1, 1);
     animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
   }
-  28% {
-    transform: translateY(-15%) scale(0.97, 1.05);
+  12% {
+    transform: translateY(0) translateY(-50%) rotate(0deg) translateY(50%)
+      scale(1.05, 0.93);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  24% {
+    transform: translateY(-18%) translateY(-50%) rotate(0deg) translateY(50%)
+      scale(0.96, 1.05);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  50% {
+    transform: translateY(-35%) translateY(-50%) rotate(180deg) translateY(50%)
+      scale(1, 1);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4);
+  }
+  72% {
+    transform: translateY(-10%) translateY(-50%) rotate(360deg) translateY(50%)
+      scale(0.98, 1.03);
     animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
   }
-  52% {
-    transform: translateY(0) scale(1.06, 0.94);
+  82% {
+    transform: translateY(0) translateY(-50%) rotate(360deg) translateY(50%)
+      scale(1.06, 0.94);
     animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1);
   }
-  76% {
-    transform: translateY(-5%) scale(0.99, 1.01);
+  92% {
+    transform: translateY(-3%) translateY(-50%) rotate(360deg) translateY(50%)
+      scale(0.99, 1.01);
   }
   100% {
-    transform: none;
+    transform: translateY(0) translateY(-50%) rotate(360deg) translateY(50%)
+      scale(1, 1);
   }
 }
 
 .ym-hop {
   transform-origin: 50% 100%;
 }
+/* trigger (see the latch in `components/mark.tsx`): .ym-hop-play carries
+   `animation: ym-hop 640ms;`, added on pointerenter and removed on
+   animationend. */
 
 @media (hover: hover) and (pointer: fine) {
-  .ym-hop:hover {
-    animation: ym-hop 420ms;
+  .ym-hop.ym-hop-play {
+    animation: ym-hop 640ms;
   }
 }
 
@@ -1010,10 +1054,11 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
 
     --color-fg: #1a1c1f;
     --color-fg-mute: #4c525a;
-    --color-fg-quiet: #6a707a;
+    --color-fg-quiet: #61676f;
 
     --color-accent: #b03a4c;
     --color-accent-dim: #fbe9ec;
+    --color-brand: #2563eb;
     --color-brass: #8a5a12;
     --color-sage: #2f6b41;
     --color-slate: #46586f;
@@ -1032,10 +1077,11 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
 
   --color-fg: #1a1c1f;
   --color-fg-mute: #4c525a;
-  --color-fg-quiet: #6a707a;
+  --color-fg-quiet: #61676f;
 
   --color-accent: #b03a4c;
   --color-accent-dim: #fbe9ec;
+  --color-brand: #2563eb;
   --color-brass: #8a5a12;
   --color-sage: #2f6b41;
   --color-slate: #46586f;
@@ -1058,6 +1104,19 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
     box-shadow:
       0 1px 2px rgba(26, 28, 31, 0.04),
       0 12px 32px -24px rgba(26, 28, 31, 0.3);
+  }
+
+  :root:not([data-theme="dark"]) .shadow-float {
+    box-shadow: 0 12px 32px -16px rgba(26, 28, 31, 0.25);
+  }
+
+  :root:not([data-theme="dark"]) .shimmer::after {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 100%
+    );
   }
 }
 
@@ -1103,6 +1162,19 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
   box-shadow:
     0 1px 2px rgba(26, 28, 31, 0.04),
     0 12px 32px -24px rgba(26, 28, 31, 0.3);
+}
+
+:root[data-theme="light"] .shadow-float {
+  box-shadow: 0 12px 32px -16px rgba(26, 28, 31, 0.25);
+}
+
+:root[data-theme="light"] .shimmer::after {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
 }
 
 /*

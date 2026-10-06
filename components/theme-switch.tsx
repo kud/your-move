@@ -111,11 +111,12 @@ export const ThemeSwitch = ({ quiet = false }: { quiet?: boolean }) => {
                  * Rose means "this needs you" on this board, and the login card
                  * has no accent at rest — so a permanently rose segment sitting
                  * under it would be the loudest thing on a page whose whole job
-                 * is one tap. The state still separates by fill and weight, not
-                 * by hue alone.
+                 * is one tap. The active option separates by ground, an inset
+                 * ring and weight instead: `bg-panel` over the card's ground,
+                 * a 1px `line` ring, and semibold text.
                  */
                 quiet
-                ? "bg-raise text-fg"
+                ? "bg-panel text-fg font-semibold shadow-[inset_0_0_0_1px_var(--color-line)]"
                 : "bg-accent-dim text-accent"
               : "text-fg-quiet"
           }`}

@@ -365,7 +365,7 @@ export const About = ({
     <div
       id={id}
       popover="auto"
-      className="m-auto max-w-[330px] rounded-xl border border-line bg-panel p-4 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
+      className="m-auto max-w-[330px] rounded-xl border border-line bg-panel p-4 text-fg shadow-float shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
     >
       <b className="text-[15px] font-semibold">{title}</b>
       <p className="mt-2 text-[14px] leading-[1.55] text-fg-mute">{meaning}</p>
@@ -669,7 +669,7 @@ const LaneName = ({
          * would otherwise inherit the bug by default.
          */
         onClick={(e) => e.stopPropagation()}
-        className="m-auto w-[min(92vw,320px)] rounded-xl border border-line bg-panel p-3 text-fg shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
+        className="m-auto w-[min(92vw,320px)] rounded-xl border border-line bg-panel p-3 text-fg shadow-float shadow-[0_20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/30"
       >
         <p className="break-all font-mono text-[13px] text-fg">{repo}</p>
         <p className="mt-1 flex items-center gap-1.5">

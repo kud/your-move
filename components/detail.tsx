@@ -402,7 +402,7 @@ export const Detail = ({
         /* Full screen below `md` regardless of the preference, which is a
            desk preference: at 390px a "side panel" at 92vw is a full screen
            wearing a border, and a modal is one with margins. */
-        className={`fixed z-50 flex flex-col border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${PHONE} ${ENTER[mode]} ${SHELL[mode]}`}
+        className={`fixed z-50 flex flex-col border-line bg-panel shadow-float shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] ${PHONE} ${ENTER[mode]} ${SHELL[mode]}`}
       >
         <header
           className="flex items-start gap-3 border-b border-line-soft p-4"

@@ -728,7 +728,7 @@ export const Inbox = ({
           */}
             <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
               {/* `ym-hop` is a one-shot reaction, not a hover state — the
-                  argument for that, and for the literal 420ms, is beside the
+                  argument for that, and for the literal 640ms, is beside the
                   keyframes in `app/globals.css`. */}
               <Mark className="ym-hop h-auto w-6 shrink-0 md:w-[30px]" />
 

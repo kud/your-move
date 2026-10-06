@@ -93,7 +93,7 @@ export const Leaving = () => {
       aria-live="polite"
       className="ym-in-fade fixed inset-0 z-[60] grid place-items-center bg-black/55 p-6 md:hidden"
     >
-      <div className="ym-in-modal w-full max-w-[300px] rounded-2xl border border-line bg-panel p-4 text-center shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)]">
+      <div className="ym-in-modal w-full max-w-[300px] rounded-2xl border border-line bg-panel p-4 text-center shadow-float shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)]">
         <p className="text-[14.5px] font-semibold">Opening on GitHub</p>
         <p className="mt-1 break-all font-mono text-[12px] text-fg-quiet">
           {going}
