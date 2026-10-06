@@ -37,6 +37,22 @@ export const isDemoSession = (token: unknown): token is typeof DEMO_TOKEN =>
   isDemo() && token === DEMO_TOKEN
 
 /*
+ * The session token a route may actually use.
+ *
+ * In demo mode a real token unsealed from a real login must never win: the
+ * route below would then call GitHub with it, spending the visitor's identity
+ * on a board that promised sample data and no network. Anything that is not
+ * the sentinel therefore reads as signed out while demo holds, and the usual
+ * no-session paths — 401 from an API, the login redirect from a page — are
+ * what offer the pretend sign-in instead. Outside demo every token passes
+ * through untouched, sentinel included, so a demo cookie replayed against
+ * production stays just an invalid token.
+ */
+export const usableSessionToken = (
+  token: string | undefined,
+): string | undefined => (isDemo() && token !== DEMO_TOKEN ? undefined : token)
+
+/*
  * The key a demo session seals under when no `SESSION_SECRET` is set.
  *
  * Fixed and public, which is why it is demo-only: it protects nothing, and a

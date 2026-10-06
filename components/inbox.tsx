@@ -25,6 +25,7 @@ import {
 import { Detail, type OpenMode } from "@/components/detail"
 import { Mark, MarkMono } from "@/components/mark"
 import { Launcher, LAUNCHER_ID, type Command } from "@/components/launcher"
+import { markBoardReady } from "@/components/intro"
 import { Menu } from "@/components/menu"
 import {
   FILTERS_ID,
@@ -150,6 +151,17 @@ export const Inbox = ({
     pressed,
     announcement,
   } = useInbox(initial, doneDays, offline)
+  /*
+   * Tells the intro the board has something true to show: rows, or a failure
+   * that is itself the answer. Not on mount alone — `initial` is undefined when
+   * the server read failed and the client is still fetching, and landing onto
+   * an empty board would be lying.
+   */
+  useEffect(() => {
+    const failed =
+      liveness === "offline" || liveness === "expired" || liveness === "stale"
+    if (inbox || failed) markBoardReady()
+  }, [inbox, liveness])
   /*
    * The server already read the URL — see `app/page.tsx` — so this starts
    * filtered rather than starting empty and being corrected on mount.
@@ -730,7 +742,7 @@ export const Inbox = ({
               {/* `ym-hop` is a one-shot reaction, not a hover state — the
                   argument for that, and for the literal 640ms, is beside the
                   keyframes in `app/globals.css`. */}
-              <Mark className="ym-hop h-auto w-6 shrink-0 md:w-[30px]" />
+              <Mark slot className="ym-hop h-auto w-6 shrink-0 md:w-[30px]" />
 
               <div className="min-w-0 flex-1">
                 <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">

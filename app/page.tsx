@@ -4,9 +4,11 @@ import { cookies } from "next/headers"
 
 import { Booting } from "@/components/booting"
 import { Inbox } from "@/components/inbox"
+import { Intro } from "@/components/intro"
 import type { Picks } from "@/components/filters"
 import { COOKIE, unseal } from "@/lib/auth"
 import { cached, remember } from "@/lib/cache"
+import { usableSessionToken } from "@/lib/demo"
 import { fetchInbox } from "@/lib/github"
 import { isEmptyPicks, picksFromQuery } from "@/lib/views"
 
@@ -33,7 +35,9 @@ export const dynamic = "force-dynamic"
 const Board = async ({ picks }: { picks: Picks }) => {
   const secret = process.env.SESSION_SECRET
   const token = secret
-    ? await unseal(secret, (await cookies()).get(COOKIE)?.value)
+    ? usableSessionToken(
+        await unseal(secret, (await cookies()).get(COOKIE)?.value),
+      )
     : undefined
 
   /* Opening the page used to cost a fetch here AND another from the client on
@@ -79,9 +83,14 @@ const Page = async ({
   })
 
   return (
-    <Suspense fallback={<Booting filtered={!isEmptyPicks(picks)} />}>
-      <Board picks={picks} />
-    </Suspense>
+    <>
+      {/* A sibling BEFORE the Suspense, not inside `Booting`: Booting unmounts
+          the moment the board streams in, which would end the loop mid-hop. */}
+      <Intro />
+      <Suspense fallback={<Booting filtered={!isEmptyPicks(picks)} />}>
+        <Board picks={picks} />
+      </Suspense>
+    </>
   )
 }
 

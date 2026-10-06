@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 
-import { DEMO_TOKEN, isDemo, isDemoSession } from "@/lib/demo"
+import { DEMO_TOKEN, isDemo, isDemoSession, usableSessionToken } from "@/lib/demo"
 
 /*
  * Demo mode is a deploy-time decision read off the environment, and the one
@@ -74,5 +74,39 @@ describe("isDemoSession", () => {
     setEnv({ YOUR_MOVE_DEMO: "1" })
     expect(isDemoSession("gho_sometoken")).toBe(false)
     expect(isDemoSession(undefined)).toBe(false)
+  })
+})
+
+/*
+ * In demo only the sentinel may be used: a real token unsealed beside it
+ * reads as signed out, so no route can pass it to GitHub. Outside demo
+ * every token passes through untouched — the helper decides nothing there,
+ * and a demo cookie replayed against production stays an invalid token.
+ */
+describe("usableSessionToken", () => {
+  it("drops a real token while demo holds", () => {
+    setEnv({ YOUR_MOVE_DEMO: "1" })
+    expect(usableSessionToken("gho_sometoken")).toBe(undefined)
+  })
+
+  it("keeps the sentinel while demo holds", () => {
+    setEnv({ YOUR_MOVE_DEMO: "1" })
+    expect(usableSessionToken(DEMO_TOKEN)).toBe(DEMO_TOKEN)
+  })
+
+  it("stays signed out with no session in demo", () => {
+    setEnv({ YOUR_MOVE_DEMO: "1" })
+    expect(usableSessionToken(undefined)).toBe(undefined)
+  })
+
+  it("passes a real token through outside demo", () => {
+    setEnv({ VERCEL_ENV: "production" })
+    expect(usableSessionToken("gho_sometoken")).toBe("gho_sometoken")
+  })
+
+  it("passes the sentinel through outside demo, honoured nowhere", () => {
+    setEnv({ VERCEL_ENV: "production" })
+    expect(usableSessionToken(DEMO_TOKEN)).toBe(DEMO_TOKEN)
+    expect(isDemoSession(DEMO_TOKEN)).toBe(false)
   })
 })

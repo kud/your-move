@@ -51,7 +51,7 @@ export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
   >
     <header className="flex items-center gap-2 pb-3 md:flex-wrap md:items-end md:gap-x-4 md:pb-4">
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-2.5">
-        <Mark className="h-auto w-6 shrink-0 md:w-[30px]" />
+        <Mark slot className="h-auto w-6 shrink-0 md:w-[30px]" />
         <div className="min-w-0 flex-1">
           <h1 className="flex items-baseline gap-2 font-serif text-[19px] font-semibold leading-tight tracking-[-0.015em] md:text-[27px]">
             Your Move
