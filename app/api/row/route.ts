@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
-import { isDemoSession, sessionSecret } from "@/lib/demo"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 import { demoRowDetail } from "@/lib/demo-fixtures"
 
 /*
@@ -64,7 +64,9 @@ export const GET = async (request: Request) => {
   if (!secret)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
-  const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
+  const token = usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
   const params = new URL(request.url).searchParams

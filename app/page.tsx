@@ -8,6 +8,7 @@ import { Intro } from "@/components/intro"
 import type { Picks } from "@/components/filters"
 import { COOKIE, unseal } from "@/lib/auth"
 import { cached, remember } from "@/lib/cache"
+import { usableSessionToken } from "@/lib/demo"
 import { fetchInbox } from "@/lib/github"
 import { isEmptyPicks, picksFromQuery } from "@/lib/views"
 
@@ -34,7 +35,9 @@ export const dynamic = "force-dynamic"
 const Board = async ({ picks }: { picks: Picks }) => {
   const secret = process.env.SESSION_SECRET
   const token = secret
-    ? await unseal(secret, (await cookies()).get(COOKIE)?.value)
+    ? usableSessionToken(
+        await unseal(secret, (await cookies()).get(COOKIE)?.value),
+      )
     : undefined
 
   /* Opening the page used to cost a fetch here AND another from the client on

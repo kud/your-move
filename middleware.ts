@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { COOKIE, unseal } from "@/lib/auth"
-import { sessionSecret } from "@/lib/demo"
+import { sessionSecret, usableSessionToken } from "@/lib/demo"
 
 /*
  * Everything is behind the gate except the login page, the OAuth routes, and the
@@ -31,7 +31,11 @@ export const middleware = async (request: NextRequest) => {
   if (!secret)
     return new NextResponse("SESSION_SECRET is not configured", { status: 500 })
 
-  if (await unseal(secret, request.cookies.get(COOKIE)?.value))
+  if (
+    usableSessionToken(
+      await unseal(secret, request.cookies.get(COOKIE)?.value),
+    )
+  )
     return NextResponse.next()
 
   const login = new URL("/login", request.url)

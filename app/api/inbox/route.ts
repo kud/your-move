@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { COOKIE, unseal } from "@/lib/auth"
 import { cached, lastResort, remember } from "@/lib/cache"
 import { demoInbox } from "@/lib/demo-fixtures"
-import { isDemoSession, sessionSecret } from "@/lib/demo"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 import { fetchInbox, GitHubError } from "@/lib/github"
 
 /*
@@ -25,7 +25,9 @@ export const GET = async (request: Request) => {
   if (!secret)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
-  const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
+  const token = usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
   /* Demo never reaches the cache or GitHub: fixtures, fresh every time, and

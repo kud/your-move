@@ -42,7 +42,7 @@ Default to the dark palette. On a light ground use the `-light` files so the com
 | --- | --- | --- |
 | Motion / active form | `#3B82F6` | `#2563EB` |
 | Companion / wordmark | `#F8FAFC` | `#0B0C0E` |
-| Ground | `#0B0C0E` | `#F8FAFC` |
+| Ground | `#070C15` | `#F8FAFC` |
 | Secondary neutral | `#9CA3AF` | `#9CA3AF` |
 
 The palette is intentionally colder and more energetic than the previous rose / ivory treatment:

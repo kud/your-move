@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
-import { isDemoSession, sessionSecret } from "@/lib/demo"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 import { fetchPulse, GitHubError } from "@/lib/github"
 
 /*
@@ -27,7 +27,9 @@ export const GET = async () => {
       { status: 500, headers: NO_STORE },
     )
 
-  const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
+  const token = usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
   if (!token)
     return NextResponse.json(
       { error: "no session" },

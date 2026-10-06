@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
-import { isDemoSession, sessionSecret } from "@/lib/demo"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 import { demoLabels } from "@/lib/demo-fixtures"
 
 /*
@@ -31,7 +31,9 @@ const headersFor = (token: string) => ({
 const session = async () => {
   const secret = sessionSecret()
   if (!secret) return undefined
-  return unseal(secret, (await cookies()).get(COOKIE)?.value)
+  return usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
 }
 
 /*
