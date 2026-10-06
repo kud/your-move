@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 
 import { Booting } from "@/components/booting"
 import { Inbox } from "@/components/inbox"
+import { Intro } from "@/components/intro"
 import type { Picks } from "@/components/filters"
 import { COOKIE, unseal } from "@/lib/auth"
 import { cached, remember } from "@/lib/cache"
@@ -79,9 +80,14 @@ const Page = async ({
   })
 
   return (
-    <Suspense fallback={<Booting filtered={!isEmptyPicks(picks)} />}>
-      <Board picks={picks} />
-    </Suspense>
+    <>
+      {/* A sibling BEFORE the Suspense, not inside `Booting`: Booting unmounts
+          the moment the board streams in, which would end the loop mid-hop. */}
+      <Intro />
+      <Suspense fallback={<Booting filtered={!isEmptyPicks(picks)} />}>
+        <Board picks={picks} />
+      </Suspense>
+    </>
   )
 }
 

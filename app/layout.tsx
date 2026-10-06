@@ -115,7 +115,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#08112a";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
+          __html: `(function(){try{var t=localStorage.getItem("ym:theme")||"auto";var d=document.documentElement;d.dataset.theme=t;if(localStorage.getItem("ym:contrast")==="1")d.dataset.contrast="high";var mo=localStorage.getItem("ym:motion");if(mo==="1"||(mo===null&&matchMedia("(prefers-reduced-motion: reduce)").matches))d.dataset.motion="reduce";if(location.pathname==="/"&&!sessionStorage.getItem("ym:intro")){sessionStorage.setItem("ym:intro","1");d.dataset.intro="cold"}var light=t==="light"||(t==="auto"&&matchMedia("(prefers-color-scheme: light)").matches);var g=light?"#f4f2f0":"#08112a";d.style.background=g;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",g);}catch(e){}})()`,
         }}
       />
     </head>
