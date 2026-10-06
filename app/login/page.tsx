@@ -12,6 +12,7 @@
 import { GitHubMark } from "@/components/github-mark"
 import { Mark } from "@/components/mark"
 import { ThemeSwitch } from "@/components/theme-switch"
+import { isDemo } from "@/lib/demo"
 
 const MESSAGES: Record<string, string> = {
   bad_state:
@@ -82,6 +83,12 @@ const Login = async ({ searchParams }: Props) => {
             <GitHubMark className="size-[18px] shrink-0 text-fg-mute" />
             Sign in with GitHub
           </a>
+
+          {isDemo() ? (
+            <p className="mt-3 text-[12px] text-fg-quiet">
+              Demo: sample data, no GitHub.
+            </p>
+          ) : null}
         </div>
 
       </div>

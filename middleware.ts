@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { sessionSecret } from "@/lib/demo"
 
 /*
  * Everything is behind the gate except the login page, the OAuth routes, and the
@@ -19,7 +20,10 @@ import { COOKIE, unseal } from "@/lib/auth"
  */
 
 export const middleware = async (request: NextRequest) => {
-  const secret = process.env.SESSION_SECRET
+  /* In demo mode this falls back to a fixed demo-only secret, so a preview
+     with no secrets configured still signs in. It seals sample data and
+     nothing else — see `lib/demo.ts`. */
+  const secret = sessionSecret()
 
   /* No secret configured means no way to open a session, so nobody is let in.
      The alternative — treating an unset variable as "auth disabled" — is how a

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { isDemoSession, sessionSecret } from "@/lib/demo"
 
 /*
  * Whether you may write to each repo on the board.
@@ -39,7 +40,7 @@ const NAME = /^[\w.-]+$/
 const MAX = 60
 
 export const GET = async (request: Request) => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   if (!secret)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
@@ -58,6 +59,16 @@ export const GET = async (request: Request) => {
   })
 
   if (!repos.length) return NextResponse.json({ permissions: {} })
+
+  /*
+   * Demo owns its fixtures, so every asked repo is writable — which keeps the
+   * label control present on the demo board.
+   */
+  if (isDemoSession(token))
+    return NextResponse.json({
+      permissions: Object.fromEntries(repos.map((repo) => [repo, "ADMIN"])),
+      budget: null,
+    })
 
   const query = `{
   rateLimit { cost remaining resetAt }

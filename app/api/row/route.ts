@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { isDemoSession, sessionSecret } from "@/lib/demo"
+import { demoRowDetail } from "@/lib/demo-fixtures"
 
 /*
  * One issue or pull request, in enough detail to decide — and no further.
@@ -58,7 +60,7 @@ const query = (owner: string, name: string, number: number) => `
 }`
 
 export const GET = async (request: Request) => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   if (!secret)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
@@ -76,6 +78,14 @@ export const GET = async (request: Request) => {
     return NextResponse.json({ error: "bad repo" }, { status: 400 })
   if (!Number.isInteger(number) || number < 1)
     return NextResponse.json({ error: "bad number" }, { status: 400 })
+
+  /* Demo answers from the fixtures, never from GitHub. */
+  if (isDemoSession(token)) {
+    const detail = demoRowDetail(repo, number)
+    if (!detail)
+      return NextResponse.json({ error: "not found" }, { status: 404 })
+    return NextResponse.json(detail)
+  }
 
   const response = await fetch(GRAPHQL, {
     method: "POST",
