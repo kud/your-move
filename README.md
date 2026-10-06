@@ -94,6 +94,10 @@ npm start
 
 Deploy the build output anywhere that runs Node — a platform like Vercel works with zero extra configuration beyond the three environment variables above.
 
+### Demo mode
+
+A preview or local run can be signed into and browsed without GitHub. Demo mode is on when `VERCEL_ENV` is `preview`, or when `YOUR_MOVE_DEMO=1` is set on any non-production deploy — production is never demo, even with the flag set. The login page is still the way in, but the GitHub round trip is pretended: it seals a sentinel session and the board serves sample data (`lib/demo-fixtures.ts`, invented names only). Writes answer 200 and save nothing. With no `SESSION_SECRET` set, demo falls back to a fixed demo-only secret; set a real one and it is used instead.
+
 ## 🔧 Development
 
 ```

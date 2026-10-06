@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server"
 
-import { issueState, STATE_COOKIE } from "@/lib/auth"
+import {
+  COOKIE,
+  issueState,
+  LIFETIME_MS,
+  seal,
+  STATE_COOKIE,
+} from "@/lib/auth"
+import { DEMO_TOKEN, isDemo, sessionSecret } from "@/lib/demo"
 
 /*
  * Step one of the OAuth dance: send the user to GitHub.
@@ -23,13 +30,38 @@ const AUTHORIZE = "https://github.com/login/oauth/authorize"
 const SCOPES = "repo read:org"
 
 export const GET = async (request: Request) => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   const clientId = process.env.GITHUB_CLIENT_ID
+
+  const to = new URL(request.url).searchParams.get("to") ?? "/"
+  /* Path only, the same rule the callback enforces on the way back: this
+     branch redirects straight there rather than sealing it into `state`
+     first, so the check has to happen here instead. */
+  const safe = to.startsWith("/") && !to.startsWith("//") ? to : "/"
+
+  /*
+   * Demo: no GitHub, just a sealed sentinel session and straight in. The
+   * login page is still the way here, so the flow reads the same — only the
+   * round trip to github.com is pretended.
+   */
+  if (isDemo()) {
+    if (!secret)
+      return NextResponse.json({ error: "not configured" }, { status: 500 })
+
+    const response = NextResponse.redirect(new URL(safe, request.url), 303)
+    response.cookies.set(COOKIE, await seal(secret, DEMO_TOKEN), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: LIFETIME_MS / 1000,
+    })
+    return response
+  }
 
   if (!secret || !clientId)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
-  const to = new URL(request.url).searchParams.get("to") ?? "/"
   const state = await issueState(secret, to)
 
   const authorize = new URL(AUTHORIZE)
