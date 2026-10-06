@@ -169,7 +169,7 @@ export const Sky = () => {
 
         The stops are an eased ramp rather than the two-stop one this started
         with, and that is a banding fix rather than a taste one. Going from
-        #0b0c0e to transparent over about eighty pixels, above a sky that
+        #070c15 to transparent over about eighty pixels, above a sky that
         differs from it by a handful of RGB steps, gives each step twenty pixels
         of width — which stops reading as a fade and starts reading as a line.
         An OLED panel at low luminance is exactly where that shows.
@@ -177,7 +177,7 @@ export const Sky = () => {
         And the flat part is measured in `env()`, not in a percentage of the
         overlay. At 30% of a 120px overlay it ended at 36px, while a Pixel's
         status bar is about 48 — so the boundary between the system's flat
-        `#0b0c0e` and our page landed INSIDE the ramp, where the sky has already
+        `#070c15` and our page landed INSIDE the ramp, where the sky has already
         begun to show. The two were painting the same colour and still did not
         match, because only one of them was painting it flat.
 

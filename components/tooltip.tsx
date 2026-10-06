@@ -141,7 +141,7 @@ export const TooltipLayer = () => {
       popover="manual"
       role="tooltip"
       aria-hidden
-      className="ym-tip fixed m-0 max-w-[min(260px,60vw)] rounded-md border border-line bg-raise px-2 py-1 text-[12px] leading-[1.4] text-fg shadow-[0_8px_24px_-12px_rgba(0,0,0,.9)]"
+      className="ym-tip fixed m-0 max-w-[min(260px,60vw)] rounded-md border border-line bg-raise px-2 py-1 text-[12px] leading-[1.4] text-fg shadow-float shadow-[0_8px_24px_-12px_rgba(0,0,0,.9)]"
     >
       {tip?.text}
     </div>

@@ -147,7 +147,7 @@ export const Menu = ({
            over the page. It sat across the right end of the filter banner, which is
            why `Clear` could not be pressed, and why pressing there sometimes landed
            on the GitHub link inside this very panel. */
-        className="m-0 mt-auto max-h-[85dvh] w-full flex-col [&:popover-open]:flex overflow-hidden rounded-t-2xl border border-line bg-panel p-3 text-fg shadow-[0_-20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/40 md:m-auto md:mr-6 md:mt-16 md:max-h-[80dvh] md:w-[300px] md:rounded-2xl"
+        className="m-0 mt-auto max-h-[85dvh] w-full flex-col [&:popover-open]:flex overflow-hidden rounded-t-2xl border border-line bg-panel p-3 text-fg shadow-float shadow-[0_-20px_60px_-30px_rgba(0,0,0,.9)] backdrop:bg-black/40 md:m-auto md:mr-6 md:mt-16 md:max-h-[80dvh] md:w-[300px] md:rounded-2xl"
       >
         {login ? (
           <div className="flex shrink-0 items-center gap-2.5 px-2 pb-3">

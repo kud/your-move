@@ -168,7 +168,7 @@ export const Launcher = ({
         setCursor(0)
         requestAnimationFrame(() => field.current?.focus())
       }}
-      className="ym-cmd fixed inset-x-0 top-0 m-0 w-full rounded-b-2xl border border-line bg-panel p-2 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60 md:inset-x-auto md:left-1/2 md:top-[12vh] md:w-[min(92vw,560px)] md:rounded-2xl"
+      className="ym-cmd fixed inset-x-0 top-0 m-0 w-full rounded-b-2xl border border-line bg-panel p-2 text-fg shadow-float shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60 md:inset-x-auto md:left-1/2 md:top-[12vh] md:w-[min(92vw,560px)] md:rounded-2xl"
       style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
     >
       <input

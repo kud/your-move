@@ -27,7 +27,7 @@ export const THEME = "ym:theme"
  * frame, which is the failure the whole pre-paint dance exists to prevent.
  */
 export const GROUND: Record<"light" | "dark", string> = {
-  dark: "#0b0c0e",
+  dark: "#070c15",
   light: "#f4f2f0",
 }
 

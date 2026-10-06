@@ -605,7 +605,7 @@ export const Filters = ({
            over the page. It sat across the right end of the filter banner, which is
            why `Clear` could not be pressed, and why pressing there sometimes landed
            on the GitHub link inside this very panel. */
-        className="m-auto h-[min(70dvh,540px)] w-[min(92vw,380px)] flex-col [&:popover-open]:flex overflow-hidden rounded-2xl border border-line bg-panel p-3 text-fg shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
+        className="m-auto h-[min(70dvh,540px)] w-[min(92vw,380px)] flex-col [&:popover-open]:flex overflow-hidden rounded-2xl border border-line bg-panel p-3 text-fg shadow-float shadow-[0_30px_80px_-40px_rgba(0,0,0,.9)] backdrop:bg-black/60"
       >
         <div className="flex shrink-0 items-center gap-2 pb-2">
           <b className="text-[15px] font-semibold">Filter</b>

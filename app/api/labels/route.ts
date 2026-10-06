@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
+import { demoLabels } from "@/lib/demo-fixtures"
 
 /*
  * The one write this app does: add or remove a label on a row.
@@ -27,9 +29,11 @@ const headersFor = (token: string) => ({
 })
 
 const session = async () => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   if (!secret) return undefined
-  return unseal(secret, (await cookies()).get(COOKIE)?.value)
+  return usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
 }
 
 /*
@@ -59,6 +63,9 @@ export const GET = async (request: Request) => {
   const repo = new URL(request.url).searchParams.get("repo")
   if (!named(repo))
     return NextResponse.json({ error: "bad repo" }, { status: 400 })
+
+  /* Demo offers the fixture names and writes nothing. */
+  if (isDemoSession(token)) return NextResponse.json({ labels: demoLabels })
 
   const response = await fetch(`${API}/repos/${repo}/labels?per_page=100`, {
     headers: headersFor(token),
@@ -90,6 +97,10 @@ export const POST = async (request: Request) => {
 
   if (!named(repo) || !Number.isInteger(number) || !label || !action)
     return NextResponse.json({ error: "bad request" }, { status: 400 })
+
+  /* A demo write goes nowhere, and says so plainly. */
+  if (isDemoSession(token))
+    return NextResponse.json({ ok: true, demo: "not saved" })
 
   const base = `${API}/repos/${repo}/issues/${number}/labels`
 

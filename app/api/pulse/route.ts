@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 import { fetchPulse, GitHubError } from "@/lib/github"
 
 /*
@@ -19,19 +20,25 @@ export const dynamic = "force-dynamic"
 const NO_STORE = { "Cache-Control": "no-store" }
 
 export const GET = async () => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   if (!secret)
     return NextResponse.json(
       { error: "not configured" },
       { status: 500, headers: NO_STORE },
     )
 
-  const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
+  const token = usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
   if (!token)
     return NextResponse.json(
       { error: "no session" },
       { status: 401, headers: NO_STORE },
     )
+
+  /* Sample data never moves, so the pulse is a fixed fingerprint. */
+  if (isDemoSession(token))
+    return NextResponse.json({ fingerprint: "demo" }, { headers: NO_STORE })
 
   try {
     return NextResponse.json(await fetchPulse(token), { headers: NO_STORE })

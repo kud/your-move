@@ -10,7 +10,9 @@
  */
 
 import { GitHubMark } from "@/components/github-mark"
+import { Mark } from "@/components/mark"
 import { ThemeSwitch } from "@/components/theme-switch"
+import { isDemo } from "@/lib/demo"
 
 const MESSAGES: Record<string, string> = {
   bad_state:
@@ -54,7 +56,12 @@ const Login = async ({ searchParams }: Props) => {
 
       <div>
         <div className="w-full max-w-[320px] rounded-xl border border-line bg-panel p-5">
-          <h1 className="text-[17px] font-semibold">Your Move</h1>
+          <div className="flex items-center gap-2">
+            <Mark className="h-auto w-8 shrink-0" />
+            <h1 className="font-serif text-[22px] font-semibold tracking-[-0.015em]">
+              Your Move
+            </h1>
+          </div>
           <p className="mt-1 text-[14px] text-fg-quiet">
             What moved, and whose move it is. Sign in with GitHub — the board
             reads only what you can already see.
@@ -76,6 +83,12 @@ const Login = async ({ searchParams }: Props) => {
             <GitHubMark className="size-[18px] shrink-0 text-fg-mute" />
             Sign in with GitHub
           </a>
+
+          {isDemo() ? (
+            <p className="mt-3 text-[12px] text-fg-quiet">
+              Demo: sample data, no GitHub.
+            </p>
+          ) : null}
         </div>
 
       </div>

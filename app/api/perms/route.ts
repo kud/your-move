@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import { COOKIE, unseal } from "@/lib/auth"
+import { isDemoSession, sessionSecret, usableSessionToken } from "@/lib/demo"
 
 /*
  * Whether you may write to each repo on the board.
@@ -39,11 +40,13 @@ const NAME = /^[\w.-]+$/
 const MAX = 60
 
 export const GET = async (request: Request) => {
-  const secret = process.env.SESSION_SECRET
+  const secret = sessionSecret()
   if (!secret)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
-  const token = await unseal(secret, (await cookies()).get(COOKIE)?.value)
+  const token = usableSessionToken(
+    await unseal(secret, (await cookies()).get(COOKIE)?.value),
+  )
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 })
 
   const asked = (new URL(request.url).searchParams.get("repos") ?? "")
@@ -58,6 +61,16 @@ export const GET = async (request: Request) => {
   })
 
   if (!repos.length) return NextResponse.json({ permissions: {} })
+
+  /*
+   * Demo owns its fixtures, so every asked repo is writable — which keeps the
+   * label control present on the demo board.
+   */
+  if (isDemoSession(token))
+    return NextResponse.json({
+      permissions: Object.fromEntries(repos.map((repo) => [repo, "ADMIN"])),
+      budget: null,
+    })
 
   const query = `{
   rateLimit { cost remaining resetAt }
