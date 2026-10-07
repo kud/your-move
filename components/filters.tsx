@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
+import { tip } from "@/components/tooltip"
 import { REASON_TONE } from "@/components/board"
 import { shortName } from "@/lib/order"
 import type { Row } from "@/lib/github"
@@ -222,6 +223,134 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "status", label: "Status" },
   { id: "labels", label: "Labels" },
 ]
+
+export const FilterTrigger = ({
+  picks,
+  variant,
+}: {
+  picks: Picks
+  variant: "round" | "labelled"
+}) => {
+  const active = countPicks(picks)
+  const label = active ? `${active} filters applied` : "Filter the board"
+  if (variant === "labelled")
+    return (
+      <button
+        type="button"
+        popoverTarget={ID}
+        aria-label={label}
+        aria-keyshortcuts="/"
+        {...tip(active ? `${active} filters applied  /` : "Filter  /")}
+        className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] transition-colors ${
+          active
+            ? "border-accent bg-accent-dim text-accent"
+            : "border-line-strong text-fg-mute hover:border-fg-quiet hover:text-fg"
+        }`}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden className="size-4">
+          <path
+            d="M2.5 3.5 H13.5 L9.5 8.25 V12.5 L6.5 13.75 V8.25 Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Filter
+        {active ? (
+          <span className="font-mono tabular-nums leading-none">{active}</span>
+        ) : null}
+      </button>
+    )
+  return (
+    <button
+      type="button"
+      popoverTarget={ID}
+      aria-label={label}
+      className={`grid size-8 shrink-0 place-items-center rounded-full border transition-colors md:hidden ${
+        active
+          ? "border-accent bg-accent-dim text-accent"
+          : "border-line-strong text-fg-mute hover:border-accent hover:text-fg"
+      }`}
+    >
+      {active ? (
+        <span className="font-mono text-[12px] tabular-nums leading-none">
+          {active}
+        </span>
+      ) : (
+        <svg viewBox="0 0 16 16" aria-hidden className="size-4">
+          <path
+            d="M2.5 3.5 H13.5 L9.5 8.25 V12.5 L6.5 13.75 V8.25 Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+export const ViewChips = ({
+  views,
+  picks,
+  onChange,
+  onViews,
+  deletable,
+}: {
+  views: View[]
+  picks: Picks
+  onChange: (next: Picks) => void
+  onViews: (next: View[]) => void
+  deletable: boolean
+}) => {
+  const current = views.find((v) => samePicks(v.picks, picks))
+  return (
+    <>
+      {views.map((view) => {
+        const on = current?.name === view.name
+        return (
+          <span
+            key={view.name}
+            className={`flex shrink-0 items-center rounded-full border text-[12.5px] ${
+              on
+                ? "border-accent bg-accent-dim text-accent"
+                : "border-line text-fg-mute"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => onChange(on ? emptyPicks() : view.picks)}
+              aria-pressed={on}
+              title={on ? `Turn off ${view.name}` : `Apply ${view.name}`}
+              className="flex items-center gap-1 py-1 pl-2 pr-1.5"
+            >
+              <span aria-hidden className="w-3 shrink-0 font-mono text-[11px]">
+                {on ? "✓" : ""}
+              </span>
+              {view.name}
+            </button>
+            {deletable && on ? (
+              <button
+                type="button"
+                aria-label={`Delete ${view.name}`}
+                onClick={() =>
+                  onViews(views.filter((v) => v.name !== view.name))
+                }
+                className="ml-0.5 border-l border-accent/30 py-1 pl-1.5 pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
+              >
+                ×
+              </button>
+            ) : null}
+          </span>
+        )
+      })}
+    </>
+  )
+}
 
 export const Filters = ({
   repos,
@@ -544,42 +673,7 @@ export const Filters = ({
 
   return (
     <>
-      {/*
-        A funnel rather than the words, and a count rather than a sentence.
-
-        "All repos" spent a header he has twice called too heavy on saying
-        nothing was happening — the least interesting state the control has. As
-        an icon it matches the avatar beside it, so the two read as a pair
-        rather than as a label next to a face. `aria-label` says the whole
-        sentence, so nothing was lost for anyone reading it aloud.
-      */}
-      <button
-        type="button"
-        popoverTarget={ID}
-        aria-label={active ? `${active} filters applied` : "Filter the board"}
-        className={`grid size-8 shrink-0 place-items-center rounded-full border transition-colors ${
-          active
-            ? "border-accent bg-accent-dim text-accent"
-            : "border-line text-fg-mute hover:border-accent hover:text-fg"
-        }`}
-      >
-        {active ? (
-          <span className="font-mono text-[12px] tabular-nums leading-none">
-            {active}
-          </span>
-        ) : (
-          <svg viewBox="0 0 16 16" aria-hidden className="size-4">
-            <path
-              d="M2.5 3.5 H13.5 L9.5 8.25 V12.5 L6.5 13.75 V8.25 Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </button>
+      <FilterTrigger variant="round" picks={picks} />
 
       <div
         id={ID}
@@ -648,69 +742,13 @@ export const Filters = ({
         */}
         {views.length ? (
           <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
-            {views.map((view) => {
-              const on = current?.name === view.name
-              return (
-                <span
-                  key={view.name}
-                  className={`flex items-center rounded-full border text-[12.5px] ${
-                    on
-                      ? "border-accent bg-accent-dim text-accent"
-                      : "border-line text-fg-mute"
-                  }`}
-                >
-                  {/*
-                    A toggle, not an apply. The chip already wears the grammar
-                    of pressed — accent border, accent-dim fill — and pressing a
-                    lit one did nothing, which is the failure this file's own
-                    contrast note names: a control that reports a state the page
-                    does not honour is worse than a missing one.
-
-                    Off can only mean `emptyPicks()`, because a lit chip means
-                    the picks ARE this view exactly — that is what `current`
-                    tests — so there is nothing else it could be turning off.
-                  */}
-                  <button
-                    type="button"
-                    onClick={() => onChange(on ? emptyPicks() : view.picks)}
-                    aria-pressed={on}
-                    title={on ? `Turn off ${view.name}` : `Apply ${view.name}`}
-                    className="flex items-center gap-1 py-1 pl-2 pr-1.5"
-                  >
-                    {/* The same tick a picked row wears, so a lit chip and a
-                        ticked row say "on" with one mark rather than by hue
-                        alone. The width is reserved so a chip does not resize
-                        as it lights — the whole wrapped row would reflow under
-                        the thumb mid-press. */}
-                    <span
-                      aria-hidden
-                      className="w-3 shrink-0 font-mono text-[11px]"
-                    >
-                      {on ? "✓" : ""}
-                    </span>
-                    {view.name}
-                  </button>
-                  {on ? (
-                    <button
-                      type="button"
-                      aria-label={`Delete ${view.name}`}
-                      onClick={() =>
-                        onViews(views.filter((v) => v.name !== view.name))
-                      }
-                      /* A hairline splits the chip into its two acts. The old
-                         rationale — only the applied view can be deleted, so a
-                         mis-tap costs a switch rather than a view — inverts now
-                         that the body is a toggle: turning a view off and
-                         deleting it are both "make this stop", a pixel apart,
-                         and only one comes back. */
-                      className="ml-0.5 border-l border-accent/30 py-1 pl-1.5 pr-2 text-[13px] leading-none opacity-70 hover:opacity-100"
-                    >
-                      ×
-                    </button>
-                  ) : null}
-                </span>
-              )
-            })}
+            <ViewChips
+              views={views}
+              picks={picks}
+              onChange={onChange}
+              onViews={onViews}
+              deletable
+            />
           </div>
         ) : null}
 
@@ -888,6 +926,21 @@ export const Filters = ({
           {(found ? nothingFound : shown.length === 0) ? (
             <p className="px-2 py-3 text-[13px] text-fg-quiet">
               Nothing matches that.
+            </p>
+          ) : null}
+
+          {tab === "repos" ? (
+            <p className="px-2 pt-2 pb-1 text-[12.5px] text-fg-quiet">
+              Missing an organisation?{" "}
+              <a
+                href="/api/auth/access"
+                target="_blank"
+                rel="noreferrer"
+                className="text-fg-mute underline underline-offset-2 hover:text-fg"
+              >
+                Grant access on GitHub{" "}
+                <span aria-hidden>↗</span>
+              </a>
             </p>
           ) : null}
         </div>

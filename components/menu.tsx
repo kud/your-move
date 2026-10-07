@@ -111,7 +111,7 @@ export const Menu = ({
         type="button"
         popoverTarget={ID}
         aria-label={login ? `Menu — signed in as ${login}` : "Menu"}
-        className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full border border-line text-fg-mute hover:border-accent hover:text-fg"
+        className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full border border-line text-fg-mute hover:border-accent hover:text-fg ml-1.5 md:ml-0"
       >
         {login ? (
           <img
@@ -204,6 +204,12 @@ export const Menu = ({
                   rel="noreferrer"
                 >
                   Closed recently{" "}
+                  <span aria-hidden className="ml-auto">
+                    ↗
+                  </span>
+                </a>
+                <a className={link} href="/api/auth/access">
+                  Organisation access{" "}
                   <span aria-hidden className="ml-auto">
                     ↗
                   </span>

@@ -24,13 +24,15 @@ import {
 } from "@/components/board"
 import { Detail, type OpenMode } from "@/components/detail"
 import { Mark, MarkMono } from "@/components/mark"
-import { Launcher, LAUNCHER_ID, type Command } from "@/components/launcher"
+import { Launcher, LAUNCHER_ID, openLauncher, type Command } from "@/components/launcher"
 import { markBoardReady } from "@/components/intro"
 import { Menu } from "@/components/menu"
 import {
   FILTERS_ID,
   Filters,
+  FilterTrigger,
   Glyph,
+  ViewChips,
   countPicks,
   labelCounts,
   repoCounts,
@@ -78,6 +80,61 @@ const LIVENESS_TEXT: Record<Liveness, string> = {
   stale: "May be out of date",
   offline: "Offline",
   expired: "Session expired",
+}
+
+const DesktopSearch = () => {
+  const [mod, setMod] = useState("⌘K")
+  useEffect(() => {
+    try {
+      const platform =
+        (navigator as Navigator & { userAgentData?: { platform?: string } })
+          .userAgentData?.platform ??
+        navigator.platform ??
+        ""
+      setMod(/mac|iphone|ipad|darwin/i.test(platform) ? "⌘K" : "Ctrl K")
+    } catch {}
+  }, [])
+  return (
+    <button
+      type="button"
+      popoverTarget={LAUNCHER_ID}
+      aria-label="Find anything on the board"
+      aria-keyshortcuts="Meta+K Control+K"
+      onKeyDown={(e) => {
+        if (
+          e.key.length !== 1 ||
+          e.key === " " ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.altKey ||
+          e.nativeEvent.isComposing
+        )
+          return
+        e.preventDefault()
+        openLauncher(e.key)
+      }}
+      className="flex h-9 w-[min(360px,40vw)] shrink-0 items-center gap-2 rounded-lg border border-line-strong bg-panel pl-2.5 pr-2 text-left transition-colors hover:border-fg-quiet"
+    >
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden
+        className="size-4 shrink-0 text-fg-quiet"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      >
+        <circle cx="7" cy="7" r="4.25" />
+        <path d="M10.2 10.2 L13.5 13.5" />
+      </svg>
+      <span className="flex-1 truncate text-[13.5px] text-fg-quiet">
+        Find anything on the board
+      </span>
+      <kbd className="shrink-0 rounded border border-line px-1 py-px font-mono text-[10px] text-fg-quiet">
+        {mod}
+      </kbd>
+    </button>
+  )
 }
 
 export const Inbox = ({
@@ -868,7 +925,7 @@ export const Inbox = ({
                 popoverTarget={LAUNCHER_ID}
                 aria-label="Find anything on the board"
                 {...tip("Find anything  ⌘K")}
-                className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-fg-mute transition-colors hover:border-accent hover:text-fg"
+                className="grid size-8 shrink-0 place-items-center rounded-full border border-line-strong text-fg-mute transition-colors hover:border-accent hover:text-fg md:hidden"
               >
                 <svg
                   viewBox="0 0 16 16"
@@ -913,6 +970,22 @@ export const Inbox = ({
               />
             </div>
           </header>
+
+          <div className="hidden items-center gap-2 pb-3 md:flex">
+            <DesktopSearch />
+            <FilterTrigger variant="labelled" picks={picks} />
+            {views.length ? (
+              <div className="fade-r flex min-w-0 items-center gap-1.5 overflow-hidden">
+                <ViewChips
+                  views={views}
+                  picks={picks}
+                  onChange={setPicks}
+                  onViews={changeViews}
+                  deletable={false}
+                />
+              </div>
+            ) : null}
+          </div>
 
           <Launcher rows={all} commands={commands} onOpen={openRow} />
 

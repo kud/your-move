@@ -15,6 +15,7 @@
   --color-raise: #1e242f;
   --color-line: #252b36;
   --color-line-soft: #1a202a;
+  --color-line-strong: #6b7480;
 
   --color-fg: #e9ebee;
   --color-fg-mute: #a2aab5;
@@ -1454,6 +1455,7 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
   --color-fg-quiet: #9aa4b2;
   --color-line: #3a424c;
   --color-line-soft: #2b323a;
+  --color-line-strong: #727b88;
   --color-panel: #16181d;
   --color-panel-2: #1e222a;
 }
@@ -1544,6 +1546,7 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
     --color-raise: #f1efed;
     --color-line: #ddd8d4;
     --color-line-soft: #ebe7e3;
+    --color-line-strong: #8a8580;
 
     --color-fg: #1a1c1f;
     --color-fg-mute: #4c525a;
@@ -1567,6 +1570,7 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
   --color-raise: #f1efed;
   --color-line: #ddd8d4;
   --color-line-soft: #ebe7e3;
+  --color-line-strong: #8a8580;
 
   --color-fg: #1a1c1f;
   --color-fg-mute: #4c525a;
@@ -1724,6 +1728,10 @@ html:has([popover]:popover-open:not(.ym-tip)) main {
  */
 .fade-b {
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+.fade-r {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
 
 /* The hand-off bar. Indeterminate on purpose: nothing here knows how long an
