@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 
 import { BOARD_W, BoardSkeleton, FRAME } from "@/components/board"
 import { Mark } from "@/components/mark"
+import { SiteFooter } from "@/components/site-footer"
 
 /*
  * What the first flush paints, while the board is still being read.
@@ -119,7 +120,8 @@ export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
       static copy; a shared component would put a prop-threaded abstraction
       between two things that simply say the same sentence.
     */}
-    <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
+    <SiteFooter className="mt-2 shrink-0 border-t border-line pt-2 md:mt-3">
+      <div className="hidden md:contents">
       <span>
         Read live from GitHub and checked for changes every minute. Nothing is
         stored; labels are the only thing written back.
@@ -144,10 +146,11 @@ export const Booting = ({ filtered = false }: { filtered?: boolean }) => (
         </a>
       ))}
 
-      <span className="ml-auto text-right">
+      <span className="hidden min-[1700px]:inline">
         Built to answer one question across a lot of repositories — whose move
         is it — then made general.
       </span>
-    </footer>
+      </div>
+    </SiteFooter>
   </main>
 )

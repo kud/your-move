@@ -39,6 +39,7 @@ import {
   type Picks,
 } from "@/components/filters"
 import { SectionMark } from "@/components/section-mark"
+import { SiteFooter } from "@/components/site-footer"
 import { Sky } from "@/components/sky"
 import { useNotifier } from "@/components/use-notifier"
 import { WritableRepos } from "@/components/use-writable"
@@ -1344,43 +1345,46 @@ export const Inbox = ({
           </div>
 
           {/*
-          Desktop only, and that is the right asymmetry rather than an omission:
-          on a phone this content lives in the menu, where someone wondering
-          where the data comes from actually goes looking. Here there is room
-          for it on the page, so it sits on the page.
+          The notes are desktop only, and that is the right asymmetry rather
+          than an omission: on a phone this content lives in the menu, where
+          someone wondering where the data comes from actually goes looking.
+          Here there is room for it on the page, so it sits on the page. The
+          beansontoast line with support shows at every width.
         */}
-          <footer className="mt-3 hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[12px] text-fg-quiet md:flex">
-            <span>
-              Read live from GitHub and checked for changes every minute.
-              Nothing is stored; labels are the only thing written back.
-            </span>
+          <SiteFooter className="mt-2 shrink-0 border-t border-line pt-2 md:mt-3">
+            <div className="hidden md:contents">
+              <span>
+                Read live from GitHub and checked for changes every minute.
+                Nothing is stored; labels are the only thing written back.
+              </span>
 
-            {[
-              { label: "Source", href: "https://github.com/kud/your-move" },
-              {
-                label: "Report an issue",
-                href: "https://github.com/kud/your-move/issues/new",
-              },
-              { label: "@kud", href: "https://github.com/kud" },
-            ].map((out) => (
-              <a
-                key={out.label}
-                href={out.href}
-                target="_blank"
-                rel="noreferrer"
-                className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
-              >
-                {out.label}
-              </a>
-            ))}
+              {[
+                { label: "Source", href: "https://github.com/kud/your-move" },
+                {
+                  label: "Report an issue",
+                  href: "https://github.com/kud/your-move/issues/new",
+                },
+                { label: "@kud", href: "https://github.com/kud" },
+              ].map((out) => (
+                <a
+                  key={out.label}
+                  href={out.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-line underline-offset-2 hover:text-fg hover:decoration-accent"
+                >
+                  {out.label}
+                </a>
+              ))}
 
-            {/* No private repo names here: this page is public, and the origin
+              {/* No private repo names here: this page is public, and the origin
               is worth telling without naming what it came out of. */}
-            <span className="ml-auto text-right">
-              Built to answer one question across a lot of repositories — whose
-              move is it — then made general.
-            </span>
-          </footer>
+              <span className="hidden min-[1700px]:inline">
+                Built to answer one question across a lot of repositories —
+                whose move is it — then made general.
+              </span>
+            </div>
+          </SiteFooter>
           {/* Every width. The reasoning, and why the earlier desk-only call was
             answering the wrong question, is at the top of `detail.tsx`. */}
           {openRowData && openMode !== "github" ? (

@@ -11,6 +11,7 @@
 
 import { GitHubMark } from "@/components/github-mark"
 import { Mark } from "@/components/mark"
+import { SiteFooter } from "@/components/site-footer"
 import { ThemeSwitch } from "@/components/theme-switch"
 import { isDemo } from "@/lib/demo"
 
@@ -90,8 +91,9 @@ const Login = async ({ searchParams }: Props) => {
             </p>
           ) : null}
         </div>
-
       </div>
+
+      <SiteFooter className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] justify-center px-6" />
     </main>
   )
 }

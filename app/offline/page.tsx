@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 
 import { Inbox } from "@/components/inbox"
+import { SiteFooter } from "@/components/site-footer"
 import type { Inbox as InboxData } from "@/lib/github"
 import { readKept } from "@/lib/kept"
 
@@ -40,7 +41,7 @@ import { readKept } from "@/lib/kept"
 type Read = { done: false } | { done: true; board?: InboxData }
 
 const Card = () => (
-  <main className="grid min-h-safe place-items-center p-6">
+  <main className="relative grid min-h-safe place-items-center p-6">
     <div className="w-full max-w-[320px] rounded-xl border border-line bg-panel p-5">
       <h1 className="text-[17px] font-semibold">Your Move</h1>
 
@@ -68,6 +69,8 @@ const Card = () => (
         Try again
       </a>
     </div>
+
+    <SiteFooter className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] justify-center px-6" />
   </main>
 )
 

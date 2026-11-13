@@ -1,5 +1,7 @@
 "use client"
 
+import { SiteFooter } from "@/components/site-footer"
+
 /*
  * The one screen that exists so a crash is not a blank page.
  *
@@ -14,7 +16,7 @@
  * went wrong.
  */
 const Error = ({ reset }: { error: Error; reset: () => void }) => (
-  <main className="grid h-safe place-items-center p-6">
+  <main className="relative grid h-safe place-items-center p-6">
     <div className="w-full max-w-[320px] rounded-2xl border border-line bg-panel p-5">
       <h1 className="font-serif text-[19px] font-semibold">
         The board did not load
@@ -40,6 +42,8 @@ const Error = ({ reset }: { error: Error; reset: () => void }) => (
         </a>
       </div>
     </div>
+
+    <SiteFooter className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] justify-center px-6" />
   </main>
 )
 
