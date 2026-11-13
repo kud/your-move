@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "private": true,
   "license": "MIT",
+  "homepage": "https://kud.io/projects/your-move",
   "type": "module",
   "description": "A GitHub inbox for what moved and whose move it is. Installable on any device.",
   "scripts": {
