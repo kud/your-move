@@ -74,11 +74,18 @@ describe("GET /api/auth/login", () => {
   it("refuses an absolute `to` in demo, like the callback does", async () => {
     setEnv({ YOUR_MOVE_DEMO: "1", SESSION_SECRET: "secret" })
 
-    for (const to of ["https://evil.example", "//evil.example"]) {
+    for (const to of [
+      "https://evil.example",
+      "//evil.example",
+      "/\\evil.example",
+      "/\t/evil.example",
+    ]) {
       const response = await GET(
         new Request(`http://x/api/auth/login?to=${encodeURIComponent(to)}`),
       )
-      expect(new URL(locationOf(response)).pathname).toBe("/")
+      /* The origin, not only the path: an off-site redirect to the root of
+         another host also has the pathname "/". */
+      expect(locationOf(response)).toBe("http://x/")
     }
   })
 })
