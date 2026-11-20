@@ -94,6 +94,50 @@ export const unseal = async (
   }
 }
 
+/*
+ * Any origin will do as the base: only whether resolving changes it matters.
+ * `.invalid` is reserved, so it can never be a real host someone points at.
+ */
+const SAME_ORIGIN = "https://your-move.invalid"
+
+/**
+ * Where to land after signing in: a same-origin path, or "/".
+ *
+ * Path only, because an absolute URL here is an open redirect — and a prefix
+ * check is not enough to know what a string is a path TO. The URL parser
+ * treats a backslash as a slash and drops tabs and newlines, so input that
+ * starts with one slash can still resolve to another host. Resolving it the
+ * way the browser will, and checking where that lands, is the only test that
+ * agrees with the browser by construction.
+ *
+ * A leading encoded slash or backslash is refused too. It resolves to this
+ * origin today, but it is never a path the app itself produces, and it turns
+ * into an off-site target the moment anything decodes it once more.
+ *
+ * Shared by the login route and the callback, so the two guards cannot drift.
+ */
+export const safePath = (to: unknown): string => {
+  if (typeof to !== "string") return "/"
+
+  let url: URL
+  try {
+    url = new URL(to, SAME_ORIGIN)
+  } catch {
+    return "/"
+  }
+  if (url.origin !== SAME_ORIGIN) return "/"
+
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(url.pathname)
+  } catch {
+    return "/"
+  }
+  if (/^\/[\/\\]/.test(decoded)) return "/"
+
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
 /**
  * The OAuth `state` parameter: a random nonce, sealed the same way.
  *
@@ -127,11 +171,7 @@ export const readState = async (
     const { to, at } = JSON.parse(opened) as { to?: unknown; at?: unknown }
     if (typeof at !== "number" || now - at > STATE_LIFETIME_MS) return undefined
 
-    /* Path only. An absolute URL here would make the callback an open redirect,
-       which is exactly where one gets weaponised. */
-    return typeof to === "string" && to.startsWith("/") && !to.startsWith("//")
-      ? to
-      : "/"
+    return safePath(to)
   } catch {
     return undefined
   }
