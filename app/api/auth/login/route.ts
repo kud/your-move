@@ -4,6 +4,7 @@ import {
   COOKIE,
   issueState,
   LIFETIME_MS,
+  safePath,
   seal,
   STATE_COOKIE,
 } from "@/lib/auth"
@@ -33,11 +34,10 @@ export const GET = async (request: Request) => {
   const secret = sessionSecret()
   const clientId = process.env.GITHUB_CLIENT_ID
 
-  const to = new URL(request.url).searchParams.get("to") ?? "/"
-  /* Path only, the same rule the callback enforces on the way back: this
+  /* Path only, by the same helper the callback uses on the way back: the demo
      branch redirects straight there rather than sealing it into `state`
-     first, so the check has to happen here instead. */
-  const safe = to.startsWith("/") && !to.startsWith("//") ? to : "/"
+     first, so the check has to happen here as well. */
+  const safe = safePath(new URL(request.url).searchParams.get("to"))
 
   /*
    * Demo: no GitHub, just a sealed sentinel session and straight in. The
@@ -62,7 +62,7 @@ export const GET = async (request: Request) => {
   if (!secret || !clientId)
     return NextResponse.json({ error: "not configured" }, { status: 500 })
 
-  const state = await issueState(secret, to)
+  const state = await issueState(secret, safe)
 
   const authorize = new URL(AUTHORIZE)
   authorize.searchParams.set("client_id", clientId)
