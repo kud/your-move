@@ -18,16 +18,16 @@
     "@kud/gh": "0.18.0",
     "@kud/gh-workflow": "0.11.0",
     "next": "16.4.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "26.0.0",
-    "@types/react": "19.2.8",
-    "@types/react-dom": "19.2.4",
-    "tailwindcss": "4.3.3",
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.5",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.12"
   }
 }
